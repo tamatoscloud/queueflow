@@ -1,0 +1,25 @@
+name: queueflow_widgets
+description: >-
+  Composed, reusable widgets (molecules/organisms) built from queueflow_ui
+  primitives and queueflow_theme tokens. No business logic, no screens.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  queueflow_theme:
+    path: ../theme
+  queueflow_ui:
+    path: ../ui
+  queueflow_utils:
+    path: ../utils
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter

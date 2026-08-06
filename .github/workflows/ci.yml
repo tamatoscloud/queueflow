@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Minimal env for Prisma generate, typecheck, and unit tests (no real DB required).
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/queueflow_ci?schema=public
+  JWT_SECRET: ci-jwt-secret-minimum-32-characters-long
+  REFRESH_TOKEN_SECRET: ci-refresh-secret-minimum-32-chars
+  SUPABASE_URL: https://example.supabase.co
+  SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+  SUPABASE_SECRET_KEY: sb_secret_ci_placeholder
+  SUPABASE_JWKS_URL: https://example.supabase.co/auth/v1/.well-known/jwks.json
+  APP_ENV: development
+  NOTIFICATION_USE_MOCK: "true"
+  NOTIFICATION_QUEUE_ENABLED: "false"
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  flutter:
+    name: Flutter — ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [business_app, staff_app, admin_panel, tv_display, marketing_website]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Bootstrap workspace
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Code generation
+        run: melos run gen
+        working-directory: .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+        working-directory: apps/${{ matrix.app }}
+
+      - name: Test
+        run: flutter test
+        working-directory: apps/${{ matrix.app }}
+
+      - name: Build web
+        run: flutter build web --release -t lib/main_production.dart
+        working-directory: apps/${{ matrix.app }}
+
+  customer-portal:
+    name: Customer Portal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/customer-portal
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/customer-portal/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.com/api/v1
+          NEXT_PUBLIC_WS_BASE_URL: https://api.example.com

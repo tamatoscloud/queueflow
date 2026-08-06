@@ -1,0 +1,3 @@
+#include "Debug.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER = com.queueflow.businessApp
+PRODUCT_NAME = QueueFlow Business

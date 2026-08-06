@@ -1,0 +1,43 @@
+name: queueflow_services
+description: >-
+  Concrete infrastructure services behind narrow interfaces: local storage
+  (Hive), secure storage, push notifications (FCM), barcode/QR scanning, and
+  runtime permissions. Flutter-only, since every backing plugin requires it.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^9.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  mobile_scanner: ^6.0.2
+  path_provider: ^2.1.5
+  permission_handler: ^11.3.1
+  queueflow_core:
+    path: ../core
+  queueflow_models:
+    path: ../models
+  queueflow_network:
+    path: ../network
+  queueflow_utils:
+    path: ../utils
+  riverpod: ^2.6.1
+
+dev_dependencies:
+  # No build_runner here deliberately: this package has no @freezed/
+  # @riverpod-annotated code today, and mobile_scanner/permission_handler
+  # pull in transitive dependencies (jni/objective_c) that use Dart's
+  # native-assets "build hooks", which build_runner's script-compilation
+  # step cannot currently handle. Add build_runner back only alongside
+  # actual generated code in this package — see docs/ARCHITECTURE.md.
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter

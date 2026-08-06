@@ -1,0 +1,12 @@
+name: queueflow
+description: >-
+  QueueFlow monorepo root. This package exists only to host workspace-level
+  dev tooling (Melos) and is never published or depended on by app/package code.
+publish_to: "none"
+version: 0.0.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dev_dependencies:
+  melos: ^6.3.0

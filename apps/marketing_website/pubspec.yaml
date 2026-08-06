@@ -1,0 +1,44 @@
+name: marketing_website
+description: >-
+  QueueFlow public marketing website (web). Built with Flutter Web for
+  maximum design-system/component reuse with the rest of the monorepo; see
+  docs/ARCHITECTURE.md for the SEO/SSR trade-off this decision accepts.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  cupertino_icons: ^1.0.8
+  dio: ^5.7.0
+  flutter:
+    sdk: flutter
+  flutter_dotenv: ^5.2.1
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+  queueflow_core:
+    path: ../../packages/core
+  queueflow_network:
+    path: ../../packages/network
+  queueflow_theme:
+    path: ../../packages/theme
+  queueflow_ui:
+    path: ../../packages/ui
+  queueflow_utils:
+    path: ../../packages/utils
+  queueflow_widgets:
+    path: ../../packages/widgets
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env.dev
+    - .env.staging
+    - .env.production

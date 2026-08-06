@@ -1,0 +1,20 @@
+name: queueflow_utils
+description: >-
+  Framework-agnostic Dart utilities (string/date extensions, validators,
+  debouncing) shared across every QueueFlow app and package. Deliberately
+  pure Dart (no Flutter dependency) for maximum portability.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  # Loose constraint deliberately: flutter_localizations (used by
+  # customer_app/business_app) pins an exact intl version per Flutter SDK
+  # release, so this package must not narrow the range with a caret.
+  intl: ">=0.19.0 <1.0.0"
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  test: ^1.25.8

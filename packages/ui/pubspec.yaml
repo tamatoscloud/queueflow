@@ -1,0 +1,21 @@
+name: queueflow_ui
+description: >-
+  Low-level design-system primitives (buttons, inputs, feedback indicators)
+  built directly on top of queueflow_theme tokens. No business logic.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  queueflow_theme:
+    path: ../theme
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter

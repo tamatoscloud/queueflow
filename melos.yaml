@@ -1,0 +1,49 @@
+name: queueflow
+
+packages:
+  - apps/**
+  - packages/**
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+  clean:
+    hooks:
+      pre: melos exec -c 1 -- "flutter clean" || true
+
+scripts:
+  analyze:
+    run: melos exec -c 1 -- "dart analyze --fatal-infos"
+    description: Run static analysis across every package and app.
+
+  format:
+    run: melos exec -c 1 -- "dart format --output=none --set-exit-if-changed ."
+    description: Verify formatting across the workspace (CI-safe, non-mutating).
+
+  format:fix:
+    run: melos exec -c 1 -- "dart format ."
+    description: Apply formatting across the workspace.
+
+  test:
+    run: melos exec -c 1 --dir-exists=test -- "flutter test"
+    description: Run tests for every package/app that has a test/ directory.
+
+  gen:
+    run: melos exec -c 1 --depends-on=build_runner -- "dart run build_runner build --delete-conflicting-outputs"
+    description: Run code generation (Freezed, json_serializable, Riverpod) for every package that needs it.
+
+  gen:watch:
+    run: melos exec -c 10 --depends-on=build_runner -- "dart run build_runner watch --delete-conflicting-outputs"
+    description: Watch mode code generation (runs concurrently across packages).
+
+  gen:clean:
+    run: melos exec -c 1 --depends-on=build_runner -- "dart run build_runner clean"
+    description: Remove all generated (.g.dart / .freezed.dart) files.
+
+  get:
+    run: melos exec -c 1 -- "flutter pub get"
+    description: Fetch dependencies for every package/app (usually prefer `melos bootstrap`).
+
+  lint:import-order:
+    run: melos exec -c 1 -- "dart analyze --fatal-infos"
+    description: Alias kept for CI readability; directives_ordering is enforced via analysis_options.yaml.

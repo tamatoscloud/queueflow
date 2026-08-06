@@ -1,0 +1,40 @@
+name: queueflow_shared
+description: >-
+  The cross-app composition root: shared Riverpod provider wiring, shared
+  route path constants, and shared feature contracts. The only package
+  allowed to depend on every other package — apps depend on this instead of
+  hand-wiring composition themselves.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+  sentry_flutter: ^8.14.1
+  queueflow_core:
+    path: ../core
+  queueflow_models:
+    path: ../models
+  queueflow_network:
+    path: ../network
+  queueflow_services:
+    path: ../services
+  queueflow_theme:
+    path: ../theme
+  queueflow_ui:
+    path: ../ui
+  queueflow_utils:
+    path: ../utils
+  queueflow_widgets:
+    path: ../widgets
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter

@@ -1,0 +1,106 @@
+{
+  "business": {
+    "id": "3300373f-efce-4ed7-9997-f279163a329a",
+    "name": "Bella Vista",
+    "slug": "bella-vista"
+  },
+  "branch": {
+    "id": "78e5b100-d970-4ab8-af72-b02df90616df",
+    "name": "Bella Vista Downtown"
+  },
+  "owner": {
+    "email": "owner@bellavista.example.com"
+  },
+  "portalBaseUrl": "http://localhost:3001",
+  "mainQueue": {
+    "id": "76f2a221-9d04-45ed-b353-acda1c5e885f",
+    "name": "Dine-In Waiting List",
+    "joinUrl": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f",
+    "qrCodes": [
+      {
+        "label": "Restaurant Entrance",
+        "code": "BV-ENTRANCE",
+        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+      },
+      {
+        "label": "Reception Desk",
+        "code": "BV-RECEPTION",
+        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+      },
+      {
+        "label": "Window",
+        "code": "BV-WINDOW",
+        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+      },
+      {
+        "label": "Outdoor Banner",
+        "code": "BV-OUTDOOR",
+        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+      },
+      {
+        "label": "Parking Area",
+        "code": "BV-PARKING",
+        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+      }
+    ]
+  },
+  "serviceModes": {
+    "DINE_IN": {
+      "queueId": "76f2a221-9d04-45ed-b353-acda1c5e885f",
+      "name": "Dine-In Waiting List",
+      "joinUrl": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+    },
+    "TAKEAWAY": {
+      "queueId": "3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "name": "Takeaway Pickup",
+      "joinUrl": "http://localhost:3001/q/3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "branchLandingUrl": "http://localhost:3001/takeaway/78e5b100-d970-4ab8-af72-b02df90616df?queue=3764aa48-8355-4523-ab53-a6bac870f5fb"
+    },
+    "DRIVE_IN": {
+      "queueId": "8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "name": "Drive-In Lane",
+      "joinUrl": "http://localhost:3001/q/8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "branchLandingUrl": "http://localhost:3001/drive/78e5b100-d970-4ab8-af72-b02df90616df?queue=8e39f190-00ae-4e92-8f85-cc0a4ec772d8"
+    }
+  },
+  "queues": [
+    {
+      "id": "76f2a221-9d04-45ed-b353-acda1c5e885f",
+      "name": "Dine-In Waiting List",
+      "joinUrl": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f",
+      "serviceMode": "DINE_IN"
+    },
+    {
+      "id": "3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "name": "Takeaway Pickup",
+      "joinUrl": "http://localhost:3001/q/3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "serviceMode": "TAKEAWAY"
+    },
+    {
+      "id": "8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "name": "Drive-In Lane",
+      "joinUrl": "http://localhost:3001/q/8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "serviceMode": "DRIVE_IN"
+    },
+    {
+      "id": "952fcae5-2e28-43c9-90ae-102cc5cdfcfa",
+      "name": "Reservation Waitlist",
+      "joinUrl": "http://localhost:3001/q/952fcae5-2e28-43c9-90ae-102cc5cdfcfa",
+      "serviceMode": "DINE_IN"
+    },
+    {
+      "id": "ffc52fb7-43b8-47ca-81e1-fa827b24d580",
+      "name": "VIP Guests",
+      "joinUrl": "http://localhost:3001/q/ffc52fb7-43b8-47ca-81e1-fa827b24d580",
+      "serviceMode": "DINE_IN"
+    }
+  ],
+  "stats": {
+    "totalEntries": 100,
+    "waiting": 31,
+    "completed": 53,
+    "vip": 5,
+    "cancelled": 5
+  },
+  "heroImage": "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1200&h=600&fit=crop"
+}

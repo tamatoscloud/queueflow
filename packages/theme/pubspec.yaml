@@ -1,0 +1,22 @@
+name: queueflow_theme
+description: >-
+  Design tokens (color, typography, spacing, radius) and ThemeData assembly
+  shared by every QueueFlow Flutter app, plus responsive breakpoint helpers.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.2.1
+  queueflow_utils:
+    path: ../utils
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter

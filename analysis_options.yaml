@@ -1,0 +1,51 @@
+# Root lint contract for the entire QueueFlow monorepo.
+# Every package/app has its own analysis_options.yaml that does:
+#   include: ../../analysis_options.yaml   (or relative equivalent)
+# so this file is the single source of truth for code quality rules.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    invalid_annotation_target: ignore # required for freezed/json_serializable generated unions
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.gr.dart"
+    - "**/generated_plugin_registrant.dart"
+    - "build/**"
+
+linter:
+  rules:
+    # --- Import hygiene / ordering ---
+    # directives_ordering enforces dart: -> package: -> relative, alphabetized within each group.
+    # prefer_relative_imports keeps intra-package imports relative; cross-package imports are
+    # necessarily `package:` imports, so the two rules are complementary, not conflicting.
+    - directives_ordering
+    - prefer_relative_imports
+    - avoid_relative_lib_imports
+
+    # --- Consistency & correctness ---
+    - always_declare_return_types
+    - annotate_overrides
+    - avoid_dynamic_calls
+    - avoid_print
+    - avoid_returning_null_for_void
+    - avoid_types_as_parameter_names
+    - cancel_subscriptions
+    - close_sinks
+    - no_leading_underscores_for_local_identifiers
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - prefer_final_locals
+    - prefer_single_quotes
+    - require_trailing_commas
+    - sort_child_properties_last
+    - sort_pub_dependencies
+    - unawaited_futures
+    - unnecessary_await_in_return
+    - use_key_in_widget_constructors
