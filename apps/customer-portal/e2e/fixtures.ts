@@ -80,7 +80,7 @@ export const test = base.extend<{
   queues: DemoQueues;
   staffToken: string;
 }>({
-  queues: async ({}, use, testInfo) => {
+  queues: async ({}, fixture, testInfo) => {
     const fromManifest = loadQueuesFromManifest();
     const dineIn =
       (testInfo.config.metadata.dineInQueueId as string | undefined) ??
@@ -102,10 +102,10 @@ export const test = base.extend<{
       );
     }
 
-    await use({ dineIn: dineIn!, takeaway: takeaway!, driveIn: driveIn! });
+    await fixture({ dineIn: dineIn!, takeaway: takeaway!, driveIn: driveIn! });
   },
 
-  staffToken: async ({}, use, testInfo) => {
+  staffToken: async ({}, fixture, testInfo) => {
     const email = process.env.DEMO_STAFF_EMAIL ?? 'owner@bellavista.example.com';
     const password = process.env.DEMO_STAFF_PASSWORD ?? process.env.SEED_DEMO_PASSWORD;
     if (!password) {
@@ -121,7 +121,7 @@ export const test = base.extend<{
       test.skip(true, `Staff login failed (${res.status}). Check demo credentials.`);
     }
     const body = (await res.json()) as ApiEnvelope<AuthTokens>;
-    await use(body.data.accessToken);
+    await fixture(body.data.accessToken);
   },
 });
 

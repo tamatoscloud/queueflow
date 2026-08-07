@@ -730,7 +730,9 @@ export async function clearBellaVistaActiveEntries(prisma: PrismaClient): Promis
   }
 
   const deleted = await prisma.queueEntry.deleteMany({ where: { businessId: business.id } });
-  await prisma.queueToken.deleteMany({ where: { businessId: business.id } });
+  await prisma.queueToken.deleteMany({
+    where: { queue: { businessId: business.id } },
+  });
   await prisma.notification.deleteMany({ where: { businessId: business.id } });
   await prisma.feedback.deleteMany({ where: { businessId: business.id } });
 
