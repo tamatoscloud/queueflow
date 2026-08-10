@@ -28,6 +28,8 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+
     await expectLater(
       find.byType(StatCard),
       matchesGoldenFile('goldens/stat_card.png'),
