@@ -55,7 +55,7 @@ class _LandingPageState extends State<LandingPage> {
           ),
           const SliverToBoxAdapter(child: _TestimonialsSection()),
           const SliverToBoxAdapter(child: _FaqSection()),
-          SliverToBoxAdapter(child: _CtaSection(onBookDemo: openDemoRequest)),
+          const SliverToBoxAdapter(child: _CtaSection(onBookDemo: openDemoRequest)),
           const SliverToBoxAdapter(child: _Footer()),
         ],
       ),
@@ -194,9 +194,9 @@ class _HeroVisual extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          _MockQueueRow(token: 'A-042', label: 'Now serving', highlight: true),
-          _MockQueueRow(token: 'A-043', label: 'Next'),
-          _MockQueueRow(token: 'A-044', label: 'Waiting · 12 min'),
+          const _MockQueueRow(token: 'A-042', label: 'Now serving', highlight: true),
+          const _MockQueueRow(token: 'A-043', label: 'Next'),
+          const _MockQueueRow(token: 'A-044', label: 'Waiting · 12 min'),
           const SizedBox(height: AppSpacing.md),
           Container(
             padding: const EdgeInsets.all(12),
@@ -599,7 +599,7 @@ class _FaqSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Section(
+    return const _Section(
       title: 'FAQ',
       child: Column(
         children: [

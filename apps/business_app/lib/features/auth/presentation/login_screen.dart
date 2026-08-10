@@ -6,7 +6,6 @@ import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_utils/queueflow_utils.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
 
-import '../../../core/network/api_error_message.dart';
 import '../../../core/network/connection_diagnostics.dart';
 import '../../../core/routing/app_routes.dart';
 import 'auth_controller.dart';

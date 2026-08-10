@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../../core/routing/app_routes.dart';
-import '../auth/data/auth_user.dart';
-import '../auth/presentation/auth_controller.dart';
 import '../../shared/widgets/admin_command_palette.dart';
 import '../../shared/widgets/calm/admin_calm_helpers.dart';
 import '../../shared/widgets/calm/calm_status_dot.dart';
+import '../auth/data/auth_user.dart';
+import '../auth/presentation/auth_controller.dart';
 
 class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key, required this.child});
@@ -218,7 +218,6 @@ class _CalmNavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final all = [...primary, ...more];
     return Container(
       width: extended ? 240 : 72,
       decoration: const BoxDecoration(

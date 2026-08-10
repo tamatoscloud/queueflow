@@ -16,12 +16,12 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: Scaffold(
           body: Center(
             child: NowServingToken(
               config: config,
-              entry: const QueueEntryModel(
+              entry: QueueEntryModel(
                 id: 'e1',
                 displayCode: 'A-007',
                 status: 'CALLED',

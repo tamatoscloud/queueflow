@@ -13,8 +13,8 @@ import '../../../shared/widgets/calm/calm_queue_console.dart';
 import '../../../shared/widgets/calm/calm_queue_entry_card.dart';
 import '../../../shared/widgets/calm/calm_section_label.dart';
 import '../../../shared/widgets/staff/call_next_sheet.dart';
-import '../../../shared/widgets/staff/staff_empty_states.dart';
 import '../../../shared/widgets/staff/service_mode_helpers.dart';
+import '../../../shared/widgets/staff/staff_empty_states.dart';
 
 final queueSnapshotProvider =
     FutureProvider.autoDispose.family<QueueSnapshotModel, String>((ref, queueId) async {
@@ -588,9 +588,9 @@ Future<void> transferEntry(
   final targets = queues.where((q) => q.id != queueId).toList();
   if (targets.isEmpty) return;
   String? targetId = targets.first.id;
-  final context = ref.context;
+  if (!ref.context.mounted) return;
   await showDialog<void>(
-    context: context,
+    context: ref.context,
     builder: (ctx) => AlertDialog(
       title: const Text('Transfer to queue'),
       content: DropdownButtonFormField<String>(

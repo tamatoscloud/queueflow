@@ -8,17 +8,17 @@ import '../../../core/cache/cached_fetch.dart';
 import '../../../core/cache/offline_cache_service.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/business_api_client.dart';
-import '../../../core/routing/app_routes.dart';
-import '../../../core/session/session_providers.dart';
 import '../../../core/realtime/realtime_client.dart';
 import '../../../core/realtime/realtime_sync.dart';
+import '../../../core/routing/app_routes.dart';
+import '../../../core/session/session_providers.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
 import '../../../features/queue_console/presentation/queue_console_screen.dart';
-import '../../../shared/widgets/skeleton_loaders.dart';
 import '../../../shared/widgets/calm/calm_card.dart';
 import '../../../shared/widgets/calm/calm_live_indicator.dart';
 import '../../../shared/widgets/calm/calm_primary_button.dart';
 import '../../../shared/widgets/calm/calm_section_label.dart';
+import '../../../shared/widgets/skeleton_loaders.dart';
 import '../../restaurant_demo/presentation/service_mode_helpers.dart';
 
 final queuesRealtimeProvider = Provider.autoDispose<void>((ref) {
@@ -71,7 +71,7 @@ class QueuesScreen extends ConsumerWidget {
       );
       return;
     }
-    await showDialog(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Create queue'),

@@ -7,15 +7,15 @@ import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
 
 import '../../../core/config/customer_portal_url.dart';
-import '../../../core/network/business_api_client.dart';
 import '../../../core/models/models.dart';
+import '../../../core/network/business_api_client.dart';
 import '../../../core/restaurant/restaurant_config_provider.dart';
 import '../../../core/restaurant/service_mode.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
-import '../../queues/presentation/queues_screen.dart';
 import '../../../shared/widgets/calm/calm_card.dart';
 import '../../../shared/widgets/calm/calm_section_label.dart';
 import '../../../shared/widgets/skeleton_loaders.dart';
+import '../../queues/presentation/queues_screen.dart';
 import 'service_mode_helpers.dart';
 
 final qrCenterBusinessNameProvider = FutureProvider.autoDispose<String>((ref) async {
@@ -77,7 +77,7 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
 
   void _showPrintDialog(BuildContext context, QueueModel queue, String url, String businessName) {
     final info = ServiceModeInfo.forMode(queue.serviceMode);
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Print poster · ${info.label}'),
@@ -159,7 +159,7 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
             return ListView(
               padding: EdgeInsets.all(isTablet ? AppSpacing.lg : AppSpacing.md),
               children: [
-                CalmSectionLabel(
+                const CalmSectionLabel(
                   'QR Center',
                   subtitle: 'How customers join your queues',
                 ),

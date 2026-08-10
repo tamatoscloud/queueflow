@@ -122,7 +122,7 @@ class BranchesScreen extends ConsumerWidget {
                               PopupMenuItem(value: 'delete', child: Text('Delete')),
                             ],
                             onSelected: (v) async {
-                              if (v == 'edit') context.push(AppRoutes.branchEdit(b.id));
+                              if (v == 'edit') await context.push(AppRoutes.branchEdit(b.id));
                               if (v == 'switch') {
                                 ref.read(selectedBranchIdProvider.notifier).state = b.id;
                                 await ref.read(sessionBootstrapProvider).saveBranchId(b.id);

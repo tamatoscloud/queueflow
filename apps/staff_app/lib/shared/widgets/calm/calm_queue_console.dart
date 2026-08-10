@@ -367,17 +367,17 @@ class CalmQueueSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
-          const _SkeletonCard(height: 88),
-          const SizedBox(height: AppSpacing.md),
-          const _SkeletonCard(height: 140),
-          const SizedBox(height: AppSpacing.sm),
-          const _SkeletonCard(height: 140),
-          const SizedBox(height: AppSpacing.sm),
-          const _SkeletonCard(height: 140),
+          _SkeletonCard(height: 88),
+          SizedBox(height: AppSpacing.md),
+          _SkeletonCard(height: 140),
+          SizedBox(height: AppSpacing.sm),
+          _SkeletonCard(height: 140),
+          SizedBox(height: AppSpacing.sm),
+          _SkeletonCard(height: 140),
         ],
       ),
     );

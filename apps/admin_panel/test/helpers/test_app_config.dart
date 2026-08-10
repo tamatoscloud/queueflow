@@ -1,16 +1,13 @@
+import 'package:admin_panel/core/network/api_response_parser.dart';
 import 'package:admin_panel/core/session/session_providers.dart';
+import 'package:admin_panel/features/auth/data/auth_remote_data_source.dart';
 import 'package:admin_panel/features/auth/data/auth_repository.dart';
 import 'package:admin_panel/features/auth/data/auth_token_holder.dart';
 import 'package:admin_panel/features/auth/data/auth_token_storage.dart';
-import 'package:admin_panel/features/auth/data/auth_user.dart';
 import 'package:admin_panel/features/auth/presentation/auth_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:queueflow_network/queueflow_network.dart';
 import 'package:queueflow_shared/queueflow_shared.dart';
-
-import 'package:admin_panel/core/network/api_response_parser.dart';
-import 'package:admin_panel/features/auth/data/auth_remote_data_source.dart';
 
 List<Override> testAppOverrides() {
   const testConfig = AppConfig(

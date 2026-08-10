@@ -86,7 +86,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Manage your team',
                 onTap: () => context.push(AppRoutes.staff),
               ),
-              CalmSettingsTile(
+              const CalmSettingsTile(
                 icon: Icons.mail_outline,
                 title: 'Invitations',
                 subtitle: 'Invite team members — coming soon',
@@ -120,12 +120,12 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Profile',
                 subtitle: user?.email ?? '',
               ),
-              CalmSettingsTile(
+              const CalmSettingsTile(
                 icon: Icons.lock_outline,
                 title: 'Security',
                 subtitle: 'Password and sign-in — coming soon',
               ),
-              CalmSettingsTile(
+              const CalmSettingsTile(
                 icon: Icons.credit_card_outlined,
                 title: 'Subscription',
                 subtitle: 'Manage your plan — coming soon',
@@ -149,7 +149,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: themeMode == ThemeMode.dark ? 'On' : 'Off',
                 trailing: Switch(
                   value: themeMode == ThemeMode.dark,
-                  activeColor: AppColors.calmViolet,
+                  activeThumbColor: AppColors.calmViolet,
                   onChanged: (v) {
                     ref.read(themeModeProvider.notifier).state = v ? ThemeMode.dark : ThemeMode.light;
                   },

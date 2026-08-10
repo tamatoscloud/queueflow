@@ -46,7 +46,6 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  int _index = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   static final _destinations = AppShell.destinations;
@@ -178,7 +177,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                   _PremiumNavRail(
                     selectedIndex: selected,
                     onDestinationSelected: (i) {
-                      setState(() => _index = i);
                       context.go(_destinations[i].route);
                     },
                   ),

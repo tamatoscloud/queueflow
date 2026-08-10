@@ -22,11 +22,11 @@ class SettingsScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppSpacing.sm),
-          ListTile(
+          const ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.dark_mode_outlined),
-            title: const Text('Appearance'),
-            subtitle: const Text('Follow system theme'),
+            leading: Icon(Icons.dark_mode_outlined),
+            title: Text('Appearance'),
+            subtitle: Text('Follow system theme'),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,

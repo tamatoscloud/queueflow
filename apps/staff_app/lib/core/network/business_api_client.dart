@@ -1,10 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/models.dart';
 import 'api_response_parser.dart';
 import 'dio_providers.dart';
-import '../models/models.dart';
-import '../models/staff_model.dart';
 
 class BusinessApiClient {
   BusinessApiClient(this._dio, this._parser);

@@ -75,7 +75,7 @@ class BranchSwitcher extends ConsumerWidget {
           hint: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
+              const Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
                 'All branches',
@@ -86,16 +86,16 @@ class BranchSwitcher extends ConsumerWidget {
               ),
             ],
           ),
-          icon: Icon(Icons.expand_more, color: AppColors.primary, size: 20),
+          icon: const Icon(Icons.expand_more, color: AppColors.primary, size: 20),
           borderRadius: AppRadius.lgAll,
           items: [
-            DropdownMenuItem(
+            const DropdownMenuItem(
               value: null,
               child: Row(
                 children: [
                   Icon(Icons.hub_outlined, size: 18, color: AppColors.neutral500),
-                  const SizedBox(width: 8),
-                  const Text('All branches'),
+                  SizedBox(width: 8),
+                  Text('All branches'),
                 ],
               ),
             ),
@@ -104,7 +104,7 @@ class BranchSwitcher extends ConsumerWidget {
                 value: b.id,
                 child: Row(
                   children: [
-                    Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
+                    const Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
                     const SizedBox(width: 8),
                     Text(b.name),
                   ],

@@ -135,7 +135,7 @@ class StaffOfflineState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.neutral400),
+            const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.neutral400),
             const SizedBox(height: AppSpacing.md),
             Text(
               "You're offline",

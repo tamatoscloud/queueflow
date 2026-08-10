@@ -71,7 +71,7 @@ class AnalyticsScreen extends ConsumerWidget {
                   for (final row in data.dailyCustomers)
                     CalmCard(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Text('${row['status']}: ${row['_count']?['_all'] ?? 0}'),
+                      child: Text(_formatStatusCount(row)),
                     ),
                 ],
               ),
@@ -88,7 +88,7 @@ class AnalyticsScreen extends ConsumerWidget {
                   for (final row in data.notificationSuccess)
                     CalmCard(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Text('${row['status']}: ${row['_count']?['_all'] ?? 0}'),
+                      child: Text(_formatStatusCount(row)),
                     ),
                 ],
               ),
@@ -97,4 +97,10 @@ class AnalyticsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatStatusCount(Map<String, dynamic> row) {
+  final countMap = row['_count'];
+  final total = countMap is Map<String, dynamic> ? countMap['_all'] ?? 0 : 0;
+  return '${row['status']}: $total';
 }

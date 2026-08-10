@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:queueflow_theme/queueflow_theme.dart';
 
 import 'routes/app_router.dart';
 import 'theme/theme_mode_provider.dart';
-import 'package:queueflow_theme/queueflow_theme.dart';
 
 class BusinessApp extends ConsumerWidget {
   const BusinessApp({super.key});

@@ -301,7 +301,7 @@ class _StatBlock extends StatelessWidget {
 }
 
 class CalmEmptyInline extends StatelessWidget {
-  const CalmEmptyInline({required this.message});
+  const CalmEmptyInline({super.key, required this.message});
 
   final String message;
 
@@ -390,9 +390,9 @@ Future<void> transferEntry(
   final targets = queues.where((q) => q.id != queueId).toList();
   if (targets.isEmpty) return;
   String? targetId = targets.first.id;
-  final context = ref.context;
+  if (!ref.context.mounted) return;
   await showDialog<void>(
-    context: context,
+    context: ref.context,
     builder: (ctx) => AlertDialog(
       title: const Text('Transfer to another queue'),
       content: DropdownButtonFormField<String>(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
-import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../core/providers/branches_provider.dart';
 import '../../core/routing/staff_routes.dart';

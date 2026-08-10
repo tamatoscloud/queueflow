@@ -92,7 +92,7 @@ class _AdminCommandPaletteDialogState extends State<_AdminCommandPaletteDialog> 
           _MoveIntent: CallbackAction<_MoveIntent>(
             onInvoke: (intent) {
               setState(() {
-                if (results.isEmpty) return null;
+                if (results.isEmpty) return;
                 _selected = (_selected + intent.delta).clamp(0, results.length - 1);
               });
               return null;

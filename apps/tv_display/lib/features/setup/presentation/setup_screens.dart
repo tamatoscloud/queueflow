@@ -247,7 +247,7 @@ class _StaffConfigureScreenState extends ConsumerState<StaffConfigureScreen> {
               children: [
                 branches.when(
                   data: (items) => DropdownButtonFormField<String>(
-                    value: _branchId,
+                    initialValue: _branchId,
                     decoration: const InputDecoration(labelText: 'Branch'),
                     items: items
                         .map((b) => DropdownMenuItem(value: b.id, child: Text(b.name)))
@@ -263,7 +263,7 @@ class _StaffConfigureScreenState extends ConsumerState<StaffConfigureScreen> {
                 const SizedBox(height: AppSpacing.md),
                 queues.when(
                   data: (items) => DropdownButtonFormField<String>(
-                    value: _queueId,
+                    initialValue: _queueId,
                     decoration: const InputDecoration(labelText: 'Queue'),
                     items: items
                         .map((q) => DropdownMenuItem(value: q.id, child: Text(q.name)))
@@ -275,7 +275,7 @@ class _StaffConfigureScreenState extends ConsumerState<StaffConfigureScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 DropdownButtonFormField<DisplayLayoutMode>(
-                  value: _layout,
+                  initialValue: _layout,
                   decoration: const InputDecoration(labelText: 'Display mode'),
                   items: const [
                     DropdownMenuItem(

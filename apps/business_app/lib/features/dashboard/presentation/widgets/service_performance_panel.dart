@@ -94,12 +94,12 @@ class ServicePerformancePanel extends ConsumerWidget {
         }
 
         if (cards.isEmpty) {
-          return Column(
+          return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CalmSectionLabel('Service performance'),
-              const SizedBox(height: AppSpacing.sm),
-              const CalmCard(
+              CalmSectionLabel('Service performance'),
+              SizedBox(height: AppSpacing.sm),
+              CalmCard(
                 child: Text('Not enough data yet. Performance will appear as guests are served.'),
               ),
             ],

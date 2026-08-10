@@ -213,7 +213,7 @@ class _TableFloorScreenState extends ConsumerState<TableFloorScreen> {
               ),
               AppCard(
                 child: DropdownButtonFormField<String>(
-                  value: queueId,
+                  initialValue: queueId,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.queue),
                     labelText: 'Waiting list source',

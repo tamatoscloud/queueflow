@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:queueflow_network/queueflow_network.dart';
 import 'package:queueflow_shared/queueflow_shared.dart';
 
 /// Result of a backend connectivity probe (`GET /health/live`).
@@ -82,7 +81,7 @@ Future<ConnectionDiagnostics> probeBackend(Dio dio, String apiBaseUrl) async {
     );
   } on DioException catch (e) {
     stopwatch.stop();
-    final factory = const DioClientFactory();
+    const factory = DioClientFactory();
     final mapped = factory.mapError(e);
     return ConnectionFailed(
       apiBaseUrl: apiBaseUrl,

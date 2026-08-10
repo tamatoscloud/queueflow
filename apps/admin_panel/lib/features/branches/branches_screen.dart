@@ -51,7 +51,7 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                     fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(borderRadius: AppRadius.lgAll),
                   ),
-                  value: _selectedBusinessId,
+                  initialValue: _selectedBusinessId,
                   items: [
                     for (final b in businesses)
                       DropdownMenuItem(value: b.id, child: Text(b.name)),

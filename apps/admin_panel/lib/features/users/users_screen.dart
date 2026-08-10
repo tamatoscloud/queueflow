@@ -128,7 +128,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       if (action == 'reset') {
         final temp = await api.resetUserPassword(userId);
         if (context.mounted) {
-          await showDialog(
+          await showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: AppRadius.xlAll),

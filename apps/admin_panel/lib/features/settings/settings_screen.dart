@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:queueflow_shared/queueflow_shared.dart';
-import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../core/routing/app_routes.dart';
-import '../auth/presentation/auth_controller.dart';
 import '../../shared/widgets/calm/calm_card.dart';
 import '../../shared/widgets/calm/calm_primary_button.dart';
 import '../../shared/widgets/calm/calm_section_label.dart';
+import '../auth/presentation/auth_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

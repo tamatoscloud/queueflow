@@ -28,8 +28,8 @@ class DashboardSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Expanded(child: AppSkeletonCard()),
               SizedBox(width: 12),
               Expanded(child: AppSkeletonCard()),

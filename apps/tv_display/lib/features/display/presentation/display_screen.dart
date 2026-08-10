@@ -19,9 +19,9 @@ class DisplayScreen extends ConsumerWidget {
     final configAsync = ref.watch(displayConfigProvider);
     final config = configAsync.valueOrNull;
     if (config == null) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.darkBackground,
-        body: const Center(child: AppLoadingIndicator(size: 48)),
+        body: Center(child: AppLoadingIndicator(size: 48)),
       );
     }
 
@@ -634,7 +634,7 @@ class NextCustomersList extends StatelessWidget {
     final scale = config.fontScale;
 
     if (items.isEmpty) {
-      return Center(
+      return const Center(
         child: EmptyStateView(
           title: 'No customers waiting',
           icon: Icons.people_outline_rounded,
@@ -1087,7 +1087,7 @@ class DisplaySettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          AppButton(
+          const AppButton(
             label: 'Enter fullscreen',
             onPressed: requestTvFullscreen,
             fullWidth: true,

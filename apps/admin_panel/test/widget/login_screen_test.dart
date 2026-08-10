@@ -3,7 +3,6 @@ import 'package:admin_panel/features/auth/presentation/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:queueflow_shared/queueflow_shared.dart';
 
 import '../helpers/test_app_config.dart';
 

@@ -19,7 +19,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final email = TextEditingController();
     final name = TextEditingController();
     var role = 'RECEPTIONIST';
-    await showDialog(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Invite staff'),
@@ -29,7 +29,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
             TextField(controller: email, decoration: const InputDecoration(labelText: 'Email')),
             DropdownButtonFormField<String>(
-              value: role,
+              initialValue: role,
               items: const [
                 DropdownMenuItem(value: 'MANAGER', child: Text('Manager')),
                 DropdownMenuItem(value: 'RECEPTIONIST', child: Text('Receptionist')),
@@ -44,22 +44,21 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               try {
                 await ref.read(businessApiClientProvider).inviteStaff(
                       StaffInviteRequest(email: email.text, fullName: name.text, roleName: role),
                     );
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Invitation sent to ${email.text}')),
-                  );
                 }
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Invitation sent to ${email.text}')),
+                );
               } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('We couldn\'t send the invitation. Try again.')),
-                  );
-                }
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('We couldn\'t send the invitation. Try again.')),
+                );
               }
             },
             child: const Text('Send invite'),

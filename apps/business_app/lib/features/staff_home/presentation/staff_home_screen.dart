@@ -117,7 +117,7 @@ class StaffHomeScreen extends ConsumerWidget {
               ),
               data: (queues) {
                 if (queues.isEmpty) {
-                  return SliverFillRemaining(
+                  return const SliverFillRemaining(
                     child: EmptyStateView(
                       title: 'No queues today',
                       message: 'Ask your manager to open a queue for this branch.',

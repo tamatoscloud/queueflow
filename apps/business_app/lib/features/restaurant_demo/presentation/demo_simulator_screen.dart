@@ -110,7 +110,7 @@ class _DemoSimulatorScreenState extends ConsumerState<DemoSimulatorScreen> {
                     Text('Target queue', style: Theme.of(context).textTheme.titleSmall),
                     const SizedBox(height: AppSpacing.sm),
                     DropdownButtonFormField<String>(
-                      value: queueId,
+                      initialValue: queueId,
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.queue),
                         labelText: 'Queue',

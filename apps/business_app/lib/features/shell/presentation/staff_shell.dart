@@ -6,9 +6,9 @@ import 'package:queueflow_theme/queueflow_theme.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/session/session_providers.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
-import '../../branches/presentation/branches_screen.dart';
 import '../../../shared/widgets/common_widgets.dart';
 import '../../../shared/widgets/offline_banner.dart';
+import '../../branches/presentation/branches_screen.dart';
 
 typedef ShellDestination = ({
   IconData icon,

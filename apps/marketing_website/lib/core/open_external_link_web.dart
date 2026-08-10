@@ -1,5 +1,5 @@
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 void openExternalLink(String url) {
-  html.window.location.href = url;
+  web.window.location.href = url;
 }

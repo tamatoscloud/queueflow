@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../core/network/api_error_message.dart';
 import '../../core/network/platform_api_client.dart';
-import '../../core/routing/app_routes.dart';
 import '../../shared/widgets/calm/calm_attention_card.dart';
 import '../../shared/widgets/calm/calm_card.dart';
 import '../../shared/widgets/calm/calm_empty_state.dart';
@@ -67,7 +65,7 @@ class NotificationsScreen extends ConsumerWidget {
                   for (final row in (data.stats['byStatus'] as List<dynamic>? ?? []))
                     CalmCard(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Text('${row['status']}: ${row['_count']?['_all'] ?? 0}'),
+                      child: Text(_formatStatusCount(row as Map<String, dynamic>)),
                     ),
                 ],
               ),
@@ -81,7 +79,7 @@ class NotificationsScreen extends ConsumerWidget {
                   icon: Icons.check_circle_outline,
                 )
               else
-                for (final n in failed)
+                for (final item in failed)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: CalmCard(
@@ -92,16 +90,16 @@ class NotificationsScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  n['type']?.toString() ?? 'Notification',
+                                  _notificationLabel(item),
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                                 ),
                                 Text(
-                                  '${n['channel']} · ${n['business']?['name'] ?? 'Platform'}',
+                                  _notificationChannelLine(item),
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.calmWarmGray),
                                 ),
-                                if (n['failureReason'] != null)
+                                if (_notificationFailureReason(item) != null)
                                   Text(
-                                    n['failureReason'].toString(),
+                                    _notificationFailureReason(item)!,
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.calmWarmGray),
                                   ),
                               ],
@@ -113,7 +111,7 @@ class NotificationsScreen extends ConsumerWidget {
                             variant: AppButtonVariant.secondary,
                             onPressed: () async {
                               try {
-                                await ref.read(platformApiClientProvider).retryNotification(n['id'] as String);
+                                await ref.read(platformApiClientProvider).retryNotification(_notificationId(item));
                                 ref.invalidate(notificationDashboardProvider);
                               } catch (e) {
                                 if (context.mounted) {
@@ -134,4 +132,28 @@ class NotificationsScreen extends ConsumerWidget {
       },
     );
   }
+}
+
+String _formatStatusCount(Map<String, dynamic> row) {
+  final countMap = row['_count'];
+  final total = countMap is Map<String, dynamic> ? countMap['_all'] ?? 0 : 0;
+  return '${row['status']}: $total';
+}
+
+String _notificationLabel(Map<String, dynamic> notification) {
+  return notification['type']?.toString() ?? 'Notification';
+}
+
+String _notificationChannelLine(Map<String, dynamic> notification) {
+  final business = notification['business'];
+  final businessName = business is Map<String, dynamic> ? business['name']?.toString() : null;
+  return '${notification['channel']} · ${businessName ?? 'Platform'}';
+}
+
+String? _notificationFailureReason(Map<String, dynamic> notification) {
+  return notification['failureReason']?.toString();
+}
+
+String _notificationId(Map<String, dynamic> notification) {
+  return notification['id'] as String;
 }

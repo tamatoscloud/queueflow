@@ -66,7 +66,7 @@ final class TokenRefreshInterceptor extends Interceptor {
 
       final opts = err.requestOptions;
       opts.headers['Authorization'] = 'Bearer ${tokens.access}';
-      final response = await retryDio().fetch(opts);
+      final response = await retryDio().fetch<dynamic>(opts);
       return handler.resolve(response);
     } catch (_) {
       return handler.next(err);
