@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   buildIORedisOptions,
   isTlsRedisUrl,
@@ -6,29 +6,32 @@ import {
 } from '../redis.config';
 
 describe('loadRedisConfig', () => {
-  const env = { ...process.env };
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+  });
 
   afterEach(() => {
-    process.env = { ...env };
+    vi.unstubAllEnvs();
   });
 
   it('disables when REDIS_URL is missing', () => {
-    delete process.env.REDIS_URL;
-    delete process.env.NOTIFICATION_QUEUE_ENABLED;
+    vi.stubEnv('REDIS_URL', '');
+    vi.stubEnv('NOTIFICATION_QUEUE_ENABLED', 'true');
     const config = loadRedisConfig();
     expect(config.enabled).toBe(false);
   });
 
   it('enables when REDIS_URL is set', () => {
-    process.env.REDIS_URL = 'rediss://default:secret@upstash.example:6379';
+    vi.stubEnv('REDIS_URL', 'rediss://default:secret@upstash.example:6379');
+    vi.stubEnv('NOTIFICATION_QUEUE_ENABLED', 'true');
     const config = loadRedisConfig();
     expect(config.enabled).toBe(true);
     expect(config.url).toContain('rediss://');
   });
 
   it('respects NOTIFICATION_QUEUE_ENABLED=false', () => {
-    process.env.REDIS_URL = 'redis://localhost:6379';
-    process.env.NOTIFICATION_QUEUE_ENABLED = 'false';
+    vi.stubEnv('REDIS_URL', 'redis://localhost:6379');
+    vi.stubEnv('NOTIFICATION_QUEUE_ENABLED', 'false');
     expect(loadRedisConfig().enabled).toBe(false);
   });
 });
