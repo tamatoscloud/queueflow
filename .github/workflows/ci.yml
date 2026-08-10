@@ -77,6 +77,15 @@ jobs:
         run: melos run gen
         working-directory: .
 
+      - name: Prepare env assets for analyzer
+        run: |
+          set -euo pipefail
+          for app in business_app staff_app admin_panel tv_display marketing_website; do
+            for env in dev staging production; do
+              cp "apps/$app/.env.$env.example" "apps/$app/.env.$env"
+            done
+          done
+
       - name: Analyze
         run: flutter analyze --fatal-infos
         working-directory: apps/${{ matrix.app }}
