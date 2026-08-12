@@ -8,18 +8,20 @@ import {
 } from '../constants/notification-queue.constants';
 import type { NotificationJobData } from '../domain/notification.types';
 import { RedisConnectionService } from '../../redis/redis-connection.service';
+import {
+  NotificationQueueUnavailableError,
+  type EnqueueSendOptions,
+  type NotificationJobProcessor,
+  type NotificationQueueHealthCounts,
+  type NotificationQueuePort,
+} from './notification-queue.port';
 
-export type NotificationJobProcessor = (job: Job<NotificationJobData>) => Promise<void>;
-
-export class NotificationQueueUnavailableError extends Error {
-  constructor(message = 'Notification queue is temporarily unavailable') {
-    super(message);
-    this.name = 'NotificationQueueUnavailableError';
-  }
-}
+export { NotificationQueueUnavailableError };
 
 @Injectable()
-export class NotificationQueueService implements OnModuleDestroy {
+export class NotificationQueueService
+  implements NotificationQueuePort, OnModuleDestroy
+{
   private readonly logger = new Logger(NotificationQueueService.name);
   private readonly config = notificationQueueConfig();
   private queue: Queue<NotificationJobData> | null = null;
@@ -35,7 +37,11 @@ export class NotificationQueueService implements OnModuleDestroy {
   constructor(private readonly redis: RedisConnectionService) {}
 
   get isEnabled(): boolean {
-    return this.config.enabled && this.redis.config.enabled;
+    return (
+      this.config.enabled &&
+      this.config.driver === 'redis' &&
+      this.redis.config.enabled
+    );
   }
 
   private ensureQueueConnection() {
@@ -59,6 +65,7 @@ export class NotificationQueueService implements OnModuleDestroy {
     return this.dlqConnection;
   }
 
+  /** @deprecated Prefer getHealthCounts — kept for transitional callers. */
   getQueue(): Queue<NotificationJobData> {
     if (!this.queue) {
       this.queue = new Queue<NotificationJobData>(NOTIFICATION_QUEUE_NAME, {
@@ -85,7 +92,7 @@ export class NotificationQueueService implements OnModuleDestroy {
 
   async enqueueSend(
     notificationId: string,
-    options?: { delayMs?: number; attempt?: number; force?: boolean },
+    options?: EnqueueSendOptions,
   ): Promise<void> {
     if (!this.isEnabled) {
       throw new NotificationQueueUnavailableError('Notification queue is disabled');
@@ -131,9 +138,13 @@ export class NotificationQueueService implements OnModuleDestroy {
 
     this.worker = new Worker<NotificationJobData>(
       NOTIFICATION_QUEUE_NAME,
-      async (job) => {
+      async (job: Job<NotificationJobData>) => {
         try {
-          await processor(job);
+          await processor({
+            id: job.id,
+            data: job.data,
+            attemptsMade: job.attemptsMade,
+          });
         } catch (err) {
           const maxAttempts = this.config.maxAttempts;
           if (job.attemptsMade + 1 >= maxAttempts) {
@@ -173,6 +184,24 @@ export class NotificationQueueService implements OnModuleDestroy {
 
   isWorkerRunning(): boolean {
     return this.worker != null;
+  }
+
+  async getHealthCounts(): Promise<NotificationQueueHealthCounts> {
+    const queue = this.getQueue();
+    const counts = await queue.getJobCounts(
+      'waiting',
+      'active',
+      'completed',
+      'failed',
+      'delayed',
+    );
+    return {
+      waiting: counts.waiting ?? 0,
+      active: counts.active ?? 0,
+      completed: counts.completed ?? 0,
+      failed: counts.failed ?? 0,
+      delayed: counts.delayed ?? 0,
+    };
   }
 
   async onModuleDestroy(): Promise<void> {

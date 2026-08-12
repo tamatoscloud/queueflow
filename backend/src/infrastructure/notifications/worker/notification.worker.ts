@@ -1,5 +1,8 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { NotificationQueueService } from '../queue/notification-queue.service';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Inject } from '@nestjs/common';
+import {
+  NOTIFICATION_QUEUE,
+  type NotificationQueuePort,
+} from '../queue/notification-queue.port';
 import {
   NotificationDispatcher,
   NonRetryableNotificationError,
@@ -16,7 +19,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
   private reconcileTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private readonly queue: NotificationQueueService,
+    @Inject(NOTIFICATION_QUEUE) private readonly queue: NotificationQueuePort,
     private readonly dispatcher: NotificationDispatcher,
     private readonly dispatch: NotificationDispatchService,
   ) {}
@@ -24,7 +27,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     if (!this.queue.isEnabled) {
       this.logger.warn(
-        'Notification worker not started — set REDIS_URL or disable with NOTIFICATION_QUEUE_ENABLED=false',
+        'Notification worker not started — enable NOTIFICATION_QUEUE_DRIVER=postgres or set REDIS_URL (NOTIFICATION_QUEUE_ENABLED=false to opt out)',
       );
       return;
     }
@@ -42,7 +45,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
         throw err;
       }
     });
-    this.logger.log('NotificationWorker bound to BullMQ queue');
+    this.logger.log('NotificationWorker bound to notification queue');
 
     void this.dispatch.reconcilePending();
     this.reconcileTimer = setInterval(() => {

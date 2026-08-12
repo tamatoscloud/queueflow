@@ -171,6 +171,18 @@ enum NotificationStatus {
   @@map("notification_status")
 }
 
+/// Outbox / worker queue for PostgreSQL-backed notification delivery
+/// (alternative to BullMQ/Redis). One row per notification intent.
+enum NotificationJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  DEAD
+
+  @@map("notification_job_status")
+}
+
 /// Per-attempt delivery status, one row per NotificationLog. A Notification
 /// can have several NotificationLog rows (retries, provider webhook
 /// updates progressing SENT -> DELIVERED -> READ).
@@ -1135,6 +1147,7 @@ model Notification {
   updatedBy String?   @map("updated_by") @db.Uuid
 
   logs NotificationLog[]
+  job  NotificationJob?
 
   // Dispatch worker polling for due sends:
   @@index([status, scheduledAt])
@@ -1142,6 +1155,30 @@ model Notification {
   @@index([customerId, status])
   @@index([queueEntryId])
   @@map("notifications")
+}
+
+/// PostgreSQL-backed delivery queue (NOTIFICATION_QUEUE_DRIVER=postgres).
+/// Claimed with FOR UPDATE SKIP LOCKED for concurrent workers.
+model NotificationJob {
+  id             String               @id @default(uuid()) @db.Uuid
+  notificationId String               @unique @map("notification_id") @db.Uuid
+  notification   Notification         @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  status      NotificationJobStatus @default(PENDING)
+  attempts    Int                   @default(0)
+  maxAttempts Int                   @map("max_attempts")
+  availableAt DateTime              @default(now()) @map("available_at")
+  lockedAt    DateTime?             @map("locked_at")
+  lockedBy    String?               @map("locked_by")
+  lastError   String?               @map("last_error") @db.Text
+  processedAt DateTime?             @map("processed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status, availableAt])
+  @@index([lockedAt])
+  @@map("notification_jobs")
 }
 
 /// One delivery attempt / provider webhook update for a Notification.

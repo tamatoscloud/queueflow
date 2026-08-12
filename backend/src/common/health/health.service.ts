@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisConnectionService } from '../../infrastructure/redis/redis-connection.service';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service';
-import { NotificationQueueService } from '../../infrastructure/notifications/queue/notification-queue.service';
+import {
+  NOTIFICATION_QUEUE,
+  type NotificationQueuePort,
+} from '../../infrastructure/notifications/queue/notification-queue.port';
 import { getBuildMetadata } from '../../config/env.validation';
 import * as os from 'node:os';
 
@@ -19,7 +22,8 @@ export class HealthService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisConnectionService,
     private readonly supabase: SupabaseService,
-    private readonly notificationQueue: NotificationQueueService,
+    @Inject(NOTIFICATION_QUEUE)
+    private readonly notificationQueue: NotificationQueuePort,
   ) {}
 
   async getDetailedHealth() {
@@ -106,14 +110,7 @@ export class HealthService {
       return { status: 'degraded', enabled: false, detail: 'Queue disabled' };
     }
     try {
-      const queue = this.notificationQueue.getQueue();
-      const counts = await queue.getJobCounts(
-        'waiting',
-        'active',
-        'completed',
-        'failed',
-        'delayed',
-      );
+      const counts = await this.notificationQueue.getHealthCounts();
       return { status: 'ok', enabled: true, counts };
     } catch (e) {
       return {

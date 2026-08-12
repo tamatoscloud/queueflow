@@ -12,7 +12,11 @@ Strongly-typed contract for `backend/.env*`. Whichever framework is chosen must 
 | `SUPABASE_PUBLISHABLE_KEY` | string | yes (if Supabase) | Publishable API key (`sb_publishable_…`). Client-safe; used for RLS-scoped clients. |
 | `SUPABASE_SECRET_KEY`   | string  | yes (if Supabase)  | Secret API key (`sb_secret_…`). Server-only; never expose to clients. |
 | `SUPABASE_JWKS_URL`     | string  | yes (if Supabase)  | JWKS endpoint for verifying Supabase Auth JWTs (`…/auth/v1/.well-known/jwks.json`). |
-| `REDIS_URL`             | string  | yes (for notifications) | Managed Redis connection URL (`redis://` or `rediss://` for TLS, e.g. Upstash). BullMQ reads this only. |
+| `REDIS_URL`             | string  | yes (for notifications when `NOTIFICATION_QUEUE_DRIVER=redis`) | Managed Redis connection URL (`redis://` or `rediss://` for TLS, e.g. Upstash). BullMQ reads this only. |
+| `NOTIFICATION_QUEUE_DRIVER` | enum | no (default `redis`) | `redis` (BullMQ) \| `postgres` (SKIP LOCKED jobs table). Default remains `redis` until staging validation. |
+| `NOTIFICATION_PG_POLL_INTERVAL_MS` | int | no (default `1000`) | Postgres worker poll interval. |
+| `NOTIFICATION_PG_LEASE_MS` | int | no (default `NOTIFICATION_STALE_PROCESSING_MS` or 300000) | Stale PROCESSING lease reclaim window. |
+| `NOTIFICATION_PG_CLAIM_BATCH` | int | no (default `10`) | Max jobs claimed per poll cycle. |
 | `REDIS_CONNECT_TIMEOUT_MS` | int | no (default `10000`) | TCP connect timeout for Redis. |
 | `REDIS_COMMAND_TIMEOUT_MS` | int | no (default `15000`) | Per-command timeout for Redis. |
 | `REDIS_RECONNECT_BASE_MS` | int | no (default `200`) | Initial reconnect delay (exponential backoff). |

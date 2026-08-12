@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { NotificationStatus } from '@prisma/client';
 import type { CreateNotificationInput, ScheduleNotificationBase } from '../domain/notification.types';
 import {
-  NotificationQueueService,
+  NOTIFICATION_QUEUE,
   NotificationQueueUnavailableError,
-} from '../queue/notification-queue.service';
+  type NotificationQueuePort,
+} from '../queue/notification-queue.port';
 import { NotificationRepository } from '../repositories/notification.repository';
 
 @Injectable()
@@ -13,7 +14,7 @@ export class NotificationDispatchService {
 
   constructor(
     private readonly repository: NotificationRepository,
-    private readonly queue: NotificationQueueService,
+    @Inject(NOTIFICATION_QUEUE) private readonly queue: NotificationQueuePort,
   ) {}
 
   async schedule(input: CreateNotificationInput): Promise<string[]> {

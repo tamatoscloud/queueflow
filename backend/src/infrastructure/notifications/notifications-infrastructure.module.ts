@@ -4,7 +4,14 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
 import { QueueEngineModule } from '../../modules/queue-engine/queue-engine.module';
 import { RedisModule } from '../redis/redis.module';
 import { QueueNotificationBridgeService } from './bridge/queue-notification-bridge.service';
+import {
+  notificationQueueConfig,
+  resolveNotificationQueueDriver,
+} from './constants/notification-queue.constants';
+import { NotificationJobRepository } from './queue/notification-job.repository';
+import { NOTIFICATION_QUEUE } from './queue/notification-queue.port';
 import { NotificationQueueService } from './queue/notification-queue.service';
+import { PostgresNotificationQueueService } from './queue/postgres-notification-queue.service';
 import { NotificationRepository } from './repositories/notification.repository';
 import { NotificationTemplateRepository } from './repositories/notification-template.repository';
 import { MockNotificationProvider } from './providers/mock-notification.provider';
@@ -37,11 +44,27 @@ const providerAdapters = [
     },
     NotificationRepository,
     NotificationTemplateRepository,
+    NotificationJobRepository,
     NotificationProviderRegistry,
     NotificationTemplateService,
     NotificationDispatcher,
     NotificationDispatchService,
     NotificationQueueService,
+    PostgresNotificationQueueService,
+    {
+      provide: NOTIFICATION_QUEUE,
+      useFactory: (
+        redisQueue: NotificationQueueService,
+        pgQueue: PostgresNotificationQueueService,
+      ) => {
+        const driver = resolveNotificationQueueDriver();
+        const selected = driver === 'postgres' ? pgQueue : redisQueue;
+        // Touch config early so misconfiguration is visible at boot.
+        notificationQueueConfig();
+        return selected;
+      },
+      inject: [NotificationQueueService, PostgresNotificationQueueService],
+    },
     NotificationWorker,
     QueueNotificationBridgeService,
   ],
@@ -51,6 +74,9 @@ const providerAdapters = [
     NotificationTemplateRepository,
     NotificationTemplateService,
     NotificationQueueService,
+    PostgresNotificationQueueService,
+    NotificationJobRepository,
+    NOTIFICATION_QUEUE,
     NotificationDispatcher,
   ],
 })
