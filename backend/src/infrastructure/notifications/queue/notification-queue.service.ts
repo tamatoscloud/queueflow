@@ -85,7 +85,7 @@ export class NotificationQueueService implements OnModuleDestroy {
 
   async enqueueSend(
     notificationId: string,
-    options?: { delayMs?: number; attempt?: number },
+    options?: { delayMs?: number; attempt?: number; force?: boolean },
   ): Promise<void> {
     if (!this.isEnabled) {
       throw new NotificationQueueUnavailableError('Notification queue is disabled');
@@ -98,11 +98,23 @@ export class NotificationQueueService implements OnModuleDestroy {
     try {
       const queue = this.getQueue();
       const delay = options?.delayMs ?? 0;
+      const jobId = `send-${notificationId}`;
+      const existing = await queue.getJob(jobId);
+      if (existing && !options?.force) {
+        const state = await existing.getState();
+        if (state === 'waiting' || state === 'delayed' || state === 'active') {
+          this.logger.debug(
+            `Notification job already queued notificationId=${notificationId} state=${state}`,
+          );
+          return;
+        }
+      }
+
       await queue.add(
         NOTIFICATION_JOB_SEND,
         { notificationId, attempt: options?.attempt ?? 1 },
         {
-          jobId: `${notificationId}-${Date.now()}`,
+          jobId,
           delay,
         },
       );

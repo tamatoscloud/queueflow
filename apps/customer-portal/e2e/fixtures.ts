@@ -17,10 +17,12 @@ export type ApiEnvelope<T> = {
 export type JoinResult = {
   entry: { id: string; status: string };
   token: { displayCode: string };
+  trackingToken?: string;
 };
 
 export type TrackingResult = {
   entry: { id: string; status: string };
+  trackingToken?: string;
 };
 
 type AuthTokens = {
@@ -135,7 +137,7 @@ export async function joinQueue(
   const res = await fetch(`${api}/queues/${queueId}/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, bypassOperatingHours: true }),
+    body: JSON.stringify(payload),
   });
   expect(res.ok, `join failed: ${res.status} ${await res.text()}`).toBeTruthy();
   const body = (await res.json()) as ApiEnvelope<JoinResult>;

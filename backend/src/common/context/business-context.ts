@@ -1,4 +1,4 @@
-import { Injectable, Scope } from '@nestjs/common';
+import { ForbiddenException, Injectable, Scope } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../modules/auth/interfaces/auth.interfaces';
 
 /**
@@ -53,7 +53,7 @@ export class BusinessContext {
       return;
     }
     if (!this.businessId || this.businessId !== resourceBusinessId) {
-      throw new Error('TENANT_ACCESS_DENIED');
+      throw new ForbiddenException('TENANT_ACCESS_DENIED');
     }
   }
 
@@ -61,12 +61,12 @@ export class BusinessContext {
   resolveBusinessId(override?: string): string {
     if (override) {
       if (!this.isPlatformAdmin() && this.businessId !== override) {
-        throw new Error('TENANT_ACCESS_DENIED');
+        throw new ForbiddenException('TENANT_ACCESS_DENIED');
       }
       return override;
     }
     if (!this.businessId) {
-      throw new Error('BUSINESS_CONTEXT_REQUIRED');
+      throw new ForbiddenException('BUSINESS_CONTEXT_REQUIRED');
     }
     return this.businessId;
   }

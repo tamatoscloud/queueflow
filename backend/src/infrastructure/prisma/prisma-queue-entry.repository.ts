@@ -4,6 +4,7 @@ import type {
   QueueEntryRepository,
   QueueEntryStatus,
 } from '../../queue-engine';
+import { QueueEntryNotFoundError } from '../../queue-engine';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import {
   ACTIVE_PRISMA_STATUSES,
@@ -26,6 +27,53 @@ export class PrismaQueueEntryRepository implements QueueEntryRepository {
       include: entryInclude,
     });
     return row ? toDomainQueueEntry(row) : null;
+  }
+
+  async lockById(id: string): Promise<QueueEntry | null> {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM queue_entries
+      WHERE id = ${id}::uuid
+        AND deleted_at IS NULL
+      FOR UPDATE
+    `;
+    if (!rows[0]) {
+      return null;
+    }
+    return this.findById(id);
+  }
+
+  async claimNextWaiting(
+    queueId: string,
+    priorityEnabled: boolean,
+    actorUserId: string | null,
+    now: Date,
+  ): Promise<QueueEntry | null> {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT qe.id
+      FROM queue_entries qe
+      WHERE qe.queue_id = ${queueId}::uuid
+        AND qe.deleted_at IS NULL
+        AND qe.status = 'WAITING'
+      ORDER BY
+        CASE WHEN ${priorityEnabled} THEN CASE WHEN qe.is_vip THEN 0 ELSE 1 END END ASC NULLS LAST,
+        CASE WHEN ${priorityEnabled} THEN qe.priority END DESC NULLS LAST,
+        qe.sort_order ASC,
+        qe.joined_at ASC
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    `;
+    const row = rows[0];
+    if (!row) {
+      return null;
+    }
+    const entry = await this.findById(row.id);
+    if (!entry) {
+      throw new QueueEntryNotFoundError(row.id);
+    }
+    entry.call(actorUserId, now);
+    await this.save(entry);
+    return entry;
   }
 
   async findByQueueId(queueId: string): Promise<QueueEntry[]> {

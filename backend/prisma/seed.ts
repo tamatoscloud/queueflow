@@ -510,6 +510,7 @@ async function seedBusiness(opts: SeedBusinessOptions) {
             type: NotificationType.QUEUE_JOINED,
             payload: { displayCode: token.displayCode, position: tokenNumber },
             status: NotificationStatus.DELIVERED,
+            idempotencyKey: `seed:${entry.id}:QUEUE_JOINED`,
           },
         });
         await prisma.notificationLog.create({

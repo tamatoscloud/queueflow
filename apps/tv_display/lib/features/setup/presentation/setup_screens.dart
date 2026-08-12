@@ -198,11 +198,18 @@ class _StaffConfigureScreenState extends ConsumerState<StaffConfigureScreen> {
     if (_branchId == null || _queueId == null) return;
     final api = ref.read(staffApiClientProvider);
     final landing = await api.getQueueLanding(_queueId!);
+    final credential = await api.issueDisplayCredential(_queueId!);
     final branches = await ref.read(setupBranchesProvider.future);
     final branch = branches.firstWhere((b) => b.id == _branchId);
 
+    final existing = await ref.read(displayConfigStorageProvider).load();
+    final pairingCode = (existing?.queueId == _queueId && existing != null)
+        ? existing.displayToken
+        : generateDisplayToken();
+
     final config = DisplayConfig(
-      displayToken: generateDisplayToken(),
+      displayToken: pairingCode,
+      displayCredential: credential.displayToken,
       queueId: _queueId!,
       queueName: landing.queue.name,
       branchName: branch.name,
@@ -358,19 +365,26 @@ class _PublicPairScreenState extends ConsumerState<PublicPairScreen> {
       final landing = await api.getQueueLanding(queueId);
       final existing = await storage.load();
 
-      final config = (existing?.queueId == queueId ? existing! : DisplayConfig(
-        displayToken: generateDisplayToken(),
-        queueId: queueId,
-        queueName: landing.queue.name,
-        branchName: landing.branchName,
-        businessName: landing.businessName,
-        businessLogoUrl: landing.businessLogoUrl,
-      )).copyWith(
-        queueName: landing.queue.name,
-        branchName: landing.branchName,
-        businessName: landing.businessName,
-        businessLogoUrl: landing.businessLogoUrl,
-      );
+      // Public pairing keeps local pairing UX. Realtime JWT is only issued via
+      // authenticated staff setup — never invent a client-side credential.
+      final DisplayConfig config;
+      if (existing?.queueId == queueId) {
+        config = existing!.copyWith(
+          queueName: landing.queue.name,
+          branchName: landing.branchName,
+          businessName: landing.businessName,
+          businessLogoUrl: landing.businessLogoUrl,
+        );
+      } else {
+        config = DisplayConfig(
+          displayToken: generateDisplayToken(),
+          queueId: queueId,
+          queueName: landing.queue.name,
+          branchName: landing.branchName,
+          businessName: landing.businessName,
+          businessLogoUrl: landing.businessLogoUrl,
+        );
+      }
 
       await ref.read(displayConfigProvider.notifier).save(config);
       if (mounted) context.go('/display');

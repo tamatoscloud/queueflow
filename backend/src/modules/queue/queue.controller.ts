@@ -83,4 +83,10 @@ export class QueueController {
   close(@Param('id', ParseUUIDPipe) id: string) {
     return this.queueService.close(id);
   }
+
+  @Post(':id/display-credential')
+  @ApiOperation({ summary: 'Issue TV display realtime credential for a queue' })
+  issueDisplayCredential(@Param('id', ParseUUIDPipe) id: string) {
+    return this.queueService.issueDisplayCredential(id);
+  }
 }

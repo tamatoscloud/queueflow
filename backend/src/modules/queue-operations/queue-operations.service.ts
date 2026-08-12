@@ -1,10 +1,12 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   QueueEngineService,
   QueueEntrySource,
 } from '../../queue-engine';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TenantScopeService } from '../../common/tenant/tenant-scope.service';
+import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import type {
   JoinQueueDto,
   MarkNoShowDto,
@@ -20,6 +22,8 @@ export class QueueOperationsService {
   constructor(
     @Inject(QueueEngineService) private readonly engine: QueueEngineService,
     private readonly snapshotEnrichment: QueueSnapshotEnrichmentService,
+    private readonly tenantScope: TenantScopeService,
+    private readonly realtimeCredentials: RealtimeCredentialService,
     @Optional() private readonly prisma?: PrismaService,
   ) {}
 
@@ -32,9 +36,8 @@ export class QueueOperationsService {
       notes: dto.notes,
       notificationPreference: dto.notificationPreference,
       source: QueueEntrySource.QR_LANDING,
-      isVip: dto.isVip,
-      priority: dto.priority,
-      bypassOperatingHours: dto.bypassOperatingHours,
+      isVip: false,
+      bypassOperatingHours: false,
     });
 
     if (dto.metadata && this.prisma) {
@@ -44,10 +47,14 @@ export class QueueOperationsService {
       });
     }
 
-    return result;
+    return {
+      ...result,
+      trackingToken: this.realtimeCredentials.issueEntryTrackingToken(result.entryId),
+    };
   }
 
-  walkIn(queueId: string, dto: WalkInCustomerDto) {
+  async walkIn(queueId: string, dto: WalkInCustomerDto) {
+    await this.tenantScope.requireQueue(queueId);
     return this.engine.walkInCustomer({
       queueId,
       fullName: dto.fullName,
@@ -61,41 +68,50 @@ export class QueueOperationsService {
     });
   }
 
-  callNext(queueId: string) {
+  async callNext(queueId: string) {
+    await this.tenantScope.requireQueue(queueId);
     return this.engine.callNextCustomer(queueId).then((e) => e.toProps());
   }
 
-  hold(entryId: string) {
+  async hold(entryId: string) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine.holdCustomer(entryId).then((e) => e.toProps());
   }
 
-  resumeHeld(entryId: string) {
+  async resumeHeld(entryId: string) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine.resumeHeldCustomer(entryId).then((e) => e.toProps());
   }
 
-  skip(entryId: string) {
+  async skip(entryId: string) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine.skipCustomer(entryId).then((e) => e.toProps());
   }
 
-  recall(entryId: string) {
+  async recall(entryId: string) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine.recallCustomer(entryId).then((e) => e.toProps());
   }
 
-  complete(entryId: string) {
+  async complete(entryId: string) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine.completeCustomer(entryId).then((e) => e.toProps());
   }
 
-  cancel(entryId: string) {
+  async cancel(entryId: string) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine.cancelQueueEntry(entryId).then((e) => e.toProps());
   }
 
-  markNoShow(entryId: string, dto: MarkNoShowDto) {
+  async markNoShow(entryId: string, dto: MarkNoShowDto) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine
       .markNoShow(entryId, { force: dto.force })
       .then((e) => e.toProps());
   }
 
-  move(entryId: string, dto: MoveCustomerDto) {
+  async move(entryId: string, dto: MoveCustomerDto) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine
       .moveCustomer(entryId, {
         beforeEntryId: dto.beforeEntryId,
@@ -104,13 +120,19 @@ export class QueueOperationsService {
       .then((e) => e.toProps());
   }
 
-  transfer(entryId: string, dto: TransferCustomerDto) {
+  async transfer(entryId: string, dto: TransferCustomerDto) {
+    const entry = await this.tenantScope.requireQueueEntry(entryId);
+    const targetQueue = await this.tenantScope.requireQueue(dto.targetQueueId);
+    if (targetQueue.businessId !== entry.businessId) {
+      throw new ForbiddenException('TENANT_ACCESS_DENIED');
+    }
     return this.engine
       .transferCustomer(entryId, dto.targetQueueId)
       .then((e) => e.toProps());
   }
 
-  promote(entryId: string, dto: PromotePriorityDto) {
+  async promote(entryId: string, dto: PromotePriorityDto) {
+    await this.tenantScope.requireQueueEntry(entryId);
     return this.engine
       .priorityCustomer(entryId, {
         priority: dto.priority,
@@ -125,7 +147,8 @@ export class QueueOperationsService {
       .then((s) => this.snapshotEnrichment.enrich(s));
   }
 
-  metrics(queueId: string) {
+  async metrics(queueId: string) {
+    await this.tenantScope.requireQueue(queueId);
     return this.engine.calculateQueueMetrics(queueId);
   }
 

@@ -86,7 +86,6 @@ export const joinQueueSchema = z.object({
     .or(z.literal('')),
   occasion: z.enum(occasionOptions).optional(),
   seatingPreference: z.enum(seatingOptions).optional(),
-  isVip: z.boolean().optional(),
 });
 
 export type JoinQueueFormValues = z.infer<typeof joinQueueSchema>;

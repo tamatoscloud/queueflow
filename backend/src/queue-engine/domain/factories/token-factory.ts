@@ -18,13 +18,23 @@ export interface IssuedToken {
 export class TokenFactory {
   static issue(queue: Queue, now: Date): IssuedToken {
     const tokenNumber = queue.issueNextTokenNumber(now);
-    const code = TokenDisplayCode.fromPrefix(queue.prefix, tokenNumber);
+    return TokenFactory.issueWithNumber(queue.id, queue.prefix, tokenNumber, now);
+  }
+
+  static issueWithNumber(
+    queueId: string,
+    prefix: string,
+    tokenNumber: number,
+    now: Date,
+    tokenId?: string,
+  ): IssuedToken {
+    const code = TokenDisplayCode.fromPrefix(prefix, tokenNumber);
     const issuedDate = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
     return {
-      id: randomUUID(),
-      queueId: queue.id,
+      id: tokenId ?? randomUUID(),
+      queueId,
       tokenNumber: code.tokenNumber,
       displayCode: code.value,
       issuedDate,

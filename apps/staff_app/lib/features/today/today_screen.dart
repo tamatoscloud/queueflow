@@ -53,9 +53,9 @@ final todayRealtimeProvider = Provider.autoDispose<void>((ref) {
     onRefresh: () {
       ref.invalidate(todayQueuesProvider);
     },
-    onConnect: () async {
+    onSubscribe: () async {
       await client.connect();
-      client.subscribeBusinessQueues(businessId);
+      return client.subscribeBusinessQueues(businessId);
     },
   );
 });

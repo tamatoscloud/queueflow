@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { NotificationQueueService } from '../queue/notification-queue.service';
-import { NotificationDispatcher } from '../services/notification-dispatcher.service';
+import {
+  NotificationDispatcher,
+  NonRetryableNotificationError,
+} from '../services/notification-dispatcher.service';
 import { NotificationDispatchService } from '../services/notification-dispatch.service';
 
 const RECONCILE_INTERVAL_MS = Number(
@@ -27,7 +30,17 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
     }
 
     this.queue.startWorker(async (job) => {
-      await this.dispatcher.dispatch(job.data);
+      try {
+        await this.dispatcher.dispatch(job.data);
+      } catch (err) {
+        if (err instanceof NonRetryableNotificationError) {
+          this.logger.warn(
+            `Notification terminal failure notificationId=${job.data.notificationId}: ${err.message}`,
+          );
+          return;
+        }
+        throw err;
+      }
     });
     this.logger.log('NotificationWorker bound to BullMQ queue');
 

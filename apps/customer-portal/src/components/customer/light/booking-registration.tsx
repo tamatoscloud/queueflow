@@ -164,6 +164,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
         queueId,
         displayCode: result.displayCode,
         joinedAt: new Date().toISOString(),
+        trackingToken: result.trackingToken,
         fullName: formValues.fullName,
         phone: formValues.phone,
       });

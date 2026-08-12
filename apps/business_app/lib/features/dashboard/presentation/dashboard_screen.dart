@@ -47,10 +47,11 @@ final dashboardRealtimeBindingProvider = Provider.autoDispose<void>((ref) {
     ref: ref,
     client: client,
     onRefresh: () => ref.invalidate(dashboardProvider),
-    onConnect: () async {
+    onSubscribe: () async {
       await client.connect();
-      client.subscribeBusinessDashboard(businessId);
-      client.subscribeBusinessQueues(businessId);
+      final dash = await client.subscribeBusinessDashboard(businessId);
+      final queues = await client.subscribeBusinessQueues(businessId);
+      return dash && queues;
     },
   );
 });

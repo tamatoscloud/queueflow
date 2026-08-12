@@ -176,3 +176,22 @@ class BranchModel {
         name: json['name'] as String,
       );
 }
+
+/// Response from `POST /queues/:id/display-credential`.
+class DisplayCredentialModel {
+  const DisplayCredentialModel({
+    required this.queueId,
+    required this.displayToken,
+  });
+
+  final String queueId;
+
+  /// Backend-issued JWT — store as [DisplayConfig.displayCredential], never show in UI.
+  final String displayToken;
+
+  factory DisplayCredentialModel.fromJson(Map<String, dynamic> json) =>
+      DisplayCredentialModel(
+        queueId: json['queueId'] as String,
+        displayToken: json['displayToken'] as String,
+      );
+}

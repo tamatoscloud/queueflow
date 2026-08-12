@@ -21,6 +21,13 @@ class TvApiClient {
         QueueLandingModel.fromJson,
       );
 
+  /// Staff-authenticated: issues a queue-scoped JWT for TV Socket.IO auth.
+  Future<DisplayCredentialModel> issueDisplayCredential(String queueId) =>
+      _parser.getData(
+        () => _dio.post('/queues/$queueId/display-credential'),
+        DisplayCredentialModel.fromJson,
+      );
+
   Future<List<BranchModel>> getBranches({String? businessId}) =>
       _parser.getList(
         () => _dio.get('/branches', queryParameters: {

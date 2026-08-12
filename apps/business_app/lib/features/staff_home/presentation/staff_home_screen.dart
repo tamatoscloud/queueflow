@@ -32,9 +32,9 @@ final staffHomeRealtimeProvider = Provider.autoDispose<void>((ref) {
     ref: ref,
     client: client,
     onRefresh: () => ref.invalidate(staffQueuesProvider),
-    onConnect: () async {
+    onSubscribe: () async {
       await client.connect();
-      client.subscribeBusinessQueues(businessId);
+      return client.subscribeBusinessQueues(businessId);
     },
   );
 });

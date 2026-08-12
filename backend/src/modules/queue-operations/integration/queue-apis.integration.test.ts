@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import {
   INestApplication,
   ValidationPipe,
@@ -20,6 +20,17 @@ import {
 import { GlobalExceptionFilter } from '../../../common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from '../../../common/interceptors/response-envelope.interceptor';
 import { RequestIdMiddleware } from '../../../common/middleware/request-id.middleware';
+import { TenantScopeService } from '../../../common/tenant/tenant-scope.service';
+
+const passThroughTenantScope = {
+  requireQueue: vi.fn().mockResolvedValue({ id: 'q', businessId: 'biz' }),
+  requireQueueEntry: vi.fn().mockResolvedValue({ id: 'e', businessId: 'biz' }),
+  resolveRequiredBusinessId: (id?: string) => id ?? 'biz',
+  resolveOptionalListBusinessId: () => undefined,
+  requireBranch: vi.fn().mockResolvedValue({ id: 'b', businessId: 'biz' }),
+  requireCustomer: vi.fn().mockResolvedValue({ id: 'c', businessId: 'biz' }),
+  requireFeedback: vi.fn().mockResolvedValue({ id: 'f', businessId: 'biz' }),
+} as unknown as TenantScopeService;
 
 describe('Queue APIs (integration, in-memory engine)', () => {
   let app: INestApplication;
@@ -39,7 +50,18 @@ describe('Queue APIs (integration, in-memory engine)', () => {
           useFactory: (
             engine: QueueEngineService,
             enrichment: QueueSnapshotEnrichmentService,
-          ) => new QueueOperationsService(engine, enrichment),
+          ) =>
+            new QueueOperationsService(
+              engine,
+              enrichment,
+              passThroughTenantScope,
+              {
+                issueEntryTrackingToken: () => 'test-tracking-token',
+                issueQueueDisplayToken: () => 'test-display-token',
+                verifyEntryTrackingToken: () => true,
+                verifyQueueDisplayToken: () => true,
+              } as never,
+            ),
           inject: [QueueEngineService, QueueSnapshotEnrichmentService],
         },
       ],
@@ -90,7 +112,6 @@ describe('Queue APIs (integration, in-memory engine)', () => {
         phone: '+923001111111',
         partySize: 2,
         notificationPreference: NotificationPreference.SMS,
-        bypassOperatingHours: true,
       })
       .expect(201);
 

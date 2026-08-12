@@ -7,6 +7,7 @@ import {
 import { FeedbackStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { QueueEngineService } from '../../queue-engine';
+import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import type { SubmitFeedbackDto } from './dto/customer-portal.dto';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
 
@@ -15,6 +16,7 @@ export class CustomerPortalService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(QueueEngineService) private readonly engine: QueueEngineService,
+    private readonly realtimeCredentials: RealtimeCredentialService,
   ) {}
 
   async getQueueLanding(queueId: string) {
@@ -123,6 +125,7 @@ export class CustomerPortalService {
       estimatedWaitMinutes: estimate.estimatedWaitMinutes,
       averageServiceTimeMinutes: estimate.averageServiceTimeMinutes,
       snapshotGeneratedAt: snapshot.generatedAt,
+      trackingToken: this.realtimeCredentials.issueEntryTrackingToken(entry.id),
     };
   }
 

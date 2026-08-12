@@ -5,15 +5,31 @@ import type {
   NotificationType,
 } from '@prisma/client';
 
-export interface CreateNotificationInput {
+export interface ScheduleNotificationBase {
   businessId: string;
   customerId: string;
   queueEntryId?: string | null;
-  channel: NotificationChannel;
   type: NotificationType;
   payload?: Record<string, unknown>;
   scheduledAt?: Date | null;
   createdBy?: string | null;
+  eventKey?: string | null;
+}
+
+export interface CreateNotificationInput extends ScheduleNotificationBase {
+  channel: NotificationChannel;
+  idempotencyKey: string;
+}
+
+export interface IdempotentCreateResult {
+  notification: { id: string; status: NotificationStatus };
+  created: boolean;
+}
+
+export interface ClaimNotificationResult {
+  claimed: boolean;
+  notificationId?: string;
+  reason?: 'not_found' | 'terminal' | 'already_processing' | 'recovered_stale';
 }
 
 export interface NotificationJobData {

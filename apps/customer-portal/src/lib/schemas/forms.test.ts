@@ -22,7 +22,6 @@ describe('joinQueueSchema', () => {
       occasion: 'Birthday',
       seatingPreference: 'Outdoor',
       whatsappNumber: '+923009876543',
-      isVip: true,
     });
     expect(result.success).toBe(true);
   });

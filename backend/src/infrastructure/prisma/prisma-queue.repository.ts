@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Queue, QueueRepository } from '../../queue-engine';
+import { QueueNotFoundError } from '../../queue-engine';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { toDomainQueue, toPrismaQueueData } from './mappers/queue-engine.mapper';
 
@@ -12,6 +13,40 @@ export class PrismaQueueRepository implements QueueRepository {
       where: { id, deletedAt: null },
     });
     return row ? toDomainQueue(row) : null;
+  }
+
+  async lockById(id: string): Promise<Queue | null> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ id: string; last_token_number: number; prefix: string }>
+    >`
+      SELECT id, last_token_number, prefix
+      FROM queues
+      WHERE id = ${id}::uuid
+        AND deleted_at IS NULL
+      FOR UPDATE
+    `;
+    if (!rows[0]) {
+      return null;
+    }
+    return this.findById(id);
+  }
+
+  async incrementTokenNumber(queueId: string) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ last_token_number: number; prefix: string }>
+    >`
+      UPDATE queues
+      SET last_token_number = last_token_number + 1,
+          updated_at = NOW()
+      WHERE id = ${queueId}::uuid
+        AND deleted_at IS NULL
+      RETURNING last_token_number, prefix
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new QueueNotFoundError(queueId);
+    }
+    return { tokenNumber: row.last_token_number, prefix: row.prefix };
   }
 
   async save(queue: Queue): Promise<void> {

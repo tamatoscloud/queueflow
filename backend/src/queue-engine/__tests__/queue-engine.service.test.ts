@@ -7,6 +7,7 @@ import {
   InMemoryQueueEntryRepository,
   InMemoryCustomerRepository,
   InMemoryTokenRepository,
+  InMemoryUnitOfWork,
   AlwaysOpenOperatingHours,
   FixedWindowsOperatingHours,
   NotificationPreference,
@@ -23,6 +24,7 @@ import {
   EntryLifecyclePolicy,
   OrderingPolicy,
   VIP_PRIORITY_BUMP,
+  CrossTenantTransferError,
 } from '../index';
 
 function createEngine(opts?: {
@@ -35,6 +37,7 @@ function createEngine(opts?: {
   const entries = new InMemoryQueueEntryRepository();
   const customers = new InMemoryCustomerRepository();
   const tokens = new InMemoryTokenRepository();
+  const unitOfWork = new InMemoryUnitOfWork(queues, entries, customers, tokens);
   const engine = new QueueEngineService({
     queues,
     entries,
@@ -43,8 +46,9 @@ function createEngine(opts?: {
     eventBus,
     clock,
     operatingHours: opts?.operatingHours ?? new AlwaysOpenOperatingHours(),
+    unitOfWork,
   });
-  return { engine, clock, eventBus, queues, entries, customers, tokens };
+  return { engine, clock, eventBus, queues, entries, customers, tokens, unitOfWork };
 }
 
 async function seedQueue(

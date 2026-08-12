@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TenantScopeService } from '../../common/tenant/tenant-scope.service';
 import {
   paginatedMeta,
   paginationSkip,
@@ -9,14 +10,20 @@ import type { ListFeedbackQueryDto } from './dto/feedback.dto';
 
 @Injectable()
 export class FeedbackService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantScope: TenantScopeService,
+  ) {}
 
   async list(query: ListFeedbackQueryDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
+    const businessId = this.tenantScope.resolveOptionalListBusinessId(
+      query.businessId,
+    );
     const where: Prisma.FeedbackWhereInput = {
       deletedAt: null,
-      ...(query.businessId ? { businessId: query.businessId } : {}),
+      ...(businessId ? { businessId } : {}),
       ...(query.branchId ? { branchId: query.branchId } : {}),
       ...(query.rating ? { rating: query.rating } : {}),
     };
@@ -33,12 +40,6 @@ export class FeedbackService {
   }
 
   async get(id: string) {
-    const row = await this.prisma.feedback.findFirst({
-      where: { id, deletedAt: null },
-    });
-    if (!row) {
-      throw new NotFoundException('Feedback not found');
-    }
-    return row;
+    return this.tenantScope.requireFeedback(id);
   }
 }

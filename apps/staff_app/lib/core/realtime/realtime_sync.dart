@@ -4,15 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'realtime_client.dart';
 
-/// Binds Socket.IO events + HTTP polling fallback when the socket is down.
+/// Binds Socket.IO events + HTTP polling fallback.
 ///
-/// Re-subscribes on every socket connect/reconnect (rooms are per-socket).
-/// Polls every [pollInterval] while disconnected/reconnecting.
+/// Polling stays active until subscription authorization succeeds (ack ok:true).
+/// Socket connect alone does NOT stop polling.
 void bindRealtimeRefresh({
   required Ref ref,
   required RealtimeClient client,
   required void Function() onRefresh,
-  required Future<void> Function() onConnect,
+  required Future<bool> Function() onSubscribe,
   Duration pollInterval = const Duration(seconds: 10),
 }) {
   Timer? pollTimer;
@@ -28,32 +28,39 @@ void bindRealtimeRefresh({
     pollTimer = null;
   }
 
-  void subscribe() {
-    unawaited(onConnect());
-  }
+  Future<bool> subscribe() => onSubscribe();
 
   client.registerOnConnected(subscribe);
 
   Future.microtask(() async {
+    startPolling();
     await client.connect();
     onRefresh();
   });
 
   final eventSub = client.events.listen((_) => onRefresh());
+  final authSub = client.subscriptionAuthorized.listen((authorized) {
+    if (authorized) {
+      stopPolling();
+    } else {
+      startPolling();
+    }
+  });
   final statusSub = client.status.listen((status) {
     switch (status) {
-      case RealtimeStatus.connected:
-        stopPolling();
       case RealtimeStatus.connecting:
       case RealtimeStatus.reconnecting:
       case RealtimeStatus.disconnected:
         startPolling();
+      case RealtimeStatus.connected:
+        break;
     }
   });
 
   ref.onDispose(() {
     client.unregisterOnConnected(subscribe);
     eventSub.cancel();
+    authSub.cancel();
     statusSub.cancel();
     stopPolling();
   });

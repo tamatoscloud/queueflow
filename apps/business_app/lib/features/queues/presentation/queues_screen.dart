@@ -30,9 +30,9 @@ final queuesRealtimeProvider = Provider.autoDispose<void>((ref) {
     ref: ref,
     client: client,
     onRefresh: () => ref.invalidate(queuesProvider),
-    onConnect: () async {
+    onSubscribe: () async {
       await client.connect();
-      client.subscribeBusinessQueues(businessId);
+      return client.subscribeBusinessQueues(businessId);
     },
     pollInterval: const Duration(seconds: 10),
   );

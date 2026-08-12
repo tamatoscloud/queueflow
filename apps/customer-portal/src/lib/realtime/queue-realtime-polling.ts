@@ -1,5 +1,5 @@
 /**
- * Polling-only adapter — used as fallback inside hybrid adapter and in tests.
+ * Polling-only adapter — used for public landing and as fallback inside hybrid entry tracking.
  */
 export interface QueueRealtimeSubscription {
   unsubscribe: () => void;
@@ -7,12 +7,19 @@ export interface QueueRealtimeSubscription {
 
 export type QueueUpdateHandler<T> = (data: T) => void;
 
+export interface EntryTrackingSubscribeOptions {
+  trackingToken?: string | null;
+  recoverToken?: () => Promise<string | null>;
+  onToken?: (token: string) => void;
+  intervalMs?: number;
+}
+
 export interface QueueRealtimeAdapter {
   subscribeEntryTracking<T>(
     entryId: string,
     fetcher: () => Promise<T>,
     onUpdate: QueueUpdateHandler<T>,
-    intervalMs?: number,
+    options?: EntryTrackingSubscribeOptions,
   ): QueueRealtimeSubscription;
 
   subscribeQueueLanding<T>(
@@ -53,8 +60,8 @@ function poll<T>(
 }
 
 export const pollingRealtimeAdapter: QueueRealtimeAdapter = {
-  subscribeEntryTracking(_entryId, fetcher, onUpdate, intervalMs = 15_000) {
-    return poll(fetcher, onUpdate, intervalMs);
+  subscribeEntryTracking(_entryId, fetcher, onUpdate, options) {
+    return poll(fetcher, onUpdate, options?.intervalMs ?? 15_000);
   },
   subscribeQueueLanding(_queueId, fetcher, onUpdate, intervalMs = 30_000) {
     return poll(fetcher, onUpdate, intervalMs);

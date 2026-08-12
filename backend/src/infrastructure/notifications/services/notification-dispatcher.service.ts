@@ -1,9 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotificationProvider, NotificationStatus } from '@prisma/client';
+import { isRetryableProviderError } from '../domain/notification-idempotency';
 import { NotificationProviderRegistry } from '../providers/notification-provider.registry';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import type { NotificationJobData } from '../domain/notification.types';
+
+export class NonRetryableNotificationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NonRetryableNotificationError';
+  }
+}
 
 @Injectable()
 export class NotificationDispatcher {
@@ -16,11 +24,40 @@ export class NotificationDispatcher {
   ) {}
 
   async dispatch(job: NotificationJobData): Promise<void> {
-    const notification = await this.repository.findById(job.notificationId);
-    if (!notification) {
-      this.logger.warn(`Notification ${job.notificationId} not found`);
+    const claim = await this.repository.claimForProcessing(job.notificationId);
+    if (!claim.claimed) {
+      if (claim.reason === 'terminal') {
+        this.logger.debug(
+          `Notification worker skip terminal notificationId=${job.notificationId}`,
+        );
+      } else if (claim.reason === 'already_processing') {
+        this.logger.debug(
+          `Notification worker skip in-flight notificationId=${job.notificationId}`,
+        );
+      } else {
+        this.logger.warn(
+          `Notification worker skip notificationId=${job.notificationId} reason=${claim.reason}`,
+        );
+      }
       return;
     }
+
+    if (claim.reason === 'recovered_stale') {
+      this.logger.warn(
+        `Notification worker recovered stale PROCESSING notificationId=${job.notificationId}`,
+      );
+    }
+
+    this.logger.log(
+      `Notification worker started notificationId=${job.notificationId} attempt=${job.attempt ?? 1}`,
+    );
+
+    const notification = await this.repository.findById(job.notificationId);
+    if (!notification) {
+      this.logger.warn(`Notification ${job.notificationId} not found after claim`);
+      return;
+    }
+
     if (notification.status === NotificationStatus.CANCELLED) {
       return;
     }
@@ -42,6 +79,9 @@ export class NotificationDispatcher {
         errorMessage: 'Customer has no phone number',
         failedAt: new Date(),
       });
+      this.logger.warn(
+        `Notification terminal failure notificationId=${notification.id} code=NO_PHONE`,
+      );
       return;
     }
 
@@ -54,6 +94,10 @@ export class NotificationDispatcher {
     );
 
     const provider = this.providerRegistry.resolve(notification.channel);
+    this.logger.debug(
+      `Notification provider attempt notificationId=${notification.id} channel=${notification.channel}`,
+    );
+
     const result = await provider.send({
       notificationId: notification.id,
       businessId: notification.businessId,
@@ -89,7 +133,24 @@ export class NotificationDispatcher {
     });
 
     if (status === NotificationStatus.FAILED) {
+      const httpStatus =
+        typeof result.responsePayload?.httpStatus === 'number'
+          ? result.responsePayload.httpStatus
+          : undefined;
+      const retryable = isRetryableProviderError(result.errorCode, httpStatus);
+      this.logger.warn(
+        `Notification provider failure notificationId=${notification.id} code=${result.errorCode ?? 'unknown'} retryable=${retryable}`,
+      );
+      if (!retryable) {
+        throw new NonRetryableNotificationError(
+          result.errorMessage ?? 'Permanent provider delivery failure',
+        );
+      }
       throw new Error(result.errorMessage ?? 'Provider delivery failed');
     }
+
+    this.logger.log(
+      `Notification provider success notificationId=${notification.id} status=${status}`,
+    );
   }
 }

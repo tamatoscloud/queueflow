@@ -105,9 +105,25 @@ final displayRealtimeBindingProvider = Provider.autoDispose<void>((ref) {
     pollTimer = null;
   }
 
+  Future<bool> trySubscribe() async {
+    final credential = config.displayCredential;
+    if (credential == null || credential.isEmpty) {
+      return false;
+    }
+    return client.subscribeQueueDisplay(
+      queueId: config.queueId,
+      displayCredential: credential,
+    );
+  }
+
   Future.microtask(() async {
+    // Always keep HTTP polling until (and unless) subscription is authorized.
+    startPolling();
     await client.connect();
-    client.subscribeQueueDisplay(config.queueId);
+    final ok = await trySubscribe();
+    if (ok) {
+      stopPolling();
+    }
     await ref.read(displayBoardProvider.notifier).refresh();
   });
 
@@ -130,8 +146,14 @@ final displayRealtimeBindingProvider = Provider.autoDispose<void>((ref) {
   final statusSub = client.status.listen((status) {
     switch (status) {
       case RealtimeStatus.connected:
-        stopPolling();
-        client.subscribeQueueDisplay(config.queueId);
+        unawaited(() async {
+          final ok = await trySubscribe();
+          if (ok) {
+            stopPolling();
+          } else {
+            startPolling();
+          }
+        }());
       case RealtimeStatus.connecting:
       case RealtimeStatus.reconnecting:
       case RealtimeStatus.disconnected:
@@ -139,9 +161,18 @@ final displayRealtimeBindingProvider = Provider.autoDispose<void>((ref) {
     }
   });
 
+  final authSub = client.subscriptionAuthorized.listen((authorized) {
+    if (authorized) {
+      stopPolling();
+    } else {
+      startPolling();
+    }
+  });
+
   ref.onDispose(() {
     eventSub.cancel();
     statusSub.cancel();
+    authSub.cancel();
     stopPolling();
   });
 });

@@ -162,6 +162,7 @@ enum NotificationType {
 enum NotificationStatus {
   PENDING
   QUEUED
+  PROCESSING
   SENT
   DELIVERED
   FAILED
@@ -1120,6 +1121,12 @@ model Notification {
   payload     Json?
   status      NotificationStatus  @default(PENDING)
   scheduledAt DateTime?           @map("scheduled_at")
+  /// Deterministic key preventing duplicate notification intents.
+  idempotencyKey String @unique @map("idempotency_key")
+  /// Optional domain event correlation key for observability.
+  eventKey       String? @map("event_key")
+  /// Set when a worker claims delivery (PROCESSING); used for stale reclaim.
+  processingStartedAt DateTime? @map("processing_started_at")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")

@@ -38,6 +38,7 @@ import type {
   QueueRepository,
   TokenRepository,
 } from './ports/repositories';
+import type { TransactionRepositories, UnitOfWork } from './ports/unit-of-work';
 import type { CreateQueueInput } from '../domain/entities/queue.entity';
 import type { JoinQueueCommand } from '../domain/validators/join-queue-validator';
 import type {
@@ -46,6 +47,7 @@ import type {
   LiveQueueSnapshot,
 } from './commands/types';
 import type { QueueMetrics, WaitEstimate } from '../domain/value-objects';
+import type { DomainEvent } from '../domain/events/queue-events';
 
 export interface QueueEngineDeps {
   queues: QueueRepository;
@@ -55,6 +57,7 @@ export interface QueueEngineDeps {
   eventBus: EventBus;
   clock: Clock;
   operatingHours: OperatingHoursPort;
+  unitOfWork: UnitOfWork;
 }
 
 /**
@@ -118,111 +121,124 @@ export class QueueEngineService {
 
   async joinQueue(command: JoinQueueCommand): Promise<JoinResult> {
     const validated = JoinQueueValidator.validate(command);
-    const queue = await this.requireQueue(command.queueId);
     const now = this.deps.clock.now();
 
+    const queuePreview = await this.requireQueue(command.queueId);
     if (!command.bypassOperatingHours) {
       const windows = await this.deps.operatingHours.getWindowsForBranch(
-        queue.branchId,
+        queuePreview.branchId,
       );
       const offset = await this.deps.operatingHours.getTimezoneOffsetMinutes(
-        queue.branchId,
+        queuePreview.branchId,
       );
-      OperatingHoursPolicy.assertOpen(queue.branchId, now, windows, offset);
+      OperatingHoursPolicy.assertOpen(queuePreview.branchId, now, windows, offset);
     }
 
-    const activeCount = await this.deps.entries.countActive(queue.id);
-    CapacityPolicy.assertCanJoin(queue, activeCount);
+    return this.commitMutation([command.queueId], async (repos) => {
+      const queue = await repos.queues.findById(command.queueId);
+      if (!queue) {
+        throw new QueueNotFoundError(command.queueId);
+      }
 
-    const activePhones = await this.deps.entries.findActivePhones(queue.id);
-    DuplicateJoinPolicy.assertPhoneNotActive(validated.phone, activePhones);
+      const activeCount = await repos.entries.countActive(queue.id);
+      CapacityPolicy.assertCanJoin(queue, activeCount);
 
-    const existingCustomer = await this.deps.customers.findByBusinessAndPhone(
-      queue.businessId,
-      validated.phone.value,
-    );
-    const customer =
-      existingCustomer ??
-      Customer.create(
+      const activePhones = await repos.entries.findActivePhones(queue.id);
+      DuplicateJoinPolicy.assertPhoneNotActive(validated.phone, activePhones);
+
+      const existingCustomer = await repos.customers.findByBusinessAndPhone(
+        queue.businessId,
+        validated.phone.value,
+      );
+      const customer =
+        existingCustomer ??
+        Customer.create(
+          {
+            businessId: queue.businessId,
+            fullName: validated.fullName,
+            phone: validated.phone.value,
+            notes: command.notes,
+          },
+          now,
+        );
+      customer.recordVisit(now);
+      if (customer.isBlacklisted) {
+        throw new ValidationError('Customer is blacklisted and cannot join');
+      }
+      await repos.customers.save(customer);
+
+      const { priority, isVip } = PriorityPolicy.resolveJoinPriority({
+        priorityEnabled: queue.priorityEnabled,
+        isVip: command.isVip ?? false,
+        requestedPriority: command.priority,
+      });
+
+      const active = await repos.entries.findActiveByQueueId(queue.id);
+      const sortOrder = OrderingPolicy.nextSortOrder(active);
+
+      const counter = await repos.queues.incrementTokenNumber(queue.id);
+      const token = TokenFactory.issueWithNumber(
+        queue.id,
+        counter.prefix,
+        counter.tokenNumber,
+        now,
+      );
+      await repos.tokens.save(token);
+
+      const entry = QueueEntry.create(
         {
           businessId: queue.businessId,
-          fullName: validated.fullName,
-          phone: validated.phone.value,
+          branchId: queue.branchId,
+          queueId: queue.id,
+          customerId: customer.id,
+          queueTokenId: token.id,
+          displayCode: token.displayCode,
+          tokenNumber: token.tokenNumber,
+          source: validated.source,
+          partySize: validated.partySize.value,
           notes: command.notes,
+          notificationPreference: validated.preference,
+          priority,
+          isVip,
+          sortOrder,
+          customerPhone: customer.phone,
+          customerName: customer.fullName,
         },
         now,
       );
-    customer.recordVisit(now);
-    if (customer.isBlacklisted) {
-      throw new ValidationError('Customer is blacklisted and cannot join');
-    }
-    await this.deps.customers.save(customer);
 
-    const { priority, isVip } = PriorityPolicy.resolveJoinPriority({
-      priorityEnabled: queue.priorityEnabled,
-      isVip: command.isVip ?? false,
-      requestedPriority: command.priority,
-    });
+      const allActive = [...active, entry];
+      const estimate = WaitTimeCalculator.estimateForEntry(queue, entry, allActive);
+      entry.updateEstimate(estimate.position, estimate.estimatedWaitMinutes, now);
+      WaitTimeCalculator.recalculateAll(queue, allActive, now);
 
-    const active = await this.deps.entries.findActiveByQueueId(queue.id);
-    const sortOrder = OrderingPolicy.nextSortOrder(active);
+      await repos.entries.save(entry);
+      await repos.entries.saveMany(allActive.filter((e) => e.id !== entry.id));
 
-    const token = TokenFactory.issue(queue, now);
-    await this.deps.tokens.save(token);
-    await this.deps.queues.save(queue);
-
-    const entry = QueueEntry.create(
-      {
-        businessId: queue.businessId,
-        branchId: queue.branchId,
-        queueId: queue.id,
-        customerId: customer.id,
-        queueTokenId: token.id,
-        displayCode: token.displayCode,
-        tokenNumber: token.tokenNumber,
-        source: validated.source,
-        partySize: validated.partySize.value,
-        notes: command.notes,
-        notificationPreference: validated.preference,
-        priority,
-        isVip,
-        sortOrder,
-        customerPhone: customer.phone,
-        customerName: customer.fullName,
-      },
-      now,
-    );
-
-    const allActive = [...active, entry];
-    const estimate = WaitTimeCalculator.estimateForEntry(queue, entry, allActive);
-    entry.updateEstimate(estimate.position, estimate.estimatedWaitMinutes, now);
-    WaitTimeCalculator.recalculateAll(queue, allActive, now);
-
-    await this.deps.entries.save(entry);
-    await this.deps.entries.saveMany(allActive.filter((e) => e.id !== entry.id));
-
-    await this.deps.eventBus.publish(
-      QueueEvents.customerJoined(
-        queue.id,
-        queue.businessId,
-        {
+      return {
+        value: {
           entryId: entry.id,
           customerId: customer.id,
           displayCode: token.displayCode,
-          position: estimate.position,
-          source: validated.source,
+          tokenNumber: token.tokenNumber,
+          estimate,
         },
-        now,
-      ),
-    );
-
-    return {
-      entryId: entry.id,
-      customerId: customer.id,
-      displayCode: token.displayCode,
-      tokenNumber: token.tokenNumber,
-      estimate,
-    };
+        events: [
+          QueueEvents.customerJoined(
+            queue.id,
+            queue.businessId,
+            {
+              entryId: entry.id,
+              customerId: customer.id,
+              displayCode: token.displayCode,
+              position: estimate.position,
+              source: validated.source,
+            },
+            now,
+          ),
+        ],
+      };
+    });
   }
 
   async walkInCustomer(
@@ -264,30 +280,42 @@ export class QueueEngineService {
     queueId: string,
     actorUserId?: string | null,
   ): Promise<QueueEntry> {
-    const queue = await this.requireQueue(queueId);
     const now = this.deps.clock.now();
-    const active = await this.deps.entries.findActiveByQueueId(queueId);
-    const waiting = OrderingPolicy.sortWaiting(active, queue.priorityEnabled);
-    const next = waiting[0];
-    if (!next) {
-      throw new QueueEmptyError(queueId);
-    }
-    next.call(actorUserId ?? null, now);
-    await this.deps.entries.save(next);
-    await this.recalculateWaits(queue);
-    await this.deps.eventBus.publish(
-      QueueEvents.customerCalled(
-        queue.id,
-        queue.businessId,
-        {
-          entryId: next.id,
-          displayCode: next.displayCode,
-          calledByUserId: actorUserId ?? null,
-        },
+
+    return this.commitMutation([queueId], async (repos) => {
+      const queue = await repos.queues.findById(queueId);
+      if (!queue) {
+        throw new QueueNotFoundError(queueId);
+      }
+
+      const next = await repos.entries.claimNextWaiting(
+        queueId,
+        queue.priorityEnabled,
+        actorUserId ?? null,
         now,
-      ),
-    );
-    return next;
+      );
+      if (!next) {
+        throw new QueueEmptyError(queueId);
+      }
+
+      await this.recalculateWaits(queue, repos);
+
+      return {
+        value: next,
+        events: [
+          QueueEvents.customerCalled(
+            queue.id,
+            queue.businessId,
+            {
+              entryId: next.id,
+              displayCode: next.displayCode,
+              calledByUserId: actorUserId ?? null,
+            },
+            now,
+          ),
+        ],
+      };
+    });
   }
 
   async recallCustomer(entryId: string): Promise<QueueEntry> {
@@ -555,61 +583,84 @@ export class QueueEngineService {
     entryId: string,
     targetQueueId: string,
   ): Promise<QueueEntry> {
-    const entry = await this.requireEntry(entryId);
-    const sourceQueue = await this.requireQueue(entry.queueId);
-    const targetQueue = await this.requireQueue(targetQueueId);
-    if (sourceQueue.businessId !== targetQueue.businessId) {
+    const entryPreview = await this.requireEntry(entryId);
+    const sourceQueuePreview = await this.requireQueue(entryPreview.queueId);
+    const targetQueuePreview = await this.requireQueue(targetQueueId);
+    if (sourceQueuePreview.businessId !== targetQueuePreview.businessId) {
       throw new CrossTenantTransferError();
     }
-    if (sourceQueue.id === targetQueue.id) {
+    if (sourceQueuePreview.id === targetQueuePreview.id) {
       throw new ValidationError('Source and target queue are the same');
     }
+
     const now = this.deps.clock.now();
+    const queueIds = [sourceQueuePreview.id, targetQueuePreview.id].sort();
 
-    const activeCount = await this.deps.entries.countActive(targetQueue.id);
-    CapacityPolicy.assertCanJoin(targetQueue, activeCount);
+    return this.commitMutation(queueIds, async (repos) => {
+      const entry = await repos.entries.lockById(entryId);
+      if (!entry) {
+        throw new QueueEntryNotFoundError(entryId);
+      }
+      const sourceQueue = await repos.queues.findById(entry.queueId);
+      const targetQueue = await repos.queues.findById(targetQueueId);
+      if (!sourceQueue || !targetQueue) {
+        throw new QueueNotFoundError(targetQueueId);
+      }
+      if (sourceQueue.businessId !== targetQueue.businessId) {
+        throw new CrossTenantTransferError();
+      }
 
-    const activePhones = await this.deps.entries.findActivePhones(targetQueue.id);
-    DuplicateJoinPolicy.assertPhoneNotActive(
-      PhoneNumber.create(entry.customerPhone),
-      activePhones,
-    );
+      const activeCount = await repos.entries.countActive(targetQueue.id);
+      CapacityPolicy.assertCanJoin(targetQueue, activeCount);
 
-    const targetActive = await this.deps.entries.findActiveByQueueId(
-      targetQueue.id,
-    );
-    const sortOrder = OrderingPolicy.nextSortOrder(targetActive);
-    const token = TokenFactory.issue(targetQueue, now);
-    await this.deps.tokens.save(token);
-    await this.deps.queues.save(targetQueue);
+      const activePhones = await repos.entries.findActivePhones(targetQueue.id);
+      DuplicateJoinPolicy.assertPhoneNotActive(
+        PhoneNumber.create(entry.customerPhone),
+        activePhones,
+      );
 
-    const fromQueueId = entry.queueId;
-    entry.rebindToQueue({
-      queueId: targetQueue.id,
-      branchId: targetQueue.branchId,
-      queueTokenId: token.id,
-      displayCode: token.displayCode,
-      tokenNumber: token.tokenNumber,
-      sortOrder,
-      now,
-    });
-    await this.deps.entries.save(entry);
-    await this.recalculateWaits(sourceQueue);
-    await this.recalculateWaits(targetQueue);
-    await this.deps.eventBus.publish(
-      QueueEvents.customerTransferred(
+      const targetActive = await repos.entries.findActiveByQueueId(targetQueue.id);
+      const sortOrder = OrderingPolicy.nextSortOrder(targetActive);
+      const counter = await repos.queues.incrementTokenNumber(targetQueue.id);
+      const token = TokenFactory.issueWithNumber(
         targetQueue.id,
-        targetQueue.businessId,
-        {
-          entryId: entry.id,
-          fromQueueId,
-          toQueueId: targetQueue.id,
-          displayCode: token.displayCode,
-        },
+        counter.prefix,
+        counter.tokenNumber,
         now,
-      ),
-    );
-    return entry;
+      );
+      await repos.tokens.save(token);
+
+      const fromQueueId = entry.queueId;
+      entry.rebindToQueue({
+        queueId: targetQueue.id,
+        branchId: targetQueue.branchId,
+        queueTokenId: token.id,
+        displayCode: token.displayCode,
+        tokenNumber: token.tokenNumber,
+        sortOrder,
+        now,
+      });
+      await repos.entries.save(entry);
+      await this.recalculateWaits(sourceQueue, repos);
+      await this.recalculateWaits(targetQueue, repos);
+
+      return {
+        value: entry,
+        events: [
+          QueueEvents.customerTransferred(
+            targetQueue.id,
+            targetQueue.businessId,
+            {
+              entryId: entry.id,
+              fromQueueId,
+              toQueueId: targetQueue.id,
+              displayCode: token.displayCode,
+            },
+            now,
+          ),
+        ],
+      };
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -710,11 +761,35 @@ export class QueueEngineService {
     return entry;
   }
 
-  private async recalculateWaits(queue: Queue): Promise<void> {
+  private async recalculateWaits(
+    queue: Queue,
+    repos: TransactionRepositories = {
+      queues: this.deps.queues,
+      entries: this.deps.entries,
+      customers: this.deps.customers,
+      tokens: this.deps.tokens,
+    },
+  ): Promise<void> {
     const now = this.deps.clock.now();
-    const active = await this.deps.entries.findActiveByQueueId(queue.id);
+    const active = await repos.entries.findActiveByQueueId(queue.id);
     WaitTimeCalculator.recalculateAll(queue, active, now);
-    await this.deps.entries.saveMany(active);
+    await repos.entries.saveMany(active);
+  }
+
+  private async commitMutation<T>(
+    queueIds: readonly string[],
+    work: (
+      repos: TransactionRepositories,
+    ) => Promise<{ value: T; events: DomainEvent[] }>,
+  ): Promise<T> {
+    const { value, events } = await this.deps.unitOfWork.runForQueues(
+      queueIds,
+      work,
+    );
+    for (const event of events) {
+      await this.deps.eventBus.publish(event);
+    }
+    return value;
   }
 }
 

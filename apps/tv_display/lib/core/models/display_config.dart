@@ -23,6 +23,7 @@ class DisplayConfig {
     required this.queueName,
     required this.branchName,
     required this.businessName,
+    this.displayCredential,
     this.businessId,
     this.branchId,
     this.businessLogoUrl,
@@ -46,7 +47,13 @@ class DisplayConfig {
     this.transitionStyle = 'fade',
   });
 
+  /// Local pairing code (8 chars). Shown in settings; used for same-device lookup.
+  /// Not a Socket.IO authorization credential.
   final String displayToken;
+
+  /// Backend-issued JWT for `subscribe:queue-display`. Never expose in UI/logs/URLs.
+  final String? displayCredential;
+
   final String queueId;
   final String queueName;
   final String branchName;
@@ -73,8 +80,13 @@ class DisplayConfig {
   final bool blinkCurrentCustomer;
   final String transitionStyle;
 
+  bool get hasRealtimeCredential =>
+      displayCredential != null && displayCredential!.isNotEmpty;
+
   DisplayConfig copyWith({
     String? displayToken,
+    String? displayCredential,
+    bool clearDisplayCredential = false,
     String? queueId,
     String? queueName,
     String? branchName,
@@ -103,6 +115,9 @@ class DisplayConfig {
   }) {
     return DisplayConfig(
       displayToken: displayToken ?? this.displayToken,
+      displayCredential: clearDisplayCredential
+          ? null
+          : (displayCredential ?? this.displayCredential),
       queueId: queueId ?? this.queueId,
       queueName: queueName ?? this.queueName,
       branchName: branchName ?? this.branchName,
@@ -134,6 +149,7 @@ class DisplayConfig {
 
   Map<String, dynamic> toJson() => {
         'displayToken': displayToken,
+        if (displayCredential != null) 'displayCredential': displayCredential,
         'queueId': queueId,
         'queueName': queueName,
         'branchName': branchName,
@@ -163,6 +179,7 @@ class DisplayConfig {
 
   factory DisplayConfig.fromJson(Map<String, dynamic> json) => DisplayConfig(
         displayToken: json['displayToken'] as String,
+        displayCredential: json['displayCredential'] as String?,
         queueId: json['queueId'] as String,
         queueName: json['queueName'] as String? ?? '',
         branchName: json['branchName'] as String? ?? '',

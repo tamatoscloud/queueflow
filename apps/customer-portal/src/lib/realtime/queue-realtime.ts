@@ -1,6 +1,7 @@
 import type { RealtimeEventName } from './socket-events';
 import { getSharedSocket } from './socket-client';
 import { RealtimeSubscribe } from './socket-events';
+import { pollingRealtimeAdapter } from './queue-realtime-polling';
 
 export interface QueueRealtimeSubscription {
   unsubscribe: () => void;
@@ -8,12 +9,25 @@ export interface QueueRealtimeSubscription {
 
 export type QueueUpdateHandler<T> = (data: T) => void;
 
+export interface EntryTrackingSubscribeOptions {
+  /** Current entry-scoped credential; may be missing until recovery. */
+  trackingToken?: string | null;
+  /**
+   * Recover a fresh token (e.g. via tracking HTTP).
+   * Invoked at most once per failure cycle.
+   */
+  recoverToken?: () => Promise<string | null>;
+  /** Persist a recovered/refreshed token (must not log the value). */
+  onToken?: (token: string) => void;
+  intervalMs?: number;
+}
+
 export interface QueueRealtimeAdapter {
   subscribeEntryTracking<T>(
     entryId: string,
     fetcher: () => Promise<T>,
     onUpdate: QueueUpdateHandler<T>,
-    intervalMs?: number,
+    options?: EntryTrackingSubscribeOptions,
   ): QueueRealtimeSubscription;
 
   subscribeQueueLanding<T>(
@@ -36,26 +50,24 @@ const TRACKING_EVENTS: RealtimeEventName[] = [
   'EstimatedWaitChanged',
 ];
 
-const LANDING_EVENTS: RealtimeEventName[] = [
-  'CustomerJoined',
-  'QueueUpdated',
-  'QueuePaused',
-  'QueueResumed',
-  'QueueClosed',
-  'EstimatedWaitChanged',
-];
+interface SubscribeAck {
+  ok?: boolean;
+  room?: string;
+  error?: string;
+}
 
-function subscribeSocket<T>(
-  roomKind: 'entry' | 'queue',
-  id: string,
+function subscribeEntrySocket<T>(
+  entryId: string,
   fetcher: () => Promise<T>,
   onUpdate: QueueUpdateHandler<T>,
-  events: RealtimeEventName[],
-  fallbackIntervalMs: number,
+  options: EntryTrackingSubscribeOptions = {},
 ): QueueRealtimeSubscription {
   const socket = getSharedSocket();
+  const fallbackIntervalMs = options.intervalMs ?? 15_000;
   let active = true;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let currentToken = options.trackingToken ?? null;
+  let subscribeInFlight = false;
 
   const refresh = async () => {
     if (!active) return;
@@ -84,31 +96,96 @@ function subscribeSocket<T>(
     void refresh();
   };
 
-  const subscribeMessage =
-    roomKind === 'entry'
-      ? { event: RealtimeSubscribe.Entry, body: { entryId: id } }
-      : { event: RealtimeSubscribe.Queue, body: { queueId: id } };
-
   const wireEvents = () => {
-    for (const eventName of events) {
+    for (const eventName of TRACKING_EVENTS) {
       socket.on(eventName, onSocketEvent);
     }
   };
 
   const unwireEvents = () => {
-    for (const eventName of events) {
+    for (const eventName of TRACKING_EVENTS) {
       socket.off(eventName, onSocketEvent);
     }
   };
 
-  const joinRoom = () => {
-    socket.emit(subscribeMessage.event, subscribeMessage.body);
+  const emitSubscribe = (token: string): Promise<boolean> =>
+    new Promise((resolve) => {
+      if (!active) {
+        resolve(false);
+        return;
+      }
+      try {
+        socket
+          .timeout(8_000)
+          .emit(
+            RealtimeSubscribe.Entry,
+            { entryId, trackingToken: token },
+            (err: Error | null, ack?: SubscribeAck) => {
+              if (err || !ack?.ok) {
+                resolve(false);
+                return;
+              }
+              resolve(true);
+            },
+          );
+      } catch {
+        resolve(false);
+      }
+    });
+
+  const joinRoom = async () => {
+    if (!active || subscribeInFlight) return;
+    subscribeInFlight = true;
+    let recoveryUsed = false;
+    try {
+      let token = currentToken;
+
+      if (!token && options.recoverToken) {
+        recoveryUsed = true;
+        const recovered = await options.recoverToken();
+        if (recovered) {
+          currentToken = recovered;
+          token = recovered;
+          options.onToken?.(recovered);
+        }
+      }
+
+      if (!token) {
+        startFallback();
+        return;
+      }
+
+      let ok = await emitSubscribe(token);
+      if (ok) {
+        stopFallback();
+        void refresh();
+        return;
+      }
+
+      // Ack failed — at most one recovery + retry per connect cycle.
+      if (options.recoverToken && !recoveryUsed) {
+        recoveryUsed = true;
+        const recovered = await options.recoverToken();
+        if (recovered) {
+          currentToken = recovered;
+          options.onToken?.(recovered);
+          ok = await emitSubscribe(recovered);
+          if (ok) {
+            stopFallback();
+            void refresh();
+            return;
+          }
+        }
+      }
+
+      startFallback();
+    } finally {
+      subscribeInFlight = false;
+    }
   };
 
   const onConnect = () => {
-    stopFallback();
-    joinRoom();
-    void refresh();
+    void joinRoom();
   };
 
   const onDisconnect = () => {
@@ -120,8 +197,7 @@ function subscribeSocket<T>(
   socket.on('disconnect', onDisconnect);
 
   if (socket.connected) {
-    joinRoom();
-    void refresh();
+    void joinRoom();
   } else {
     socket.connect();
     startFallback();
@@ -135,22 +211,31 @@ function subscribeSocket<T>(
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.emit(RealtimeSubscribe.Unsubscribe, {
-        room: roomKind === 'entry' ? `entry:${id}` : `queue:${id}`,
+        room: `entry:${entryId}`,
       });
     },
   };
 }
 
 export const hybridRealtimeAdapter: QueueRealtimeAdapter = {
-  subscribeEntryTracking(entryId, fetcher, onUpdate, intervalMs = 15_000) {
-    return subscribeSocket('entry', entryId, fetcher, onUpdate, TRACKING_EVENTS, intervalMs);
+  subscribeEntryTracking(entryId, fetcher, onUpdate, options) {
+    return subscribeEntrySocket(entryId, fetcher, onUpdate, options ?? {});
   },
+  /**
+   * Public landing must NOT use staff-only `subscribe:queue`.
+   * HTTP polling is the source of truth for anonymous visitors.
+   */
   subscribeQueueLanding(queueId, fetcher, onUpdate, intervalMs = 30_000) {
-    return subscribeSocket('queue', queueId, fetcher, onUpdate, LANDING_EVENTS, intervalMs);
+    return pollingRealtimeAdapter.subscribeQueueLanding(
+      queueId,
+      fetcher,
+      onUpdate,
+      intervalMs,
+    );
   },
 };
 
-/** Active realtime adapter — Socket.IO with polling fallback. */
+/** Active realtime adapter — entry Socket.IO + landing polling. */
 export const queueRealtime = hybridRealtimeAdapter;
 
 export { pollingRealtimeAdapter } from './queue-realtime-polling';

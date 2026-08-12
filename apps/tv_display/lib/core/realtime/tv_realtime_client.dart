@@ -44,6 +44,30 @@ abstract final class TvRealtimeEvents {
   ];
 }
 
+/// Builds the Socket.IO payload for TV display subscription.
+/// [displayToken] must be the backend-issued JWT (not the local pairing code).
+Map<String, String> buildQueueDisplaySubscribePayload({
+  required String queueId,
+  required String displayToken,
+}) {
+  return {
+    'queueId': queueId,
+    'displayToken': displayToken,
+  };
+}
+
+/// Parses subscription acknowledgement from the gateway.
+bool isSubscribeAckOk(dynamic ack) {
+  if (ack is Map) {
+    return ack['ok'] == true;
+  }
+  if (ack is List && ack.isNotEmpty) {
+    final first = ack.first;
+    if (first is Map) return first['ok'] == true;
+  }
+  return false;
+}
+
 class TvRealtimeClient {
   TvRealtimeClient({required this.wsBaseUrl});
 
@@ -52,17 +76,32 @@ class TvRealtimeClient {
   io.Socket? _socket;
   final _statusController = StreamController<RealtimeStatus>.broadcast();
   final _eventController = StreamController<RealtimeEnvelope>.broadcast();
+  final _authorizedController = StreamController<bool>.broadcast();
   RealtimeStatus _status = RealtimeStatus.disconnected;
   int _reconnectAttempt = 0;
 
+  String? _activeQueueId;
+  String? _activeDisplayCredential;
+  bool _subscriptionAuthorized = false;
+
   Stream<RealtimeStatus> get status => _statusController.stream;
   Stream<RealtimeEnvelope> get events => _eventController.stream;
+  Stream<bool> get subscriptionAuthorized => _authorizedController.stream;
   RealtimeStatus get currentStatus => _status;
   int get reconnectAttempt => _reconnectAttempt;
+  bool get isSubscriptionAuthorized => _subscriptionAuthorized;
+  String? get activeQueueId => _activeQueueId;
 
   void _setStatus(RealtimeStatus status) {
     _status = status;
     _statusController.add(status);
+  }
+
+  void _setAuthorized(bool value) {
+    _subscriptionAuthorized = value;
+    if (!_authorizedController.isClosed) {
+      _authorizedController.add(value);
+    }
   }
 
   Future<void> connect() async {
@@ -86,14 +125,20 @@ class TvRealtimeClient {
       ..onConnect((_) {
         _reconnectAttempt = 0;
         _setStatus(RealtimeStatus.connected);
+        unawaited(_resubscribeIfNeeded());
       })
-      ..onDisconnect((_) => _setStatus(RealtimeStatus.disconnected))
+      ..onDisconnect((_) {
+        _setAuthorized(false);
+        _setStatus(RealtimeStatus.disconnected);
+      })
       ..onReconnect((_) {
         _reconnectAttempt = 0;
         _setStatus(RealtimeStatus.connected);
+        unawaited(_resubscribeIfNeeded());
       })
       ..onReconnectAttempt((attempt) {
         _reconnectAttempt = attempt as int? ?? _reconnectAttempt + 1;
+        _setAuthorized(false);
         _setStatus(RealtimeStatus.reconnecting);
       })
       ..onConnectError((_) => _setStatus(RealtimeStatus.reconnecting));
@@ -109,8 +154,81 @@ class TvRealtimeClient {
     }
   }
 
-  void subscribeQueueDisplay(String queueId) {
-    _socket?.emit('subscribe:queue-display', {'queueId': queueId});
+  /// Subscribe to the queue display room using a backend-issued JWT.
+  /// Returns false when the credential is missing/invalid or ack fails.
+  /// Does not attempt an unauthorized subscribe when [displayCredential] is empty.
+  Future<bool> subscribeQueueDisplay({
+    required String queueId,
+    required String displayCredential,
+  }) async {
+    final trimmed = displayCredential.trim();
+    if (trimmed.isEmpty) {
+      _activeQueueId = queueId;
+      _activeDisplayCredential = null;
+      _setAuthorized(false);
+      return false;
+    }
+
+    _activeQueueId = queueId;
+    _activeDisplayCredential = trimmed;
+
+    if (_socket?.connected != true) {
+      _setAuthorized(false);
+      return false;
+    }
+
+    return _emitSubscribe();
+  }
+
+  Future<bool> _resubscribeIfNeeded() async {
+    final queueId = _activeQueueId;
+    final credential = _activeDisplayCredential;
+    if (queueId == null || credential == null || credential.isEmpty) {
+      _setAuthorized(false);
+      return false;
+    }
+    return _emitSubscribe();
+  }
+
+  Future<bool> _emitSubscribe() async {
+    final socket = _socket;
+    final queueId = _activeQueueId;
+    final credential = _activeDisplayCredential;
+    if (socket == null ||
+        !socket.connected ||
+        queueId == null ||
+        credential == null ||
+        credential.isEmpty) {
+      _setAuthorized(false);
+      return false;
+    }
+
+    try {
+      final payload = buildQueueDisplaySubscribePayload(
+        queueId: queueId,
+        displayToken: credential,
+      );
+      final ack = await socket.emitWithAckAsync(
+        'subscribe:queue-display',
+        payload,
+      );
+      final ok = isSubscribeAckOk(ack);
+      _setAuthorized(ok);
+      return ok;
+    } catch (_) {
+      _setAuthorized(false);
+      return false;
+    }
+  }
+
+  void clearSubscription() {
+    final queueId = _activeQueueId;
+    if (queueId != null) {
+      unsubscribe('queue:$queueId:display');
+    }
+    _activeQueueId = null;
+    _activeDisplayCredential = null;
+    _setAuthorized(false);
   }
 
   void unsubscribe(String room) {
@@ -118,6 +236,7 @@ class TvRealtimeClient {
   }
 
   void disconnect() {
+    clearSubscription();
     _socket?.dispose();
     _socket = null;
     _setStatus(RealtimeStatus.disconnected);

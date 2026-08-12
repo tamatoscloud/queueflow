@@ -137,6 +137,7 @@ export function QueueJoinExperience({ data, queueId }: QueueJoinExperienceProps)
         queueId,
         displayCode: result.displayCode,
         joinedAt: new Date().toISOString(),
+        trackingToken: result.trackingToken,
       });
       router.push(`/track/${result.entryId}?welcome=1`);
     } catch (err) {

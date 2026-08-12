@@ -14,7 +14,7 @@ export const customerApi = {
   joinQueue: (queueId: string, payload: JoinQueuePayload) =>
     apiFetch<JoinQueueResult>(`/queues/${queueId}/join`, {
       method: 'POST',
-      body: JSON.stringify({ ...payload, bypassOperatingHours: true }),
+      body: JSON.stringify(payload),
     }),
 
   getEntryTracking: (entryId: string) =>

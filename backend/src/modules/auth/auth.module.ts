@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { BusinessContext } from '../../common/context/business-context';
+import { TenantScopeService } from '../../common/tenant/tenant-scope.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
@@ -32,10 +33,18 @@ import { JwtAuthGuard, PermissionsGuard } from './guards/auth.guards';
     TokenService,
     JwtStrategy,
     BusinessContext,
+    TenantScopeService,
     JwtAuthGuard,
     PermissionsGuard,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
-  exports: [AuthService, PasswordService, BusinessContext, AuthRepository, TokenService],
+  exports: [
+    AuthService,
+    PasswordService,
+    BusinessContext,
+    TenantScopeService,
+    AuthRepository,
+    TokenService,
+  ],
 })
 export class AuthModule {}

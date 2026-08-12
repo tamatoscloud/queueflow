@@ -3,6 +3,8 @@ import { AuthModule } from '../../modules/auth/auth.module';
 import { QueueRealtimeGateway } from './gateway/queue-realtime.gateway';
 import { QueueRealtimeBridgeService } from './services/queue-realtime-bridge.service';
 import { QueueRealtimeEmitterService } from './services/queue-realtime-emitter.service';
+import { RealtimeCredentialService } from './services/realtime-credential.service';
+import { RealtimeSubscriptionAuthorizer } from './services/realtime-subscription-authorizer.service';
 import { SocketAuthService } from './services/socket-auth.service';
 
 @Module({
@@ -11,8 +13,14 @@ import { SocketAuthService } from './services/socket-auth.service';
     QueueRealtimeGateway,
     QueueRealtimeBridgeService,
     QueueRealtimeEmitterService,
+    RealtimeCredentialService,
+    RealtimeSubscriptionAuthorizer,
     SocketAuthService,
   ],
-  exports: [QueueRealtimeEmitterService, QueueRealtimeBridgeService],
+  exports: [
+    QueueRealtimeEmitterService,
+    QueueRealtimeBridgeService,
+    RealtimeCredentialService,
+  ],
 })
 export class RealtimeModule {}

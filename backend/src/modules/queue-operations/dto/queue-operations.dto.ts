@@ -46,26 +46,6 @@ export class JoinQueueDto {
   @ApiProperty({ enum: NotificationPreference })
   @IsEnum(NotificationPreference)
   notificationPreference!: NotificationPreference;
-
-  @ApiPropertyOptional({ default: false })
-  @IsOptional()
-  @IsBoolean()
-  isVip?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  priority?: number;
-
-  @ApiPropertyOptional({
-    description: 'Staff override for operating hours',
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  bypassOperatingHours?: boolean;
 }
 
 /** Staff walk-in — same fields as join but always uses WALK_IN source. */

@@ -2,6 +2,8 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { QueueEngineService } from '../../queue-engine';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TenantScopeService } from '../../common/tenant/tenant-scope.service';
+import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import {
   paginatedMeta,
   paginationSkip,
@@ -16,18 +18,21 @@ import type {
 export class QueueService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly tenantScope: TenantScopeService,
+    private readonly realtimeCredentials: RealtimeCredentialService,
     @Inject(QueueEngineService) private readonly engine: QueueEngineService,
   ) {}
 
   async create(dto: CreateQueueDto) {
+    const businessId = this.tenantScope.resolveRequiredBusinessId(dto.businessId);
     const branch = await this.prisma.branch.findFirst({
-      where: { id: dto.branchId, businessId: dto.businessId, deletedAt: null },
+      where: { id: dto.branchId, businessId, deletedAt: null },
     });
     if (!branch) {
       throw new NotFoundException('Branch not found for business');
     }
     const queue = await this.engine.createQueue({
-      businessId: dto.businessId,
+      businessId,
       branchId: dto.branchId,
       name: dto.name,
       description: dto.description,
@@ -42,7 +47,7 @@ export class QueueService {
   }
 
   async update(id: string, dto: UpdateQueueDto) {
-    await this.require(id);
+    await this.tenantScope.requireQueue(id);
     return this.prisma.queue.update({
       where: { id },
       data: {
@@ -59,11 +64,11 @@ export class QueueService {
   }
 
   async get(id: string) {
-    return this.require(id);
+    return this.tenantScope.requireQueue(id);
   }
 
   async remove(id: string) {
-    await this.require(id);
+    await this.tenantScope.requireQueue(id);
     return this.prisma.queue.update({
       where: { id },
       data: { deletedAt: new Date(), status: 'ARCHIVED', isAcceptingEntries: false },
@@ -73,9 +78,12 @@ export class QueueService {
   async list(query: ListQueueQueryDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
+    const businessId = this.tenantScope.resolveOptionalListBusinessId(
+      query.businessId,
+    );
     const where: Prisma.QueueWhereInput = {
       deletedAt: null,
-      ...(query.businessId ? { businessId: query.businessId } : {}),
+      ...(businessId ? { businessId } : {}),
       ...(query.branchId ? { branchId: query.branchId } : {}),
       ...(query.status
         ? { status: query.status as Prisma.EnumQueueStatusFilter['equals'] }
@@ -99,28 +107,30 @@ export class QueueService {
   }
 
   async open(id: string) {
+    await this.tenantScope.requireQueue(id);
     return (await this.engine.openQueue(id)).toProps();
   }
 
   async pause(id: string) {
+    await this.tenantScope.requireQueue(id);
     return (await this.engine.pauseQueue(id)).toProps();
   }
 
   async resume(id: string) {
+    await this.tenantScope.requireQueue(id);
     return (await this.engine.resumeQueue(id)).toProps();
   }
 
   async close(id: string) {
+    await this.tenantScope.requireQueue(id);
     return (await this.engine.closeQueue(id)).toProps();
   }
 
-  private async require(id: string) {
-    const row = await this.prisma.queue.findFirst({
-      where: { id, deletedAt: null },
-    });
-    if (!row) {
-      throw new NotFoundException(`Queue ${id} not found`);
-    }
-    return row;
+  async issueDisplayCredential(queueId: string) {
+    await this.tenantScope.requireQueue(queueId);
+    return {
+      queueId,
+      displayToken: this.realtimeCredentials.issueQueueDisplayToken(queueId),
+    };
   }
 }

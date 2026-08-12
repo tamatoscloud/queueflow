@@ -8,6 +8,12 @@ import {
   DOMAIN_TO_NOTIFICATION_TYPE,
   WAIT_NOTIFICATION_EVENTS,
 } from '../constants/domain-event-mapping';
+import {
+  buildBroadcastNotificationKey,
+  buildEventKey,
+  buildPrimaryNotificationKey,
+  buildWaitNotificationKey,
+} from '../domain/notification-idempotency';
 import { NotificationDispatchService } from '../services/notification-dispatch.service';
 import { NotificationRepository } from '../repositories/notification.repository';
 
@@ -69,6 +75,12 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
       return;
     }
 
+    const eventKey = buildEventKey({
+      type: event.type,
+      aggregateId: event.aggregateId,
+      entryId,
+    });
+
     await this.dispatch.scheduleForPreference({
       businessId: event.businessId,
       customerId: ctx.customerId,
@@ -77,6 +89,13 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
       preference: ctx.notificationPreference,
       payload,
       scheduledAt,
+      eventKey,
+      idempotencyKeyBase: buildPrimaryNotificationKey({
+        businessId: event.businessId,
+        queueEntryId: entryId,
+        type,
+        eventType: event.type,
+      }),
     });
   }
 
@@ -89,6 +108,8 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
     if (!type) return;
 
     const waiting = await this.repository.findWaitingEntriesForQueue(queueId);
+    const eventKey = buildEventKey({ type: event.type, aggregateId: queueId });
+
     for (const entry of waiting) {
       const payload = {
         queueName: entry.queue.name,
@@ -103,6 +124,12 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
         type,
         preference: entry.notificationPreference,
         payload,
+        eventKey,
+        idempotencyKeyBase: buildBroadcastNotificationKey({
+          eventType: event.type,
+          queueId,
+          queueEntryId: entry.id,
+        }),
       });
     }
   }
@@ -134,6 +161,8 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
 
     const now = Date.now();
+    const eventKey = buildEventKey({ type: event.type, aggregateId: queueId });
+
     for (const entry of waiting) {
       const ctx = await this.repository.findEntryContext(entry.id);
       if (!ctx?.customer) continue;
@@ -160,6 +189,12 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
           etaMinutes: estimate.estimatedWaitMinutes,
           customersAhead: estimate.customersAhead,
         },
+        eventKey,
+        idempotencyKeyBase: buildWaitNotificationKey({
+          queueEntryId: entry.id,
+          type,
+          position: estimate.position,
+        }),
       });
       this.lastPositionNotify.set(entry.id, now);
     }

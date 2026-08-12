@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Socket } from 'socket.io';
+import { AuthService } from '../../../modules/auth/auth.service';
 import { TokenService } from '../../../modules/auth/token.service';
 import type { AuthenticatedUser } from '../../../modules/auth/interfaces/auth.interfaces';
 import { Permission, SystemRole } from '../../../modules/auth/constants/roles-permissions';
@@ -13,9 +14,12 @@ export type AuthenticatedSocket = Socket & { data: SocketClientData };
 
 @Injectable()
 export class SocketAuthService {
-  constructor(private readonly tokens: TokenService) {}
+  constructor(
+    private readonly tokens: TokenService,
+    private readonly authService: AuthService,
+  ) {}
 
-  authenticateHandshake(socket: AuthenticatedSocket): SocketClientData {
+  async authenticateHandshake(socket: AuthenticatedSocket): Promise<SocketClientData> {
     const token =
       (socket.handshake.auth?.token as string | undefined) ??
       (socket.handshake.query?.token as string | undefined);
@@ -27,6 +31,7 @@ export class SocketAuthService {
 
     try {
       const payload = this.tokens.verifyAccess(token);
+      await this.authService.validateSession(payload.sessionId);
       socket.data = {
         isStaff: true,
         user: {
@@ -58,6 +63,18 @@ export class SocketAuthService {
     const user = this.assertStaff(socket);
     if (user.isPlatformAdmin) return user;
     if (user.businessId !== businessId) {
+      throw new UnauthorizedException('Business access denied');
+    }
+    return user;
+  }
+
+  assertEntryBusinessAccess(
+    socket: AuthenticatedSocket,
+    resourceBusinessId: string,
+  ): AuthenticatedUser {
+    const user = this.assertStaff(socket);
+    if (user.isPlatformAdmin) return user;
+    if (!user.businessId || user.businessId !== resourceBusinessId) {
       throw new UnauthorizedException('Business access denied');
     }
     return user;

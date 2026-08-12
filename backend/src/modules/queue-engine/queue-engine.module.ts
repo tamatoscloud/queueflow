@@ -8,12 +8,14 @@ import {
   QUEUE_ENTRY_REPOSITORY,
   QUEUE_REPOSITORY,
   TOKEN_REPOSITORY,
+  UNIT_OF_WORK,
 } from '../../common/di/tokens';
 import { PrismaQueueRepository } from '../../infrastructure/prisma/prisma-queue.repository';
 import { PrismaQueueEntryRepository } from '../../infrastructure/prisma/prisma-queue-entry.repository';
 import { PrismaCustomerRepository } from '../../infrastructure/prisma/prisma-customer.repository';
 import { PrismaTokenRepository } from '../../infrastructure/prisma/prisma-token.repository';
 import { PrismaOperatingHoursAdapter } from '../../infrastructure/prisma/prisma-operating-hours.adapter';
+import { PrismaUnitOfWork } from '../../infrastructure/prisma/prisma-unit-of-work';
 import { NestEventBus } from '../../infrastructure/events/nest-event-bus';
 import { NestClock } from '../../infrastructure/clock/nest-clock';
 
@@ -25,6 +27,7 @@ import { NestClock } from '../../infrastructure/clock/nest-clock';
     PrismaCustomerRepository,
     PrismaTokenRepository,
     PrismaOperatingHoursAdapter,
+    PrismaUnitOfWork,
     NestEventBus,
     NestClock,
     { provide: QUEUE_REPOSITORY, useExisting: PrismaQueueRepository },
@@ -34,6 +37,7 @@ import { NestClock } from '../../infrastructure/clock/nest-clock';
     { provide: OPERATING_HOURS_PORT, useExisting: PrismaOperatingHoursAdapter },
     { provide: EVENT_BUS, useExisting: NestEventBus },
     { provide: CLOCK, useExisting: NestClock },
+    { provide: UNIT_OF_WORK, useExisting: PrismaUnitOfWork },
     {
       provide: QueueEngineService,
       useFactory: (
@@ -44,6 +48,7 @@ import { NestClock } from '../../infrastructure/clock/nest-clock';
         eventBus: NestEventBus,
         clock: NestClock,
         operatingHours: PrismaOperatingHoursAdapter,
+        unitOfWork: PrismaUnitOfWork,
       ) =>
         new QueueEngineService({
           queues,
@@ -53,6 +58,7 @@ import { NestClock } from '../../infrastructure/clock/nest-clock';
           eventBus,
           clock,
           operatingHours,
+          unitOfWork,
         }),
       inject: [
         PrismaQueueRepository,
@@ -62,6 +68,7 @@ import { NestClock } from '../../infrastructure/clock/nest-clock';
         NestEventBus,
         NestClock,
         PrismaOperatingHoursAdapter,
+        PrismaUnitOfWork,
       ],
     },
   ],
@@ -74,6 +81,7 @@ import { NestClock } from '../../infrastructure/clock/nest-clock';
     OPERATING_HOURS_PORT,
     EVENT_BUS,
     CLOCK,
+    UNIT_OF_WORK,
   ],
 })
 export class QueueEngineModule {}

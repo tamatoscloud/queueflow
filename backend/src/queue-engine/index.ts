@@ -24,7 +24,9 @@ export type {
   CustomerRepository,
   TokenRepository,
   OperatingHoursPort,
+  IncrementedTokenCounter,
 } from './application/ports/repositories';
+export type { UnitOfWork, TransactionRepositories } from './application/ports/unit-of-work';
 
 export { Queue } from './domain/entities/queue.entity';
 export { QueueEntry } from './domain/entities/queue-entry.entity';
@@ -74,3 +76,5 @@ export {
   AlwaysOpenOperatingHours,
   FixedWindowsOperatingHours,
 } from './infrastructure/in-memory/repositories';
+export { InMemoryUnitOfWork } from './infrastructure/in-memory/in-memory-unit-of-work';
+export { QueueLockRegistry } from './infrastructure/in-memory/queue-lock-registry';

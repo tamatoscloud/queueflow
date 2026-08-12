@@ -58,6 +58,7 @@ export interface QueueLanding {
   };
 }
 
+/** Public customer join — no operational privilege fields. */
 export interface JoinQueuePayload {
   fullName: string;
   phone: string;
@@ -65,8 +66,6 @@ export interface JoinQueuePayload {
   notes?: string;
   metadata?: Record<string, unknown>;
   notificationPreference: NotificationPreference;
-  isVip?: boolean;
-  bypassOperatingHours?: boolean;
 }
 
 export interface JoinQueueResult {
@@ -74,6 +73,8 @@ export interface JoinQueueResult {
   customerId: string;
   displayCode: string;
   tokenNumber: number;
+  /** Entry-scoped Socket.IO credential (Wave 1B). */
+  trackingToken?: string;
   estimate: {
     position: number;
     customersAhead: number;
@@ -113,6 +114,8 @@ export interface EntryTracking {
   estimatedWaitMinutes: number;
   averageServiceTimeMinutes: number;
   snapshotGeneratedAt: string;
+  /** Fresh entry-scoped Socket.IO credential for recovery/reconnect. */
+  trackingToken?: string;
 }
 
 export interface SubmitFeedbackPayload {

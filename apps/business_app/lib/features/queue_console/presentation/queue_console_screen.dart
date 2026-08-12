@@ -30,9 +30,9 @@ final queueConsoleRealtimeBindingProvider =
     ref: ref,
     client: client,
     onRefresh: () => ref.invalidate(queueSnapshotProvider(queueId)),
-    onConnect: () async {
+    onSubscribe: () async {
       await client.connect();
-      client.subscribeQueueDetail(queueId, businessId);
+      return client.subscribeQueueDetail(queueId);
     },
     pollInterval: const Duration(seconds: 10),
   );

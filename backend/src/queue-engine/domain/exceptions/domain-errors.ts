@@ -117,3 +117,9 @@ export class CrossTenantTransferError extends DomainError {
     );
   }
 }
+
+export class QueueConcurrencyConflictError extends DomainError {
+  constructor(message = 'Queue mutation conflict; please retry') {
+    super('QUEUE_CONCURRENCY_CONFLICT', message);
+  }
+}

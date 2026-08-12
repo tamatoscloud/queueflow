@@ -48,6 +48,7 @@ describe('NotificationProviderRegistry', () => {
 
 describe('NotificationDispatcher', () => {
   const repository = {
+    claimForProcessing: vi.fn(),
     findById: vi.fn(),
     updateStatus: vi.fn(),
     recordDelivery: vi.fn(),
@@ -60,7 +61,15 @@ describe('NotificationDispatcher', () => {
   });
 
   it('skips cancelled notifications', async () => {
-    repository.findById.mockResolvedValue({ status: 'CANCELLED' });
+    repository.claimForProcessing.mockResolvedValue({
+      claimed: true,
+      notificationId: 'n1',
+    });
+    repository.findById.mockResolvedValue({
+      status: 'CANCELLED',
+      business: { settings: { notificationsEnabled: true } },
+      customer: { phone: '+923001111111' },
+    });
     const dispatcher = new NotificationDispatcher(
       repository as never,
       templates as never,

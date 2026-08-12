@@ -10,7 +10,6 @@ import {
 } from '@nestjs/websockets';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import type { Server } from 'socket.io';
-import { PrismaService } from '../../../common/prisma/prisma.service';
 import { RealtimeRooms } from '../constants/rooms';
 import { RealtimeSubscribe } from '../constants/socket-events';
 import {
@@ -18,6 +17,7 @@ import {
   SocketAuthService,
 } from '../services/socket-auth.service';
 import { QueueRealtimeEmitterService } from '../services/queue-realtime-emitter.service';
+import { RealtimeSubscriptionAuthorizer } from '../services/realtime-subscription-authorizer.service';
 import { socketCorsOrigins } from '../../../common/http/cors.util';
 
 @WebSocketGateway({
@@ -34,8 +34,8 @@ export class QueueRealtimeGateway
 
   constructor(
     private readonly socketAuth: SocketAuthService,
+    private readonly subscriptionAuth: RealtimeSubscriptionAuthorizer,
     private readonly emitter: QueueRealtimeEmitterService,
-    private readonly prisma: PrismaService,
   ) {}
 
   afterInit(server: Server): void {
@@ -43,10 +43,12 @@ export class QueueRealtimeGateway
     this.logger.log('Queue realtime gateway initialized at /realtime');
   }
 
-  handleConnection(socket: AuthenticatedSocket): void {
+  async handleConnection(socket: AuthenticatedSocket): Promise<void> {
     try {
-      this.socketAuth.authenticateHandshake(socket);
-      this.logger.debug(`Client connected ${socket.id} staff=${socket.data?.isStaff ?? false}`);
+      await this.socketAuth.authenticateHandshake(socket);
+      this.logger.debug(
+        `Client connected ${socket.id} staff=${socket.data?.isStaff ?? false}`,
+      );
     } catch (err) {
       this.logger.warn(`Rejected socket ${socket.id}: ${String(err)}`);
       socket.disconnect(true);
@@ -60,20 +62,24 @@ export class QueueRealtimeGateway
   @SubscribeMessage(RealtimeSubscribe.Entry)
   async subscribeEntry(
     @ConnectedSocket() socket: AuthenticatedSocket,
-    @MessageBody() body: { entryId?: string },
+    @MessageBody() body: { entryId?: string; trackingToken?: string },
   ): Promise<{ ok: boolean; room?: string; error?: string }> {
-    const entryId = body?.entryId;
-    if (!entryId) return { ok: false, error: 'entryId required' };
+    try {
+      const entryId = body?.entryId;
+      if (!entryId) return { ok: false, error: 'entryId required' };
 
-    const entry = await this.prisma.queueEntry.findFirst({
-      where: { id: entryId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!entry) return { ok: false, error: 'Entry not found' };
+      await this.subscriptionAuth.authorizeEntrySubscription(
+        socket,
+        entryId,
+        body?.trackingToken,
+      );
 
-    const room = RealtimeRooms.entry(entryId);
-    await socket.join(room);
-    return { ok: true, room };
+      const room = RealtimeRooms.entry(entryId);
+      await socket.join(room);
+      return { ok: true, room };
+    } catch (err) {
+      return this.subscriptionError(err);
+    }
   }
 
   @SubscribeMessage(RealtimeSubscribe.Queue)
@@ -81,37 +87,41 @@ export class QueueRealtimeGateway
     @ConnectedSocket() socket: AuthenticatedSocket,
     @MessageBody() body: { queueId?: string },
   ): Promise<{ ok: boolean; room?: string; error?: string }> {
-    const queueId = body?.queueId;
-    if (!queueId) return { ok: false, error: 'queueId required' };
+    try {
+      const queueId = body?.queueId;
+      if (!queueId) return { ok: false, error: 'queueId required' };
 
-    const queue = await this.prisma.queue.findFirst({
-      where: { id: queueId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!queue) return { ok: false, error: 'Queue not found' };
+      await this.subscriptionAuth.authorizeQueueSubscription(socket, queueId);
 
-    const room = RealtimeRooms.queue(queueId);
-    await socket.join(room);
-    return { ok: true, room };
+      const room = RealtimeRooms.queue(queueId);
+      await socket.join(room);
+      return { ok: true, room };
+    } catch (err) {
+      return this.subscriptionError(err);
+    }
   }
 
   @SubscribeMessage(RealtimeSubscribe.QueueDisplay)
   async subscribeQueueDisplay(
     @ConnectedSocket() socket: AuthenticatedSocket,
-    @MessageBody() body: { queueId?: string },
+    @MessageBody() body: { queueId?: string; displayToken?: string },
   ): Promise<{ ok: boolean; room?: string; error?: string }> {
-    const queueId = body?.queueId;
-    if (!queueId) return { ok: false, error: 'queueId required' };
+    try {
+      const queueId = body?.queueId;
+      if (!queueId) return { ok: false, error: 'queueId required' };
 
-    const queue = await this.prisma.queue.findFirst({
-      where: { id: queueId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!queue) return { ok: false, error: 'Queue not found' };
+      await this.subscriptionAuth.authorizeQueueDisplaySubscription(
+        socket,
+        queueId,
+        body?.displayToken,
+      );
 
-    const room = RealtimeRooms.queueDisplay(queueId);
-    await socket.join(room);
-    return { ok: true, room };
+      const room = RealtimeRooms.queueDisplay(queueId);
+      await socket.join(room);
+      return { ok: true, room };
+    } catch (err) {
+      return this.subscriptionError(err);
+    }
   }
 
   @SubscribeMessage(RealtimeSubscribe.BusinessDashboard)
@@ -122,12 +132,13 @@ export class QueueRealtimeGateway
     try {
       const businessId = body?.businessId;
       if (!businessId) return { ok: false, error: 'businessId required' };
+      await this.subscriptionAuth.validateStaffSession(socket);
       this.socketAuth.assertBusinessAccess(socket, businessId);
       const room = RealtimeRooms.businessDashboard(businessId);
       await socket.join(room);
       return { ok: true, room };
     } catch (err) {
-      return { ok: false, error: err instanceof UnauthorizedException ? err.message : 'Forbidden' };
+      return this.subscriptionError(err);
     }
   }
 
@@ -139,12 +150,13 @@ export class QueueRealtimeGateway
     try {
       const businessId = body?.businessId;
       if (!businessId) return { ok: false, error: 'businessId required' };
+      await this.subscriptionAuth.validateStaffSession(socket);
       this.socketAuth.assertBusinessAccess(socket, businessId);
       const room = RealtimeRooms.businessQueues(businessId);
       await socket.join(room);
       return { ok: true, room };
     } catch (err) {
-      return { ok: false, error: err instanceof UnauthorizedException ? err.message : 'Forbidden' };
+      return this.subscriptionError(err);
     }
   }
 
@@ -154,23 +166,18 @@ export class QueueRealtimeGateway
     @MessageBody() body: { queueId?: string; businessId?: string },
   ): Promise<{ ok: boolean; room?: string; error?: string }> {
     try {
-      const { queueId, businessId } = body ?? {};
-      if (!queueId || !businessId) {
-        return { ok: false, error: 'queueId and businessId required' };
+      const queueId = body?.queueId;
+      if (!queueId) {
+        return { ok: false, error: 'queueId required' };
       }
-      this.socketAuth.assertQueuePermission(socket, businessId);
 
-      const queue = await this.prisma.queue.findFirst({
-        where: { id: queueId, businessId, deletedAt: null },
-        select: { id: true },
-      });
-      if (!queue) return { ok: false, error: 'Queue not found' };
+      await this.subscriptionAuth.authorizeQueueSubscription(socket, queueId);
 
       const room = RealtimeRooms.queueDetail(queueId);
       await socket.join(room);
       return { ok: true, room };
     } catch (err) {
-      return { ok: false, error: err instanceof UnauthorizedException ? err.message : 'Forbidden' };
+      return this.subscriptionError(err);
     }
   }
 
@@ -183,5 +190,15 @@ export class QueueRealtimeGateway
       await socket.leave(body.room);
     }
     return { ok: true };
+  }
+
+  private subscriptionError(err: unknown): { ok: false; error: string } {
+    if (err instanceof UnauthorizedException) {
+      return { ok: false, error: err.message };
+    }
+    if (err instanceof Error) {
+      return { ok: false, error: err.message };
+    }
+    return { ok: false, error: 'Forbidden' };
   }
 }

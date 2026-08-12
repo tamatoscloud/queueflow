@@ -43,7 +43,6 @@ export function JoinWizard({ businessName, onSubmit, submitError }: JoinWizardPr
       whatsappNumber: '',
       occasion: undefined,
       seatingPreference: undefined,
-      isVip: false,
     },
     mode: 'onChange',
   });

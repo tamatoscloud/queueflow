@@ -13,6 +13,11 @@ describe('ReportsService', () => {
   let repository: {
     aggregateDailySummary: ReturnType<typeof vi.fn>;
   };
+  let tenantScope: {
+    requireQueue: ReturnType<typeof vi.fn>;
+    requireQueueEntry: ReturnType<typeof vi.fn>;
+    resolveRequiredBusinessId: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     engine = {
@@ -33,9 +38,15 @@ describe('ReportsService', () => {
         bySource: [{ source: 'QR_LANDING', count: 4 }],
       }),
     };
+    tenantScope = {
+      requireQueue: vi.fn().mockResolvedValue({ id: 'q-1', businessId: 'biz-1' }),
+      requireQueueEntry: vi.fn().mockResolvedValue({ id: 'e-1', businessId: 'biz-1' }),
+      resolveRequiredBusinessId: vi.fn((id?: string) => id ?? 'biz-1'),
+    };
     service = new ReportsService(
       engine as unknown as QueueEngineService,
       repository as unknown as ReportsRepository,
+      tenantScope as never,
     );
   });
 
