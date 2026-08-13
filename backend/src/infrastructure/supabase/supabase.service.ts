@@ -1,6 +1,8 @@
 import { Global, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createAdminClient, resolveEnv } from '@supabase/server/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { WebSocketLikeConstructor } from '@supabase/realtime-js';
+import WebSocket from 'ws';
 
 /**
  * Server-side Supabase admin client for platform operations (bypasses RLS).
@@ -19,7 +21,17 @@ export class SupabaseService implements OnModuleInit {
       throw error;
     }
 
-    this.adminClient = createAdminClient({ env });
+    // Node 20 has no global WebSocket; supabase-js still constructs RealtimeClient
+    // at createClient() time. QueueFlow does not use Supabase Realtime — supply `ws`
+    // only so client construction succeeds. Socket.IO remains the app realtime path.
+    this.adminClient = createAdminClient({
+      env,
+      supabaseOptions: {
+        realtime: {
+          transport: WebSocket as unknown as WebSocketLikeConstructor,
+        },
+      },
+    });
     this.logger.log(`Supabase admin client ready (${env.url})`);
   }
 
