@@ -1,7 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { notificationQueueConfig } from '../constants/notification-queue.constants';
 import { NonRetryableNotificationError } from '../services/notification-dispatcher.service';
-import { NotificationJobRepository } from './notification-job.repository';
+import {
+  NotificationJobLeaseError,
+  NotificationJobRepository,
+} from './notification-job.repository';
 import {
   NotificationQueueUnavailableError,
   type EnqueueSendOptions,
@@ -113,10 +116,11 @@ export class PostgresNotificationQueueService
         data: { notificationId: job.notificationId, attempt: job.attempts },
         attemptsMade: job.attempts,
       });
-      await this.jobs.markCompleted(job.id);
     } catch (err) {
       if (err instanceof NonRetryableNotificationError) {
-        await this.jobs.markFailedTerminal(job.id, err.message);
+        await this.safeLeaseUpdate('terminal', job.id, () =>
+          this.jobs.markFailedTerminal(job.id, this.workerId, err.message),
+        );
         this.logger.warn(
           `Notification terminal failure notificationId=${job.notificationId}: ${err.message}`,
         );
@@ -124,16 +128,44 @@ export class PostgresNotificationQueueService
       }
 
       const message = err instanceof Error ? err.message : String(err);
-      const outcome = await this.jobs.scheduleRetry(
-        job.id,
-        job.attempts,
-        job.maxAttempts,
-        message,
-        this.config.backoffDelayMs,
+      const outcome = await this.safeLeaseUpdate('retry', job.id, () =>
+        this.jobs.scheduleRetry(
+          job.id,
+          this.workerId,
+          job.attempts,
+          job.maxAttempts,
+          message,
+          this.config.backoffDelayMs,
+        ),
       );
-      this.logger.warn(
-        `Notification job ${job.id} ${outcome} (attempt ${job.attempts}/${job.maxAttempts}): ${message}`,
-      );
+      if (outcome != null) {
+        this.logger.warn(
+          `Notification job ${job.id} ${outcome} (attempt ${job.attempts}/${job.maxAttempts}): ${message}`,
+        );
+      }
+      return;
+    }
+
+    await this.safeLeaseUpdate('complete', job.id, () =>
+      this.jobs.markCompleted(job.id, this.workerId),
+    );
+  }
+
+  private async safeLeaseUpdate<T>(
+    action: string,
+    jobId: string,
+    fn: () => Promise<T>,
+  ): Promise<T | null> {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err instanceof NotificationJobLeaseError) {
+        this.logger.warn(
+          `Notification job ${action} skipped (lease lost) jobId=${jobId}: ${err.message}`,
+        );
+        return null;
+      }
+      throw err;
     }
   }
 

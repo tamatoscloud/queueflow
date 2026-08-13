@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { Job, Queue, Worker } from 'bullmq';
+import { Job, Queue, UnrecoverableError, Worker } from 'bullmq';
 import {
   NOTIFICATION_DLQ_NAME,
   NOTIFICATION_JOB_SEND,
@@ -8,6 +8,7 @@ import {
 } from '../constants/notification-queue.constants';
 import type { NotificationJobData } from '../domain/notification.types';
 import { RedisConnectionService } from '../../redis/redis-connection.service';
+import { NonRetryableNotificationError } from '../services/notification-dispatcher.service';
 import {
   NotificationQueueUnavailableError,
   type EnqueueSendOptions,
@@ -146,6 +147,11 @@ export class NotificationQueueService
             attemptsMade: job.attemptsMade,
           });
         } catch (err) {
+          // Permanent failures must not burn BullMQ retries.
+          if (err instanceof NonRetryableNotificationError) {
+            throw new UnrecoverableError(err.message);
+          }
+
           const maxAttempts = this.config.maxAttempts;
           if (job.attemptsMade + 1 >= maxAttempts) {
             try {

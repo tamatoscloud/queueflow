@@ -30,16 +30,24 @@ export class NotificationDispatcher {
         this.logger.debug(
           `Notification worker skip terminal notificationId=${job.notificationId}`,
         );
-      } else if (claim.reason === 'already_processing') {
+        // Permanent: queue must not mark COMPLETED as a successful delivery.
+        throw new NonRetryableNotificationError(
+          `Notification already terminal (${claim.reason})`,
+        );
+      }
+      if (claim.reason === 'already_processing') {
         this.logger.debug(
           `Notification worker skip in-flight notificationId=${job.notificationId}`,
         );
-      } else {
-        this.logger.warn(
-          `Notification worker skip notificationId=${job.notificationId} reason=${claim.reason}`,
-        );
+        // Another worker holds the notification lease — retry the queue job later.
+        throw new Error('Notification already processing');
       }
-      return;
+      this.logger.warn(
+        `Notification worker skip notificationId=${job.notificationId} reason=${claim.reason}`,
+      );
+      throw new NonRetryableNotificationError(
+        `Notification claim rejected (${claim.reason ?? 'unknown'})`,
+      );
     }
 
     if (claim.reason === 'recovered_stale') {
@@ -55,17 +63,17 @@ export class NotificationDispatcher {
     const notification = await this.repository.findById(job.notificationId);
     if (!notification) {
       this.logger.warn(`Notification ${job.notificationId} not found after claim`);
-      return;
+      throw new NonRetryableNotificationError('Notification not found after claim');
     }
 
     if (notification.status === NotificationStatus.CANCELLED) {
-      return;
+      throw new NonRetryableNotificationError('Notification cancelled');
     }
 
     const settings = notification.business.settings;
     if (settings && !settings.notificationsEnabled) {
       await this.repository.updateStatus(notification.id, NotificationStatus.CANCELLED);
-      return;
+      throw new NonRetryableNotificationError('Notifications disabled for business');
     }
 
     const phone = notification.customer.phone;
@@ -82,7 +90,7 @@ export class NotificationDispatcher {
       this.logger.warn(
         `Notification terminal failure notificationId=${notification.id} code=NO_PHONE`,
       );
-      return;
+      throw new NonRetryableNotificationError('Customer has no phone number');
     }
 
     const message = await this.templates.render(

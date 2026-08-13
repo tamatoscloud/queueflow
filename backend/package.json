@@ -33,6 +33,8 @@
     "test:watch": "vitest",
     "test:unit": "vitest run --dir src --exclude '**/integration/**'",
     "test:integration": "vitest run src/**/integration/**",
+    "test:pg-queue-integration": "vitest run src/infrastructure/notifications/integration/notification-job.postgres.integration.test.ts",
+    "probe:pg-queue-staging": "node scripts/pg-queue-staging-probe.mjs",
     "worker:notifications": "dotenv -c development -- node dist/infrastructure/notifications/worker/notification-worker.bootstrap.js"
   },
   "prisma": {

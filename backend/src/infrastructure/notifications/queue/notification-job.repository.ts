@@ -12,6 +12,31 @@ export interface ClaimedNotificationJob {
   lockedBy: string;
 }
 
+export class NotificationJobLeaseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotificationJobLeaseError';
+  }
+}
+
+function isUniqueNotificationIdConflict(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === 'P2002' &&
+    (Array.isArray(err.meta?.target)
+      ? (err.meta.target as string[]).some(
+          (t) => t === 'notification_id' || t === 'notificationId',
+        )
+      : true)
+  );
+}
+
+const REQUEUEABLE_JOB_STATUSES: NotificationJobStatus[] = [
+  NotificationJobStatus.COMPLETED,
+  NotificationJobStatus.FAILED,
+  NotificationJobStatus.DEAD,
+];
+
 @Injectable()
 export class NotificationJobRepository {
   private readonly logger = new Logger(NotificationJobRepository.name);
@@ -20,8 +45,9 @@ export class NotificationJobRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Upsert a pending job for a notification (stable unique notification_id).
-   * Mirrors BullMQ jobId = send-{notificationId}.
+   * Atomically upsert a pending job for a notification (unique notification_id).
+   * Concurrent enqueues must not throw unique-constraint errors.
+   * Existing PENDING/PROCESSING rows are left untouched unless `force` is set.
    */
   async enqueue(
     notificationId: string,
@@ -31,28 +57,19 @@ export class NotificationJobRepository {
     const availableAt = new Date(Date.now() + delayMs);
     const maxAttempts = options?.maxAttempts ?? this.config.maxAttempts;
 
-    const existing = await this.prisma.notificationJob.findUnique({
-      where: { notificationId },
-    });
-
-    if (existing && !options?.force) {
-      if (
-        existing.status === NotificationJobStatus.PENDING ||
-        existing.status === NotificationJobStatus.PROCESSING
-      ) {
-        this.logger.debug(
-          `Notification job already queued notificationId=${notificationId} status=${existing.status}`,
-        );
-        return;
-      }
-    }
-
-    if (existing) {
-      await this.prisma.notificationJob.update({
+    if (options?.force) {
+      await this.prisma.notificationJob.upsert({
         where: { notificationId },
-        data: {
+        create: {
+          notificationId,
           status: NotificationJobStatus.PENDING,
-          attempts: options?.force ? 0 : existing.attempts,
+          attempts: 0,
+          maxAttempts,
+          availableAt,
+        },
+        update: {
+          status: NotificationJobStatus.PENDING,
+          attempts: 0,
           maxAttempts,
           availableAt,
           lockedAt: null,
@@ -64,15 +81,45 @@ export class NotificationJobRepository {
       return;
     }
 
-    await this.prisma.notificationJob.create({
-      data: {
+    try {
+      await this.prisma.notificationJob.create({
+        data: {
+          notificationId,
+          status: NotificationJobStatus.PENDING,
+          attempts: 0,
+          maxAttempts,
+          availableAt,
+        },
+      });
+      return;
+    } catch (err) {
+      if (!isUniqueNotificationIdConflict(err)) {
+        throw err;
+      }
+    }
+
+    // Unique conflict: only re-queue terminal jobs; never reset active ones.
+    const updated = await this.prisma.notificationJob.updateMany({
+      where: {
         notificationId,
+        status: { in: REQUEUEABLE_JOB_STATUSES },
+      },
+      data: {
         status: NotificationJobStatus.PENDING,
-        attempts: 0,
         maxAttempts,
         availableAt,
+        lockedAt: null,
+        lockedBy: null,
+        lastError: null,
+        processedAt: null,
       },
     });
+
+    if (updated.count === 0) {
+      this.logger.debug(
+        `Notification job already queued notificationId=${notificationId} (active or concurrent)`,
+      );
+    }
   }
 
   /**
@@ -148,65 +195,78 @@ export class NotificationJobRepository {
     );
   }
 
-  async markCompleted(jobId: string): Promise<void> {
-    await this.prisma.notificationJob.update({
-      where: { id: jobId },
-      data: {
-        status: NotificationJobStatus.COMPLETED,
-        lockedAt: null,
-        lockedBy: null,
-        processedAt: new Date(),
-        lastError: null,
-      },
+  async markCompleted(jobId: string, workerId: string): Promise<void> {
+    await this.updateOwnedJob(jobId, workerId, {
+      status: NotificationJobStatus.COMPLETED,
+      lockedAt: null,
+      lockedBy: null,
+      processedAt: new Date(),
+      lastError: null,
     });
   }
 
   async scheduleRetry(
     jobId: string,
+    workerId: string,
     attempts: number,
     maxAttempts: number,
     errorMessage: string,
     backoffDelayMs: number,
   ): Promise<'retry' | 'dead'> {
     if (attempts >= maxAttempts) {
-      await this.prisma.notificationJob.update({
-        where: { id: jobId },
-        data: {
-          status: NotificationJobStatus.DEAD,
-          lockedAt: null,
-          lockedBy: null,
-          lastError: errorMessage,
-          processedAt: new Date(),
-        },
+      await this.updateOwnedJob(jobId, workerId, {
+        status: NotificationJobStatus.DEAD,
+        lockedAt: null,
+        lockedBy: null,
+        lastError: errorMessage,
+        processedAt: new Date(),
       });
       return 'dead';
     }
 
     const delay = backoffDelayMs * Math.pow(2, Math.max(0, attempts - 1));
-    await this.prisma.notificationJob.update({
-      where: { id: jobId },
-      data: {
-        status: NotificationJobStatus.PENDING,
-        availableAt: new Date(Date.now() + delay),
-        lockedAt: null,
-        lockedBy: null,
-        lastError: errorMessage,
-      },
+    await this.updateOwnedJob(jobId, workerId, {
+      status: NotificationJobStatus.PENDING,
+      availableAt: new Date(Date.now() + delay),
+      lockedAt: null,
+      lockedBy: null,
+      lastError: errorMessage,
     });
     return 'retry';
   }
 
-  async markFailedTerminal(jobId: string, errorMessage: string): Promise<void> {
-    await this.prisma.notificationJob.update({
-      where: { id: jobId },
-      data: {
-        status: NotificationJobStatus.FAILED,
-        lockedAt: null,
-        lockedBy: null,
-        lastError: errorMessage,
-        processedAt: new Date(),
-      },
+  async markFailedTerminal(
+    jobId: string,
+    workerId: string,
+    errorMessage: string,
+  ): Promise<void> {
+    await this.updateOwnedJob(jobId, workerId, {
+      status: NotificationJobStatus.FAILED,
+      lockedAt: null,
+      lockedBy: null,
+      lastError: errorMessage,
+      processedAt: new Date(),
     });
+  }
+
+  private async updateOwnedJob(
+    jobId: string,
+    workerId: string,
+    data: Prisma.NotificationJobUpdateManyMutationInput,
+  ): Promise<void> {
+    const result = await this.prisma.notificationJob.updateMany({
+      where: {
+        id: jobId,
+        lockedBy: workerId,
+        status: NotificationJobStatus.PROCESSING,
+      },
+      data,
+    });
+    if (result.count === 0) {
+      throw new NotificationJobLeaseError(
+        `Job ${jobId} is not owned by worker ${workerId} (missing, wrong owner, or not PROCESSING)`,
+      );
+    }
   }
 
   async getHealthCounts() {

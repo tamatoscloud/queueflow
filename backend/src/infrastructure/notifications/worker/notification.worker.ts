@@ -3,10 +3,7 @@ import {
   NOTIFICATION_QUEUE,
   type NotificationQueuePort,
 } from '../queue/notification-queue.port';
-import {
-  NotificationDispatcher,
-  NonRetryableNotificationError,
-} from '../services/notification-dispatcher.service';
+import { NotificationDispatcher } from '../services/notification-dispatcher.service';
 import { NotificationDispatchService } from '../services/notification-dispatch.service';
 
 const RECONCILE_INTERVAL_MS = Number(
@@ -32,18 +29,10 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Propagate all errors (including NonRetryableNotificationError) so each
+    // queue driver can map them to COMPLETED / FAILED / retry correctly.
     this.queue.startWorker(async (job) => {
-      try {
-        await this.dispatcher.dispatch(job.data);
-      } catch (err) {
-        if (err instanceof NonRetryableNotificationError) {
-          this.logger.warn(
-            `Notification terminal failure notificationId=${job.data.notificationId}: ${err.message}`,
-          );
-          return;
-        }
-        throw err;
-      }
+      await this.dispatcher.dispatch(job.data);
     });
     this.logger.log('NotificationWorker bound to notification queue');
 

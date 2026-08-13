@@ -182,7 +182,9 @@ describe('NotificationDispatcher worker idempotency', () => {
       templates as never,
       providerRegistry as never,
     );
-    await dispatcher.dispatch({ notificationId: 'n1' });
+    await expect(dispatcher.dispatch({ notificationId: 'n1' })).rejects.toBeInstanceOf(
+      NonRetryableNotificationError,
+    );
     expect(providerRegistry.resolve).not.toHaveBeenCalled();
   });
 
@@ -198,7 +200,9 @@ describe('NotificationDispatcher worker idempotency', () => {
       templates as never,
       providerRegistry as never,
     );
-    await dispatcher.dispatch({ notificationId: 'n1' });
+    await expect(dispatcher.dispatch({ notificationId: 'n1' })).rejects.toThrow(
+      'Notification already processing',
+    );
     expect(providerRegistry.resolve).not.toHaveBeenCalled();
   });
 

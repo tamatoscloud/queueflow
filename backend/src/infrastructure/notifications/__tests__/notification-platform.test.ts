@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderTemplate } from '../templates/template-renderer';
 import { MockNotificationProvider } from '../providers/mock-notification.provider';
 import { NotificationProviderRegistry } from '../providers/notification-provider.registry';
-import { NotificationDispatcher } from '../services/notification-dispatcher.service';
+import {
+  NotificationDispatcher,
+  NonRetryableNotificationError,
+} from '../services/notification-dispatcher.service';
 
 describe('renderTemplate', () => {
   it('replaces variables', () => {
@@ -60,7 +63,7 @@ describe('NotificationDispatcher', () => {
     vi.clearAllMocks();
   });
 
-  it('skips cancelled notifications', async () => {
+  it('marks cancelled notifications as non-retryable terminal', async () => {
     repository.claimForProcessing.mockResolvedValue({
       claimed: true,
       notificationId: 'n1',
@@ -75,7 +78,39 @@ describe('NotificationDispatcher', () => {
       templates as never,
       providerRegistry as never,
     );
-    await dispatcher.dispatch({ notificationId: 'n1' });
+    await expect(dispatcher.dispatch({ notificationId: 'n1' })).rejects.toBeInstanceOf(
+      NonRetryableNotificationError,
+    );
+    expect(providerRegistry.resolve).not.toHaveBeenCalled();
+  });
+
+  it('marks NO_PHONE as non-retryable terminal after recording failure', async () => {
+    repository.claimForProcessing.mockResolvedValue({
+      claimed: true,
+      notificationId: 'n1',
+    });
+    repository.findById.mockResolvedValue({
+      id: 'n1',
+      status: 'PROCESSING',
+      businessId: 'biz',
+      customerId: 'cust',
+      type: 'QUEUE_JOINED',
+      channel: 'SMS',
+      payload: {},
+      business: { settings: { notificationsEnabled: true, locale: 'en' } },
+      customer: { phone: null },
+    });
+    const dispatcher = new NotificationDispatcher(
+      repository as never,
+      templates as never,
+      providerRegistry as never,
+    );
+    await expect(dispatcher.dispatch({ notificationId: 'n1' })).rejects.toBeInstanceOf(
+      NonRetryableNotificationError,
+    );
+    expect(repository.recordDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({ errorCode: 'NO_PHONE' }),
+    );
     expect(providerRegistry.resolve).not.toHaveBeenCalled();
   });
 });
