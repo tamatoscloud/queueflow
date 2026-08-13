@@ -76,10 +76,14 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port);
-  logger.log(`QueueFlow API listening on http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`QueueFlow API listening on 0.0.0.0:${port}`);
   logger.log(`OpenAPI docs at http://localhost:${port}/docs`);
   logger.log(`Socket.IO realtime at ws://localhost:${port}/realtime`);
 }
 
-bootstrap();
+bootstrap().catch((err: unknown) => {
+  const message = err instanceof Error ? err.stack ?? err.message : String(err);
+  console.error('QueueFlow bootstrap failed:', message);
+  process.exit(1);
+});

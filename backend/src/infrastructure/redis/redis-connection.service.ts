@@ -33,6 +33,11 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
     status: this.config.enabled ? 'down' : 'disabled',
   };
 
+  /** Bounded probe so Redis DNS/connect failure cannot block HTTP startup. */
+  private readonly healthProbeTimeoutMs = Number(
+    process.env.REDIS_HEALTH_PROBE_TIMEOUT_MS ?? 3000,
+  );
+
   async onModuleInit(): Promise<void> {
     if (!this.config.enabled) {
       this.logger.warn(
@@ -46,7 +51,7 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('Redis connection verified');
     } else {
       this.logger.warn(
-        `Redis not reachable at startup (${this.lastHealth.lastError}) — will retry on reconnect`,
+        `Redis not reachable at startup (${this.lastHealth.lastError}) — HTTP server will still start`,
       );
     }
   }
@@ -62,6 +67,54 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
     return client;
   }
 
+  /**
+   * Health-only client: short timeouts, no retry, never blocks bootstrap.
+   * BullMQ connections from createConnection() are unchanged.
+   */
+  private createHealthProbe(): Redis {
+    const options = buildIORedisOptions(this.config);
+    const probe = new IORedis(this.config.url, {
+      ...options,
+      lazyConnect: true,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: 1,
+      connectTimeout: this.healthProbeTimeoutMs,
+      commandTimeout: this.healthProbeTimeoutMs,
+      retryStrategy: () => null,
+    });
+    probe.on('error', () => {
+      /* ping/connect timeout records status; avoid unhandled error events */
+    });
+    return probe;
+  }
+
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    ms: number,
+    label: string,
+  ): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`${label} timed out after ${ms}ms`)),
+            ms,
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  private discardHealthProbe(): void {
+    if (!this.healthProbe) return;
+    this.healthProbe.disconnect();
+    this.healthProbe = null;
+  }
+
   async refreshHealth(): Promise<RedisHealthStatus> {
     if (!this.config.enabled) {
       this.lastHealth = { enabled: false, status: 'disabled' };
@@ -70,9 +123,21 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
 
     const started = Date.now();
     try {
-      const probe = this.healthProbe ?? this.createConnection('health-probe');
-      this.healthProbe = probe;
-      const pong = await probe.ping();
+      if (!this.healthProbe) {
+        this.healthProbe = this.createHealthProbe();
+      }
+      if (this.healthProbe.status !== 'ready') {
+        await this.withTimeout(
+          this.healthProbe.connect(),
+          this.healthProbeTimeoutMs,
+          'Redis connect',
+        );
+      }
+      const pong = await this.withTimeout(
+        this.healthProbe.ping(),
+        this.healthProbeTimeoutMs,
+        'Redis ping',
+      );
       if (pong !== 'PONG') {
         throw new Error(`Unexpected PING response: ${pong}`);
       }
@@ -83,6 +148,7 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
         lastCheckedAt: new Date().toISOString(),
       };
     } catch (err) {
+      this.discardHealthProbe();
       this.lastHealth = {
         enabled: true,
         status: 'down',

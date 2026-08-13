@@ -45,6 +45,7 @@ import { JwtAuthGuard, PermissionsGuard } from './guards/auth.guards';
     TenantScopeService,
     AuthRepository,
     TokenService,
+    JwtModule,
   ],
 })
 export class AuthModule {}
