@@ -2,10 +2,11 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ModuleRef, Reflector } from '@nestjs/core';
+import { ContextIdFactory, ModuleRef, Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { BusinessContext } from '../../../common/context/business-context';
 import { AuthService } from '../auth.service';
@@ -16,9 +17,9 @@ import type { AuthenticatedUser } from '../interfaces/auth.interfaces';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
-    private readonly reflector: Reflector,
-    private readonly authService: AuthService,
-    private readonly moduleRef: ModuleRef,
+    @Inject(Reflector) private readonly reflector: Reflector,
+    @Inject(AuthService) private readonly authService: AuthService,
+    @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
   ) {
     super();
   }
@@ -43,7 +44,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       throw new UnauthorizedException('Authentication required');
     }
     await this.authService.validateSession(user.sessionId);
-    const businessContext = await this.moduleRef.resolve(BusinessContext, undefined, {
+    const contextId = ContextIdFactory.getByRequest(request);
+    this.moduleRef.registerRequestByContextId(request, contextId);
+    const businessContext = await this.moduleRef.resolve(BusinessContext, contextId, {
       strict: false,
     });
     businessContext.setUser(user);

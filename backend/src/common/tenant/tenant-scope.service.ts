@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Scope } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, Scope } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessContext } from '../context/business-context';
 
@@ -9,8 +9,8 @@ import { BusinessContext } from '../context/business-context';
 @Injectable({ scope: Scope.REQUEST })
 export class TenantScopeService {
   constructor(
-    private readonly businessContext: BusinessContext,
-    private readonly prisma: PrismaService,
+    @Inject(BusinessContext) private readonly businessContext: BusinessContext,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
   ) {}
 
   /** Tenant users always get their businessId; platform admins may omit to list all. */
