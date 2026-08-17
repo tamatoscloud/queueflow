@@ -76,10 +76,28 @@ export function validateEnvironment(): void {
   }
 }
 
+function firstNonEmpty(...values: Array<string | undefined>): string | undefined {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed) return trimmed;
+  }
+  return undefined;
+}
+
+export function getGitSha(): string {
+  return (
+    firstNonEmpty(
+      process.env.RAILWAY_GIT_COMMIT_SHA,
+      process.env.GIT_SHA,
+      process.env.GITHUB_SHA,
+    ) ?? 'unknown'
+  );
+}
+
 export function getBuildMetadata() {
   return {
     version: process.env.npm_package_version ?? '0.1.0',
-    gitSha: process.env.GIT_SHA ?? process.env.GITHUB_SHA ?? 'unknown',
+    gitSha: getGitSha(),
     buildNumber: process.env.BUILD_NUMBER ?? process.env.GITHUB_RUN_NUMBER ?? 'local',
     environment: getAppEnvironment(),
   };

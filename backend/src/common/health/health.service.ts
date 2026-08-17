@@ -87,7 +87,7 @@ export class HealthService {
   private async checkSupabase(): Promise<HealthCheckResult> {
     const started = Date.now();
     try {
-      const { error } = await this.supabase.admin.from('business').select('id').limit(1);
+      const { error } = await this.supabase.admin.from('businesses').select('id').limit(1);
       if (error) {
         return { status: 'degraded', latencyMs: Date.now() - started, detail: error.message };
       }

@@ -64,4 +64,10 @@ describe('Wave 1D-A security and contract guards', () => {
     expect(src).not.toMatch(/console\.(log|debug|info|warn|error).*trackingToken/);
     expect(src).not.toMatch(/console\.(log|debug|info)\(/);
   });
+
+  it('homepage never links to /q/demo', () => {
+    const src = readFileSync(join(process.cwd(), 'src/app/page.tsx'), 'utf8');
+    expect(src).not.toMatch('/q/demo');
+    expect(src).not.toMatch('customer-portal/queues/demo');
+  });
 });

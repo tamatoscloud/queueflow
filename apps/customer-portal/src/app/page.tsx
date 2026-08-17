@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { QrCode, Sparkles } from 'lucide-react';
 import { PageShell } from '@/components/layout/page-shell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,10 +35,8 @@ export default function HomePage() {
         </Card>
 
         <p className="text-xs text-muted">
-          Demo: ask staff for a queue QR code, or open{' '}
-          <Link href="/q/demo" className="font-medium text-primary underline-offset-2 hover:underline">
-            /q/&lt;queue-id&gt;
-          </Link>
+          Ask staff for a queue QR code, or open{' '}
+          <span className="font-medium text-foreground">/q/&lt;queue-id&gt;</span>
         </p>
       </div>
     </PageShell>
