@@ -365,10 +365,11 @@ class _HowItWorksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const steps = [
-      ('1', 'Scan QR', 'Customer opens your branded join page.'),
-      ('2', 'Join queue', 'Get a digital pass with live position.'),
-      ('3', 'Get notified', 'Alerts when almost ready and when called.'),
-      ('4', 'Serve & delight', 'Staff operates from a fast console; you track KPIs.'),
+      ('1', 'Scan QR', 'Customers land on the live join page for that queue.'),
+      ('2', 'Join queue', 'Name and phone — they receive a queue number instantly.'),
+      ('3', 'Track position', 'Position and wait update in real time. No refresh needed.'),
+      ('4', 'Get called', 'Staff taps CALL NEXT. The customer screen switches to Called.'),
+      ('5', 'Complete', 'Staff completes the visit. The customer sees confirmation.'),
     ];
 
     return _Section(

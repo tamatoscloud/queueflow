@@ -14,6 +14,7 @@ import '../../../shared/widgets/calm/calm_live_indicator.dart';
 import '../../../shared/widgets/calm/calm_primary_button.dart';
 import '../../../shared/widgets/calm/calm_queue_entry_card.dart';
 import '../../../shared/widgets/calm/calm_section_label.dart';
+import '../../../shared/widgets/queue_join_qr_sheet.dart';
 
 final queueSnapshotProvider = FutureProvider.autoDispose.family<QueueSnapshotModel, String>((ref, queueId) async {
   return ref.watch(businessApiClientProvider).getQueueSnapshot(queueId);
@@ -67,6 +68,18 @@ class QueueConsoleScreen extends ConsumerWidget {
           error: (_, __) => const Text('Queue'),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Queue QR — scan to join',
+            icon: const Icon(Icons.qr_code_2, color: AppColors.primary),
+            onPressed: () {
+              final name = ref.read(queueSnapshotProvider(queueId)).asData?.value.queue.name ?? 'Queue';
+              showQueueJoinQrSheet(
+                context,
+                queueId: queueId,
+                queueName: name,
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: CalmLiveIndicator(label: connectionLabel),
@@ -143,6 +156,33 @@ class _CalmQueueWorkspace extends ConsumerWidget {
                             ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: snapshot.queue.isActive
+                                  ? AppColors.successLight
+                                  : snapshot.queue.isPaused
+                                      ? AppColors.warningLight
+                                      : AppColors.dangerLight,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              snapshot.queue.status,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: snapshot.queue.isActive
+                                        ? AppColors.success
+                                        : snapshot.queue.isPaused
+                                            ? AppColors.warning
+                                            : AppColors.danger,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
                       Row(
                         children: [
                           _StatBlock(
@@ -247,8 +287,9 @@ class _CalmQueueWorkspace extends ConsumerWidget {
             child: Column(
               children: [
                 CalmPrimaryButton(
-                  label: 'Call next',
+                  label: 'CALL NEXT',
                   icon: Icons.campaign_outlined,
+                  height: 64,
                   onPressed: waiting.isEmpty && serving.isEmpty
                       ? null
                       : () => queueAction(ref, queueId, 'call', onRefresh),

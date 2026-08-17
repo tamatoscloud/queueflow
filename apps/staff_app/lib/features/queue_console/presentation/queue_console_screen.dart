@@ -12,6 +12,7 @@ import '../../../features/auth/presentation/auth_controller.dart';
 import '../../../shared/widgets/calm/calm_queue_console.dart';
 import '../../../shared/widgets/calm/calm_queue_entry_card.dart';
 import '../../../shared/widgets/calm/calm_section_label.dart';
+import '../../../shared/widgets/queue_join_qr_sheet.dart';
 import '../../../shared/widgets/staff/call_next_sheet.dart';
 import '../../../shared/widgets/staff/service_mode_helpers.dart';
 import '../../../shared/widgets/staff/staff_empty_states.dart';
@@ -123,6 +124,18 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
           error: (_, __) => const Text('Queue'),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Queue QR — scan to join',
+            icon: const Icon(Icons.qr_code_2, color: AppColors.primary),
+            onPressed: () {
+              final name = ref.read(queueSnapshotProvider(widget.queueId)).asData?.value.queue.name ?? 'Queue';
+              showQueueJoinQrSheet(
+                context,
+                queueId: widget.queueId,
+                queueName: name,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.calmWarmGray),
             tooltip: 'Refresh queue',

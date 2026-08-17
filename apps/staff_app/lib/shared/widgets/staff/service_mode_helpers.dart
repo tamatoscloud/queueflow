@@ -48,7 +48,7 @@ class ServiceModeInfo {
             waitingLabel: 'people',
             callNextLabel: 'Call party',
             completeLabel: 'Seat',
-            callNextActionLabel: 'Call next',
+            callNextActionLabel: 'CALL NEXT',
           ),
       };
 }

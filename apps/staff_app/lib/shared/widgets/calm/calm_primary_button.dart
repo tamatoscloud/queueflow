@@ -10,6 +10,7 @@ class CalmPrimaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.variant = CalmPrimaryVariant.violet,
+    this.height = 64,
   });
 
   final String label;
@@ -17,18 +18,19 @@ class CalmPrimaryButton extends StatelessWidget {
   final IconData? icon;
   final bool isLoading;
   final CalmPrimaryVariant variant;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (variant) {
-      CalmPrimaryVariant.violet => (AppColors.calmViolet, Colors.white),
+      CalmPrimaryVariant.violet => (AppColors.primaryDark, Colors.white),
       CalmPrimaryVariant.success => (AppColors.success, Colors.white),
       CalmPrimaryVariant.danger => (AppColors.danger, Colors.white),
     };
 
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: height,
       child: FilledButton(
         onPressed: isLoading ? null : onPressed,
         style: FilledButton.styleFrom(

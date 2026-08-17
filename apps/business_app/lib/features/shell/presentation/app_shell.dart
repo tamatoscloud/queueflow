@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -306,9 +307,13 @@ class _PremiumNavRail extends StatelessWidget {
 }
 
 Widget shellChildForRoute(String path) {
+  if (kDebugMode && path.startsWith(AppRoutes.restaurantSimulator)) {
+    return const DemoSimulatorScreen();
+  }
+  if (kDebugMode && path.startsWith(AppRoutes.restaurantTables)) {
+    return const TableFloorScreen();
+  }
   if (path.startsWith(AppRoutes.restaurantQr)) return const QrCenterScreen();
-  if (path.startsWith(AppRoutes.restaurantSimulator)) return const DemoSimulatorScreen();
-  if (path.startsWith(AppRoutes.restaurantTables)) return const TableFloorScreen();
   if (path.startsWith(AppRoutes.queues)) return const QueuesScreen();
   if (path.startsWith(AppRoutes.branches)) return const BranchesScreen();
   if (path.startsWith(AppRoutes.customers)) return const CustomersScreen();
