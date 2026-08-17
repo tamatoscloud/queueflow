@@ -14,8 +14,8 @@ export function CalmCard({
       className={cn(
         'rounded-2xl border p-4',
         highlighted
-          ? 'border-[#8b7cf8]/30 bg-[#f5f3ff]'
-          : 'border-[#e8e3e8] bg-white',
+          ? 'border-primary/30 bg-primary/5'
+          : 'border-border bg-surface',
         className,
       )}
     >
@@ -36,10 +36,10 @@ export function CalmButton({
     <button
       type="button"
       className={cn(
-        'flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-opacity hover:opacity-95 disabled:opacity-50',
-        variant === 'primary' && 'bg-[#8b7cf8] text-white shadow-sm',
-        variant === 'secondary' && 'border border-[#e8e3e8] bg-white text-[#17151a]',
-        variant === 'ghost' && 'text-[#8b7cf8]',
+        'flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50',
+        variant === 'primary' && 'bg-primary text-white shadow-sm',
+        variant === 'secondary' && 'border border-border bg-surface text-foreground',
+        variant === 'ghost' && 'text-primary',
         className,
       )}
       {...props}
@@ -52,9 +52,9 @@ export function CalmButton({
 export function CalmLivePill({ label }: { label: string }) {
   const isLive = label === 'Live';
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6b6870]">
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted">
       <span
-        className={cn('h-2 w-2 rounded-full', isLive ? 'bg-emerald-500' : 'bg-[#6b6870]/50')}
+        className={cn('h-2 w-2 rounded-full', isLive ? 'bg-emerald-500' : 'bg-muted/50')}
         aria-hidden
       />
       {label}
@@ -72,15 +72,15 @@ export function CalmHeading({
   className?: string;
 }) {
   return (
-    <h1 className={cn('font-display text-3xl font-bold leading-tight text-[#17151a]', className)}>
+    <h1 className={cn('text-3xl font-bold leading-tight text-foreground', className)}>
       {children}
-      {accent ? <span className="text-[#8b7cf8]">{accent}</span> : null}
+      {accent ? <span className="text-primary">{accent}</span> : null}
     </h1>
   );
 }
 
 export function CalmSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b6870]">{children}</p>
+    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">{children}</p>
   );
 }

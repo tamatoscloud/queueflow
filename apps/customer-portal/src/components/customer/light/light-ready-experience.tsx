@@ -6,7 +6,6 @@ import {
   formatHoldCountdown,
   tableHoldSecondsRemaining,
 } from '@/lib/waiting/wait-helpers';
-import { CalmCard, CalmLivePill } from '@/components/customer/calm/primitives';
 import { cn } from '@/lib/utils';
 
 type LightReadyExperienceProps = {
@@ -25,6 +24,15 @@ function passContext(copy: ServiceModeCopy, partySize: number): string | null {
   return null;
 }
 
+function vibrateCalled() {
+  if (typeof window === 'undefined') return;
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) return;
+  if ('vibrate' in navigator) {
+    navigator.vibrate([200, 80, 200, 80, 400]);
+  }
+}
+
 export function LightReadyExperience({
   displayCode,
   calledAt,
@@ -34,9 +42,7 @@ export function LightReadyExperience({
   copy,
   className,
 }: LightReadyExperienceProps) {
-  const [secondsLeft, setSecondsLeft] = useState(() =>
-    tableHoldSecondsRemaining(calledAt),
-  );
+  const [secondsLeft, setSecondsLeft] = useState(() => tableHoldSecondsRemaining(calledAt));
 
   useEffect(() => {
     const tick = () => setSecondsLeft(tableHoldSecondsRemaining(calledAt));
@@ -45,57 +51,39 @@ export function LightReadyExperience({
     return () => clearInterval(id);
   }, [calledAt]);
 
-  const holdTotal = 5 * 60;
-  const progress = Math.round(((holdTotal - secondsLeft) / holdTotal) * 100);
+  useEffect(() => {
+    vibrateCalled();
+  }, [displayCode]);
+
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
   const context = passContext(copy, partySize);
 
   return (
     <div
-      className={cn('flex flex-1 flex-col gap-6 pb-4', className)}
+      className={cn('flex flex-1 flex-col items-center justify-center gap-8 pb-4 text-center', className)}
       role="status"
       aria-live="assertive"
     >
-      <header className="text-center">
-        <div className="flex items-center justify-center gap-2">
-          <h2 className="font-display text-lg font-bold text-[#17151a]">{businessName}</h2>
-          <CalmLivePill label="Live" />
-        </div>
-        <h1 className="mt-3 font-display text-3xl font-bold leading-tight text-[#17151a]">
-          {copy.readyTitle.replace('!', '')}
-          <span className="text-[#8b7cf8]">!</span>
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-[#6b6870]">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/80">You&apos;re up</p>
+        <h2 className="mt-2 text-lg font-bold text-white">{businessName}</h2>
+        <h1 className="mt-3 text-4xl font-bold leading-tight text-white">{copy.readyTitle}</h1>
+        <p className="mt-3 text-base leading-relaxed text-white/90">
           {copy.readyDescription(branchName)}
         </p>
-      </header>
-
-      <div className="flex flex-col items-center gap-4 py-2">
-        <div
-          className="booking-ready-ring flex h-48 w-48 items-center justify-center rounded-full p-2"
-          style={{ '--ring-progress': `${progress}%` } as React.CSSProperties}
-        >
-          <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#faf8f5]">
-            <span className="font-display text-4xl font-bold tabular-nums text-[#17151a]">
-              {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-            </span>
-            <span className="mt-1 text-xs font-medium text-[#6b6870]">remaining</span>
-          </div>
-        </div>
       </div>
 
-      <CalmCard highlighted className="text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b6870]">
-          {businessName}
+      <div className="w-full rounded-3xl bg-white px-4 py-8 text-foreground shadow-lg">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">Your number</p>
+        <p className="mt-2 font-display text-6xl font-bold tabular-nums text-primary">{displayCode}</p>
+        {context ? <p className="mt-2 text-sm text-muted">{context}</p> : null}
+        <p className="mt-4 text-sm text-foreground">{copy.readyHoldMessage}</p>
+        <p className="mt-2 text-xs tabular-nums text-muted">
+          Hold expires in {formatHoldCountdown(secondsLeft)} ({String(mins).padStart(2, '0')}:
+          {String(secs).padStart(2, '0')} remaining)
         </p>
-        <p className="mt-3 font-display text-4xl font-bold text-[#8b7cf8]">{displayCode}</p>
-        {context ? <p className="mt-2 text-sm text-[#6b6870]">{context}</p> : null}
-        <p className="mt-4 text-sm text-[#6b6870]">{copy.readyHoldMessage}</p>
-        <p className="mt-2 text-xs tabular-nums text-[#6b6870]">
-          Hold expires in {formatHoldCountdown(secondsLeft)}
-        </p>
-      </CalmCard>
+      </div>
     </div>
   );
 }

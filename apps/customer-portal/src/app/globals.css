@@ -80,47 +80,40 @@
   font-family: var(--font-display), Georgia, 'Times New Roman', serif;
 }
 
-/* Light booking experience — always white, ignores dark mode */
+/* Customer ticket experience — always light, ignores OS dark mode */
 .booking-light {
-  --background: #ffffff;
+  --background: #f8fafc;
   --foreground: #0f172a;
   --surface: #ffffff;
   --muted: #64748b;
   --border: #e2e8f0;
-  --primary: #8b7cf8;
-  --primary-light: #a78bfa;
-  background: #faf8f5;
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  background: #f8fafc;
   color: #0f172a;
 }
 
 .booking-light .text-primary {
-  color: #8b7cf8;
+  color: #6366f1;
 }
 
 .booking-light .bg-primary {
-  background-color: #8b7cf8;
+  background-color: #6366f1;
 }
 
 .booking-light .border-primary {
-  border-color: #8b7cf8;
+  border-color: #6366f1;
 }
 
-.booking-hourglass-ring {
-  background: conic-gradient(
-    from 0deg,
-    #8b7cf8 0deg,
-    #8b7cf8 120deg,
-    #ede9fe 120deg,
-    #ede9fe 360deg
-  );
-}
-
-.booking-ready-ring {
-  background: conic-gradient(
-    from -90deg,
-    #8b7cf8 var(--ring-progress, 75%),
-    #ede9fe var(--ring-progress, 75%)
-  );
+@media (prefers-reduced-motion: reduce) {
+  .booking-light *,
+  .booking-light *::before,
+  .booking-light *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @theme inline {

@@ -1,19 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, MapPin, MessageCircle, Phone, UtensilsCrossed } from 'lucide-react';
+import { Bell, MapPin, Phone } from 'lucide-react';
 import type { EntryTracking } from '@/lib/api/types';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
-import { isRestaurantDemo, MENU_TIPS } from '@/lib/demo/restaurant-content';
 import { loadQueueSession } from '@/lib/storage/session';
 import {
   formatAhead,
-  formatWaitMinutes,
   getServiceModeCopy,
 } from '@/lib/restaurant/service-mode-config';
-import { computeWaitProgress, formatConnectionLabel } from '@/lib/waiting/wait-helpers';
+import { formatConnectionLabel } from '@/lib/waiting/wait-helpers';
 import { CalmCard, CalmLivePill, CalmSectionLabel } from '@/components/customer/calm/primitives';
-import { CalmDigitalPass } from '@/components/customer/calm/calm-digital-pass';
 import { cn } from '@/lib/utils';
 
 type LightWaitingExperienceProps = {
@@ -43,25 +40,41 @@ function passContextLine(tracking: EntryTracking): string | null {
   return null;
 }
 
+function StatCell({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <CalmCard className="text-center">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">{label}</p>
+      <p className="mt-2 font-display text-3xl font-bold tabular-nums text-foreground">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+    </CalmCard>
+  );
+}
+
 export function LightWaitingExperience({
   tracking,
   connection,
   className,
 }: LightWaitingExperienceProps) {
   const [browserNotify, setBrowserNotify] = useState(false);
-  const [baseline] = useState(() => tracking.customersAhead);
   const session = loadQueueSession();
   const copy = useMemo(
     () => getServiceModeCopy(tracking.queue.serviceMode),
     [tracking.queue.serviceMode],
   );
-  const { customersAhead, estimatedWaitMinutes } = tracking;
+  const { customersAhead, estimatedWaitMinutes, position } = tracking;
   const isAlmostUp = customersAhead <= 2;
   const headline = waitHeadline(customersAhead, copy);
   const connectionLabel = formatConnectionLabel(connection);
-  const progress = computeWaitProgress(baseline, customersAhead);
-  const isDemo = isRestaurantDemo(tracking.business.name);
   const contextLine = passContextLine(tracking);
+  const waitDisplay = estimatedWaitMinutes > 0 ? String(estimatedWaitMinutes) : '—';
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -78,71 +91,56 @@ export function LightWaitingExperience({
     <div className={cn('flex flex-1 flex-col gap-6 pb-4', className)}>
       <header className="text-center">
         <div className="flex items-center justify-center gap-2">
-          <h2 className="font-display text-lg font-bold text-[#17151a]">{tracking.business.name}</h2>
+          <h2 className="text-lg font-bold text-foreground">{tracking.business.name}</h2>
           <CalmLivePill label={connectionLabel} />
         </div>
-        <h1 className="mt-3 font-display text-3xl font-bold leading-tight text-[#17151a]">
-          {headline.replace('!', '')}
-          <span className="text-[#8b7cf8]">!</span>
-        </h1>
+        <h1 className="mt-3 text-3xl font-bold leading-tight text-foreground">{headline}</h1>
         {isAlmostUp ? (
-          <p className="mt-2 text-sm text-[#6b6870]">Please stay nearby.</p>
+          <p className="mt-2 text-sm text-muted">Please stay nearby.</p>
         ) : (
-          <p className="mt-2 text-sm text-[#6b6870]">{copy.joinNotifyMessage}</p>
+          <p className="mt-2 text-sm text-muted">{copy.joinNotifyMessage}</p>
         )}
       </header>
 
-      <div className="flex flex-col items-center gap-3 py-2">
-        <div
-          className="booking-hourglass-ring flex h-44 w-44 items-center justify-center rounded-full p-2"
-          style={
-            {
-              background: `conic-gradient(from -90deg, #8b7cf8 0%, #8b7cf8 ${progress}%, #ede9fe ${progress}%, #ede9fe 100%)`,
-            } as React.CSSProperties
-          }
-        >
-          <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#faf8f5]">
-            <span className="font-display text-5xl font-bold tabular-nums text-[#17151a]">
-              {estimatedWaitMinutes > 0 ? estimatedWaitMinutes : '—'}
-            </span>
-            <span className="text-sm font-medium text-[#6b6870]">min</span>
-          </div>
-        </div>
-        <p className="text-center text-xl font-bold text-[#17151a]">
-          {formatAhead(customersAhead, copy)}
+      <div
+        className="rounded-3xl border border-primary/20 bg-primary/5 px-4 py-8 text-center"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">Your number</p>
+        <p className="mt-2 font-display text-6xl font-bold tabular-nums tracking-tight text-primary sm:text-7xl">
+          {tracking.entry.displayCode}
         </p>
-        <p className="text-sm text-[#6b6870]">{formatWaitMinutes(estimatedWaitMinutes, copy)}</p>
+        {contextLine ? <p className="mt-3 text-sm text-muted">{contextLine}</p> : null}
       </div>
 
-      <CalmDigitalPass
-        restaurantName={tracking.business.name}
-        displayCode={tracking.entry.displayCode}
-        partySize={tracking.entry.partySize}
-        customersAhead={customersAhead}
-        estimatedWaitMinutes={estimatedWaitMinutes}
-        connection={connection}
-        copy={copy}
-        serviceMode={tracking.queue.serviceMode ?? 'DINE_IN'}
-        contextLine={contextLine}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <StatCell label="Position" value={String(position)} />
+        <StatCell
+          label="People ahead"
+          value={String(customersAhead)}
+          hint={formatAhead(customersAhead, copy)}
+        />
+      </div>
+
+      <CalmCard className="text-center">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+          Estimated wait
+        </p>
+        <p className="mt-2 font-display text-4xl font-bold tabular-nums text-foreground">
+          {estimatedWaitMinutes > 0 ? `~${waitDisplay} min` : waitDisplay}
+        </p>
+        <span className="sr-only">{waitDisplay}</span>
+      </CalmCard>
 
       <section aria-labelledby="while-you-wait-heading">
         <CalmSectionLabel>{copy.whileYouWaitTitle}</CalmSectionLabel>
         <div className="mt-3 grid gap-3">
-          {isDemo ? (
-            <CalmCard className="flex items-center gap-3">
-              <UtensilsCrossed className="h-5 w-5 shrink-0 text-[#8b7cf8]" aria-hidden />
-              <div>
-                <p className="text-sm font-semibold text-[#17151a]">Browse menu</p>
-                <p className="text-xs text-[#6b6870]">{MENU_TIPS[0]}</p>
-              </div>
-            </CalmCard>
-          ) : null}
           <CalmCard className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 shrink-0 text-[#8b7cf8]" aria-hidden />
+            <MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-[#17151a]">{tracking.branch.name}</p>
-              <p className="text-xs text-[#6b6870]">Relax nearby — we&apos;ll keep you updated</p>
+              <p className="text-sm font-semibold text-foreground">{tracking.branch.name}</p>
+              <p className="text-xs text-muted">Stay nearby — this screen updates live.</p>
             </div>
           </CalmCard>
         </div>
@@ -152,64 +150,41 @@ export function LightWaitingExperience({
         <CalmSectionLabel>Stay in the loop</CalmSectionLabel>
         <div className="mt-3 space-y-3">
           <CalmCard className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#8b7cf8] text-white">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white">
               <Bell className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[#17151a]">Browser notifications</p>
-              <p className="mt-0.5 text-xs text-[#6b6870]">
-                Get notified when you&apos;re almost up.
-              </p>
+              <p className="text-sm font-semibold text-foreground">Browser notifications</p>
+              <p className="mt-0.5 text-xs text-muted">Get notified when you&apos;re almost up.</p>
               {typeof window !== 'undefined' && 'Notification' in window ? (
                 <button
                   type="button"
                   onClick={() => void requestBrowserNotify()}
                   className={cn(
                     'mt-2 rounded-full px-3 py-1 text-xs font-semibold',
-                    browserNotify
-                      ? 'bg-[#8b7cf8] text-white'
-                      : 'bg-[#eae5f8] text-[#6b6870]',
+                    browserNotify ? 'bg-primary text-white' : 'bg-primary/10 text-muted',
                   )}
                 >
                   {browserNotify ? 'Enabled' : 'Enable'}
                 </button>
               ) : (
-                <p className="mt-2 text-xs text-[#6b6870]">
-                  Notifications aren&apos;t available right now.
-                </p>
+                <p className="mt-2 text-xs text-muted">Notifications aren&apos;t available right now.</p>
               )}
-            </div>
-          </CalmCard>
-
-          <CalmCard className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#8b7cf8] text-white">
-              <MessageCircle className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[#17151a]">WhatsApp updates</p>
-              <p className="mt-0.5 text-xs text-[#6b6870]">
-                {session?.phone ? maskPhone(session.phone) : copy.notificationHint}
-              </p>
             </div>
           </CalmCard>
         </div>
       </section>
 
       <CalmCard className="flex items-center gap-3">
-        <Phone className="h-5 w-5 shrink-0 text-[#8b7cf8]" aria-hidden />
+        <Phone className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <div>
-          <p className="text-sm font-semibold text-[#17151a]">Need help?</p>
-          <p className="text-xs text-[#6b6870]">
-            Show your number {tracking.entry.displayCode} at reception.
+          <p className="text-sm font-semibold text-foreground">Need help?</p>
+          <p className="text-xs text-muted">
+            Show your number {tracking.entry.displayCode}
+            {session?.phone ? '' : ''} at reception.
           </p>
         </div>
       </CalmCard>
     </div>
   );
-}
-
-function maskPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 4) return phone;
-  return `${phone.slice(0, 4)}***${phone.slice(-3)}`;
 }

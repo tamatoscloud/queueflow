@@ -58,7 +58,7 @@ function headingCopy(mode: ServiceMode): { title: string; subtitle: string } {
     default:
       return {
         title: 'Join the queue',
-        subtitle: 'Just a few details to get you seated.',
+        subtitle: 'Name and phone — we’ll give you a number and live updates.',
       };
   }
 }
@@ -208,22 +208,22 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
   return (
     <div className="flex flex-1 flex-col gap-6 pb-4">
       <div className="text-center">
-        <h1 className="font-display text-3xl font-bold leading-tight text-[#17151a]">
+        <h1 className="font-display text-3xl font-bold leading-tight text-[var(--foreground)]">
           {headings.title.replace('!', '')}
-          {headings.title.includes('!') ? <span className="text-[#8b7cf8]">!</span> : null}
+          {headings.title.includes('!') ? <span className="text-[var(--primary)]">!</span> : null}
         </h1>
         <p className="mt-2 text-sm text-[#6b6870]">{headings.subtitle}</p>
       </div>
 
       {showSummary && canShowSummary ? (
         <CalmCard highlighted className="text-center">
-          <p className="font-display text-lg font-bold text-[#17151a]">{data.business.name}</p>
+          <p className="font-display text-lg font-bold text-[var(--foreground)]">{data.business.name}</p>
           <p className="mt-1 text-sm text-[#6b6870]">{modeLabel(mode)}</p>
-          <p className="mt-3 text-base font-semibold text-[#17151a]">
+          <p className="mt-3 text-base font-semibold text-[var(--foreground)]">
             {summaryContext(mode, values)}
           </p>
           <p className="mt-4 text-sm text-[#6b6870]">Estimated wait</p>
-          <p className="font-display text-2xl font-bold text-[#8b7cf8]">
+          <p className="font-display text-2xl font-bold text-[var(--primary)]">
             {formatWaitMinutes(data.live.estimatedWaitMinutes, copy)}
           </p>
         </CalmCard>
@@ -296,7 +296,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
         </LightField>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-[#17151a]">How should we notify you?</p>
+          <p className="text-sm font-medium text-[var(--foreground)]">How should we notify you?</p>
           <div className="flex flex-wrap gap-2">
             {NOTIFICATION_OPTIONS.map((opt) => (
               <button
@@ -308,7 +308,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
                 className={cn(
                   'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
                   values.notificationPreference === opt.value
-                    ? 'border-[#8b7cf8] bg-[#f5f3ff] text-[#8b7cf8]'
+                    ? 'border-[var(--primary)] bg-[#f5f3ff] text-[var(--primary)]'
                     : 'border-[#e8e3e8] bg-white text-[#6b6870]',
                 )}
               >
@@ -347,7 +347,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           <button
             type="button"
             onClick={() => setShowSummary(false)}
-            className="text-center text-sm font-medium text-[#8b7cf8]"
+            className="text-center text-sm font-medium text-[var(--primary)]"
           >
             Edit details
           </button>

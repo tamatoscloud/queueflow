@@ -49,7 +49,9 @@ export const MENU_TIPS = [
 ] as const;
 
 export function isRestaurantDemo(businessName: string): boolean {
-  return /bella\s*vista/i.test(businessName);
+  void businessName;
+  // Never overlay Bella Vista demo copy on live join/track screens.
+  return false;
 }
 
 /** Busy level from waiting count — visual only. */

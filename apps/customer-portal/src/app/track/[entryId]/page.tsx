@@ -89,7 +89,7 @@ export default function TrackQueuePage() {
 
   if (data.entry.status === 'CALLED') {
     return (
-      <BookingShell venueName={venueName} showJazzPill>
+      <BookingShell venueName={venueName} showJazzPill tone="called">
         <LightReadyExperience
           displayCode={data.entry.displayCode}
           calledAt={data.entry.calledAt}

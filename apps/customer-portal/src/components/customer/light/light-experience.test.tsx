@@ -20,7 +20,7 @@ describe('LightWaitingExperience', () => {
     expect(screen.getByText('18')).toBeInTheDocument();
   });
 
-  it('shows browse menu for restaurant demo businesses', () => {
+  it('does not show restaurant demo menu copy for any business name', () => {
     render(
       <LightWaitingExperience
         tracking={makeTracking({
@@ -30,7 +30,8 @@ describe('LightWaitingExperience', () => {
       />,
     );
 
-    expect(screen.getByText('Browse menu')).toBeInTheDocument();
+    expect(screen.queryByText('Browse menu')).not.toBeInTheDocument();
+    expect(screen.getByText('W-123')).toBeInTheDocument();
   });
 
   it('shows almost your turn when few customers ahead', () => {

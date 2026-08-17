@@ -26,18 +26,18 @@ export function CalmReturningCustomer({
 
       <CalmCard highlighted className="text-center">
         <p className="text-xs font-semibold uppercase tracking-wide text-[#6b6870]">Your number</p>
-        <p className="mt-2 font-display text-4xl font-bold text-[#8b7cf8]">{displayCode}</p>
+        <p className="mt-2 font-display text-4xl font-bold text-[var(--primary)]">{displayCode}</p>
         <p className="mt-3 text-sm text-[#6b6870]">We&apos;ll notify you when it&apos;s your turn.</p>
       </CalmCard>
 
       <Link
         href={`/track/${session.entryId}`}
-        className="flex h-14 w-full items-center justify-center rounded-full bg-[#8b7cf8] text-base font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
+        className="flex h-14 w-full items-center justify-center rounded-full bg-[var(--primary)] text-base font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
       >
         Continue tracking
       </Link>
 
-      <Link href={`/q/${queueId}/join`} className="block text-center text-sm font-medium text-[#8b7cf8]">
+      <Link href={`/q/${queueId}/join`} className="block text-center text-sm font-medium text-[var(--primary)]">
         Join as someone else
       </Link>
     </div>

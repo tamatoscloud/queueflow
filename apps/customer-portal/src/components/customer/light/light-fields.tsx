@@ -18,7 +18,7 @@ export function LightField({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
-        <Icon className="h-4 w-4 text-[#8b7cf8]" aria-hidden />
+        <Icon className="h-4 w-4 text-primary" aria-hidden />
         <span>{label}</span>
       </div>
       {children}
@@ -38,7 +38,7 @@ export function LightInput({
   return (
     <input
       className={cn(
-        'h-12 w-full rounded-full border border-neutral-200 bg-white px-5 text-base text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-[#8b7cf8] focus:ring-2 focus:ring-[#8b7cf8]/20',
+        'h-12 w-full rounded-full border border-neutral-200 bg-white px-5 text-base text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/20',
         className,
       )}
       {...props}
@@ -73,7 +73,7 @@ export function LightPartySelect({
         <select
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="h-12 w-full appearance-none rounded-full border border-neutral-200 bg-white px-5 pr-10 text-base text-neutral-900 outline-none focus:border-[#8b7cf8] focus:ring-2 focus:ring-[#8b7cf8]/20"
+          className="h-12 w-full appearance-none rounded-full border border-neutral-200 bg-white px-5 pr-10 text-base text-neutral-900 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
           aria-label="Party size"
         >
           {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
