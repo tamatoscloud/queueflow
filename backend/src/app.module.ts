@@ -24,6 +24,7 @@ import { PlatformAdminModule } from './modules/platform-admin/platform-admin.mod
 import { HealthModule } from './common/health/health.module';
 import { RestaurantModule } from './modules/restaurant/restaurant.module';
 import { HealthController } from './health.controller';
+import { RootController } from './root.controller';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { HealthController } from './health.controller';
     ReportsModule,
     RestaurantModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, RootController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule implements NestModule {
