@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -16,6 +17,7 @@ import type {
   UpdateNotificationSettingsDto,
   UpsertNotificationTemplateDto,
 } from './dto/notification.dto';
+import type { AuthenticatedUser } from '../auth/interfaces/auth.interfaces';
 
 @Injectable()
 export class NotificationService {
@@ -25,12 +27,32 @@ export class NotificationService {
     private readonly templates: NotificationTemplateRepository,
   ) {}
 
-  async list(query: ListNotificationQueryDto) {
+  private resolveBusinessId(
+    actor: AuthenticatedUser,
+    requested?: string,
+  ): string {
+    if (actor.isPlatformAdmin) {
+      if (!requested) {
+        throw new ForbiddenException('BUSINESS_CONTEXT_REQUIRED');
+      }
+      return requested;
+    }
+    if (!actor.businessId) {
+      throw new ForbiddenException('BUSINESS_CONTEXT_REQUIRED');
+    }
+    if (requested && requested !== actor.businessId) {
+      throw new ForbiddenException('TENANT_ACCESS_DENIED');
+    }
+    return actor.businessId;
+  }
+
+  async list(query: ListNotificationQueryDto, actor: AuthenticatedUser) {
+    const businessId = this.resolveBusinessId(actor, query.businessId);
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const where: Prisma.NotificationWhereInput = {
       deletedAt: null,
-      ...(query.businessId ? { businessId: query.businessId } : {}),
+      businessId,
       ...(query.customerId ? { customerId: query.customerId } : {}),
       ...(query.queueEntryId ? { queueEntryId: query.queueEntryId } : {}),
       ...(query.status ? { status: query.status } : {}),
@@ -50,13 +72,14 @@ export class NotificationService {
     return { data, meta: paginatedMeta(page, pageSize, totalItems) };
   }
 
-  async getLogs(notificationId: string) {
+  async getLogs(notificationId: string, actor: AuthenticatedUser) {
     const notification = await this.prisma.notification.findFirst({
       where: { id: notificationId, deletedAt: null },
     });
     if (!notification) {
       throw new NotFoundException('Notification not found');
     }
+    this.resolveBusinessId(actor, notification.businessId);
     const logs = await this.prisma.notificationLog.findMany({
       where: { notificationId },
       orderBy: { createdAt: 'desc' },
@@ -64,11 +87,12 @@ export class NotificationService {
     return { notification, logs };
   }
 
-  async getStats(query: NotificationStatsQueryDto) {
+  async getStats(query: NotificationStatsQueryDto, actor: AuthenticatedUser) {
+    const businessId = this.resolveBusinessId(actor, query.businessId);
     const from = query.from ? new Date(query.from) : undefined;
     const to = query.to ? new Date(query.to) : undefined;
     const where: Prisma.NotificationWhereInput = {
-      businessId: query.businessId,
+      businessId,
       deletedAt: null,
       ...(from || to
         ? {
@@ -100,18 +124,20 @@ export class NotificationService {
     };
   }
 
-  async retryFailed(businessId: string, notificationId: string) {
+  async retryFailed(businessId: string, notificationId: string, actor: AuthenticatedUser) {
+    const scopedBusinessId = this.resolveBusinessId(actor, businessId);
     const row = await this.prisma.notification.findFirst({
-      where: { id: notificationId, businessId, deletedAt: null, status: 'FAILED' },
+      where: { id: notificationId, businessId: scopedBusinessId, deletedAt: null, status: 'FAILED' },
     });
     if (!row) throw new NotFoundException('Failed notification not found');
     await this.dispatch.retry(notificationId);
     return { notificationId, status: 'QUEUED' };
   }
 
-  async getSettings(businessId: string) {
+  async getSettings(businessId: string, actor: AuthenticatedUser) {
+    const scopedBusinessId = this.resolveBusinessId(actor, businessId);
     const settings = await this.prisma.businessSettings.findUnique({
-      where: { businessId },
+      where: { businessId: scopedBusinessId },
     });
     if (!settings) throw new NotFoundException('Business settings not found');
     return settings;
@@ -120,35 +146,37 @@ export class NotificationService {
   async updateSettings(
     businessId: string,
     dto: UpdateNotificationSettingsDto,
-    actorUserId?: string,
+    actor: AuthenticatedUser,
   ) {
+    const scopedBusinessId = this.resolveBusinessId(actor, businessId);
     return this.prisma.businessSettings.update({
-      where: { businessId },
+      where: { businessId: scopedBusinessId },
       data: {
         ...dto,
-        updatedBy: actorUserId,
+        updatedBy: actor.id,
       },
     });
   }
 
-  listTemplates(businessId: string) {
-    return this.templates.listByBusiness(businessId);
+  listTemplates(businessId: string, actor: AuthenticatedUser) {
+    return this.templates.listByBusiness(this.resolveBusinessId(actor, businessId));
   }
 
   upsertTemplate(
     businessId: string,
     dto: UpsertNotificationTemplateDto,
-    actorUserId?: string,
+    actor: AuthenticatedUser,
   ) {
+    const scopedBusinessId = this.resolveBusinessId(actor, businessId);
     return this.templates.upsert({
-      businessId,
+      businessId: scopedBusinessId,
       type: dto.type,
       channel: dto.channel,
       locale: dto.locale,
       subject: dto.subject,
       body: dto.body,
       isActive: dto.isActive,
-      actorUserId,
+      actorUserId: actor.id,
     });
   }
 }

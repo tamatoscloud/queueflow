@@ -16,6 +16,42 @@ import type {
   WalkInCustomerDto,
 } from './dto/queue-operations.dto';
 import { QueueSnapshotEnrichmentService } from './queue-snapshot-enrichment.service';
+import { Permission } from '../auth/constants/roles-permissions';
+import type { AuthenticatedUser } from '../auth/interfaces/auth.interfaces';
+
+const PRIVATE_SNAPSHOT_PERMISSIONS = new Set<string>([
+  Permission.QUEUE_OPERATE,
+  Permission.QUEUE_MANAGE,
+  Permission.REPORTS_VIEW,
+]);
+
+export function toPublicQueueSnapshot<T extends { entries: readonly unknown[] }>(snapshot: T) {
+  return {
+    ...snapshot,
+    entries: snapshot.entries.map((raw) => {
+      const entry = raw as {
+        displayCode?: unknown;
+        status?: unknown;
+        partySize?: unknown;
+        estimatedWaitMinutes?: unknown;
+        serviceMode?: unknown;
+      };
+      return {
+        displayCode: entry.displayCode,
+        status: entry.status,
+        partySize: entry.partySize,
+        estimatedWaitMinutes: entry.estimatedWaitMinutes,
+        serviceMode: entry.serviceMode,
+      };
+    }),
+  };
+}
+
+function canSeePrivateSnapshot(actor?: Pick<AuthenticatedUser, 'permissions' | 'isPlatformAdmin'>) {
+  if (!actor) return false;
+  if (actor.isPlatformAdmin) return true;
+  return actor.permissions.some((p) => PRIVATE_SNAPSHOT_PERMISSIONS.has(p));
+}
 
 @Injectable()
 export class QueueOperationsService {
@@ -141,10 +177,17 @@ export class QueueOperationsService {
       .then((e) => e.toProps());
   }
 
-  snapshot(queueId: string) {
-    return this.engine
+  async snapshot(
+    queueId: string,
+    actor?: Pick<AuthenticatedUser, 'permissions' | 'isPlatformAdmin'>,
+  ) {
+    if (canSeePrivateSnapshot(actor)) {
+      await this.tenantScope.requireQueue(queueId);
+    }
+    const snapshot = await this.engine
       .getLiveQueueSnapshot(queueId)
       .then((s) => this.snapshotEnrichment.enrich(s));
+    return canSeePrivateSnapshot(actor) ? snapshot : toPublicQueueSnapshot(snapshot);
   }
 
   async metrics(queueId: string) {

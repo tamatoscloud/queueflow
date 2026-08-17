@@ -15,6 +15,7 @@ import { paginatedMeta, paginationSkip } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisConnectionService } from '../../infrastructure/redis/redis-connection.service';
 import { PasswordService } from '../auth/password.service';
+import { AuthRepository } from '../auth/auth.repository';
 import { NotificationDispatchService } from '../../infrastructure/notifications/services/notification-dispatch.service';
 import { BusinessService } from '../business/business.service';
 import type {
@@ -38,6 +39,7 @@ export class PlatformAdminService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisConnectionService,
     private readonly passwords: PasswordService,
+    private readonly authRepo: AuthRepository,
     private readonly dispatch: NotificationDispatchService,
     private readonly businessService: BusinessService,
   ) {}
@@ -128,7 +130,7 @@ export class PlatformAdminService {
   }
 
   getBusiness(id: string) {
-    return this.businessService.get(id);
+    return this.businessService.get(id, { businessId: null, isPlatformAdmin: true });
   }
 
   createBusiness(dto: CreateBusinessDto) {
@@ -136,11 +138,18 @@ export class PlatformAdminService {
   }
 
   async updateBusiness(id: string, dto: PlatformBusinessUpdateDto) {
-    return this.businessService.update(id, dto);
+    return this.businessService.update(id, dto, {
+      businessId: null,
+      isPlatformAdmin: true,
+    });
   }
 
   async deactivateBusiness(id: string) {
-    return this.businessService.update(id, { status: BusinessStatusDto.SUSPENDED });
+    return this.businessService.update(
+      id,
+      { status: BusinessStatusDto.SUSPENDED },
+      { businessId: null, isPlatformAdmin: true },
+    );
   }
 
   async deleteBusiness(id: string) {
@@ -241,6 +250,7 @@ export class PlatformAdminService {
       where: { id: userId },
       data: { passwordHash },
     });
+    await this.authRepo.revokeAllSessions(userId);
     return { userId, temporaryPassword };
   }
 

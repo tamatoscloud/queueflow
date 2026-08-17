@@ -49,6 +49,7 @@ export class SmsNotificationProvider implements NotificationProviderAdapter {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
       });
       const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       if (!res.ok) {
@@ -58,7 +59,7 @@ export class SmsNotificationProvider implements NotificationProviderAdapter {
           errorCode: String(res.status),
           errorMessage: 'SMS gateway error',
           requestPayload: payload,
-          responsePayload: json,
+          responsePayload: { ...json, httpStatus: res.status },
         };
       }
       return {
@@ -70,10 +71,12 @@ export class SmsNotificationProvider implements NotificationProviderAdapter {
       };
     } catch (err) {
       this.logger.warn(`SMS send failed: ${String(err)}`);
+      const name = err instanceof Error ? err.name : '';
+      const timeout = name === 'TimeoutError' || name === 'AbortError';
       return {
         provider: NotificationProvider.OTHER,
         status: 'FAILED',
-        errorCode: 'NETWORK_ERROR',
+        errorCode: timeout ? 'TIMEOUT' : 'NETWORK_ERROR',
         errorMessage: String(err),
         requestPayload: payload,
       };

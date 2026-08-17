@@ -42,6 +42,7 @@ export class WhatsAppCloudProvider implements NotificationProviderAdapter {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(10_000),
         },
       );
       const json = (await res.json()) as Record<string, unknown>;
@@ -53,7 +54,7 @@ export class WhatsAppCloudProvider implements NotificationProviderAdapter {
           errorCode: String(err?.code ?? res.status),
           errorMessage: err?.message ?? 'WhatsApp API error',
           requestPayload: payload,
-          responsePayload: json,
+          responsePayload: { ...json, httpStatus: res.status },
         };
       }
       const messages = json.messages as Array<{ id: string }> | undefined;
@@ -66,10 +67,12 @@ export class WhatsAppCloudProvider implements NotificationProviderAdapter {
       };
     } catch (err) {
       this.logger.warn(`WhatsApp send failed: ${String(err)}`);
+      const name = err instanceof Error ? err.name : '';
+      const timeout = name === 'TimeoutError' || name === 'AbortError';
       return {
         provider: NotificationProvider.META_CLOUD_API,
         status: 'FAILED',
-        errorCode: 'NETWORK_ERROR',
+        errorCode: timeout ? 'TIMEOUT' : 'NETWORK_ERROR',
         errorMessage: String(err),
         requestPayload: payload,
       };

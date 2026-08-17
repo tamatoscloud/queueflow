@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -34,17 +35,23 @@ export class BusinessService {
     }
   }
 
-  async update(id: string, dto: UpdateBusinessDto) {
-    await this.require(id);
-    const row = await this.repository.update(id, dto);
-    return toBusinessResponse({ ...row, settings: null });
+  async update(
+    id: string,
+    dto: UpdateBusinessDto,
+    actor: { businessId: string | null; isPlatformAdmin: boolean },
+  ) {
+    const row = await this.require(id);
+    this.assertActorCanAccess(actor, row.id);
+    const updated = await this.repository.update(id, dto);
+    return toBusinessResponse({ ...updated, settings: null });
   }
 
-  async get(id: string) {
+  async get(id: string, actor: { businessId: string | null; isPlatformAdmin: boolean }) {
     const row = await this.repository.findById(id);
     if (!row) {
       throw new NotFoundException(`Business ${id} not found`);
     }
+    this.assertActorCanAccess(actor, row.id);
     return toBusinessResponse(row);
   }
 
@@ -64,5 +71,15 @@ export class BusinessService {
       throw new NotFoundException(`Business ${id} not found`);
     }
     return row;
+  }
+
+  private assertActorCanAccess(
+    actor: { businessId: string | null; isPlatformAdmin: boolean },
+    businessId: string,
+  ) {
+    if (actor.isPlatformAdmin) return;
+    if (actor.businessId !== businessId) {
+      throw new ForbiddenException('TENANT_ACCESS_DENIED');
+    }
   }
 }

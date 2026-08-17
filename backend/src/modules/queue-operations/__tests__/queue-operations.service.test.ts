@@ -6,6 +6,7 @@ import {
   QueueEngineService,
   QueueEntrySource,
 } from '../../../queue-engine';
+import { Permission } from '../../auth/constants/roles-permissions';
 
 function createPassThroughTenantScope() {
   return {
@@ -144,8 +145,70 @@ describe('QueueOperationsService', () => {
 
   it('snapshot enriches engine snapshot', async () => {
     const enriched = await service.snapshot('q1');
-    expect(enriched.queueId).toBe('q1');
-    expect(enriched.serviceMode).toBe('DINE_IN');
-    expect(enriched.entries).toEqual([]);
+    expect(enriched).toMatchObject({
+      queueId: 'q1',
+      serviceMode: 'DINE_IN',
+      entries: [],
+    });
+  });
+
+  it('redacts customer PII from public snapshots', async () => {
+    engine.getLiveQueueSnapshot = vi.fn().mockResolvedValue({
+      queueId: 'q1',
+      entries: [
+        {
+          id: 'e1',
+          displayCode: 'A-001',
+          status: 'WAITING',
+          customerName: 'Ali Khan',
+          customerPhone: '+923001111111',
+          notes: 'window seat',
+          partySize: 2,
+          estimatedWaitMinutes: 12,
+          metadata: { table: 4 },
+        },
+      ],
+    });
+    const snap = await service.snapshot('q1');
+    expect(snap.entries).toEqual([
+      {
+        displayCode: 'A-001',
+        status: 'WAITING',
+        partySize: 2,
+        estimatedWaitMinutes: 12,
+        serviceMode: 'DINE_IN',
+      },
+    ]);
+    expect(snap.entries[0]).not.toHaveProperty('id');
+    expect(snap.entries[0]).not.toHaveProperty('customerName');
+    expect(snap.entries[0]).not.toHaveProperty('customerPhone');
+    expect(snap.entries[0]).not.toHaveProperty('notes');
+    expect(tenantScope.requireQueue).not.toHaveBeenCalled();
+  });
+
+  it('returns private snapshot for staff with queue operate permission', async () => {
+    engine.getLiveQueueSnapshot = vi.fn().mockResolvedValue({
+      queueId: 'q1',
+      entries: [
+        {
+          id: 'e1',
+          displayCode: 'A-001',
+          status: 'WAITING',
+          customerName: 'Ali Khan',
+          customerPhone: '+923001111111',
+          partySize: 2,
+        },
+      ],
+    });
+    const snap = await service.snapshot('q1', {
+      permissions: [Permission.QUEUE_OPERATE],
+      isPlatformAdmin: false,
+    });
+    expect(snap.entries[0]).toMatchObject({
+      id: 'e1',
+      customerName: 'Ali Khan',
+      customerPhone: '+923001111111',
+    });
+    expect(tenantScope.requireQueue).toHaveBeenCalledWith('q1');
   });
 });

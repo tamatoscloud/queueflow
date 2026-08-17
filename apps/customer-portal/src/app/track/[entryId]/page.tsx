@@ -5,15 +5,13 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { LightWaitingExperience } from '@/components/customer/light/light-waiting-experience';
 import { LightReadyExperience } from '@/components/customer/light/light-ready-experience';
 import { CalmWelcomeBanner } from '@/components/customer/calm/calm-welcome-banner';
-import { CalmError } from '@/components/customer/calm/calm-error';
+import { TrackingPageError } from '@/components/customer/calm/queue-landing-error';
 import { CalmSkeleton } from '@/components/customer/calm/calm-skeleton';
 import { QueueEnded } from '@/components/customer/queue-ended';
 import { getServiceModeCopy } from '@/lib/restaurant/service-mode-config';
 import { BookingShell } from '@/components/layout/booking-shell';
 import { useEntryTracking } from '@/hooks/use-entry-tracking';
 import { useRealtimeConnection } from '@/hooks/use-realtime-connection';
-import { ApiClientError } from '@/lib/api/client';
-import { friendlyTrackingError } from '@/lib/errors/friendly-messages';
 import { clearQueueSession } from '@/lib/storage/session';
 
 export default function TrackQueuePage() {
@@ -49,13 +47,13 @@ export default function TrackQueuePage() {
   }
 
   if (isError || !data) {
-    const message =
-      error instanceof ApiClientError
-        ? friendlyTrackingError(error)
-        : "We're having trouble updating your queue.";
     return (
       <BookingShell showJazzPill>
-        <CalmError message={message} onRetry={() => void refetch()} />
+        <TrackingPageError
+          entryId={entryId}
+          error={error}
+          onRetry={() => void refetch()}
+        />
       </BookingShell>
     );
   }

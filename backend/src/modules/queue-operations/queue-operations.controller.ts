@@ -6,11 +6,13 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Req,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/roles-permissions';
+import type { AuthenticatedUser } from '../auth/interfaces/auth.interfaces';
 import { QueueOperationsService } from './queue-operations.service';
 import {
   JoinQueueDto,
@@ -63,8 +65,11 @@ export class QueueOperationsController {
   @Public()
   @Get('queues/:queueId/snapshot')
   @ApiOperation({ summary: 'Live queue snapshot (customer tracking)' })
-  snapshot(@Param('queueId', ParseUUIDPipe) queueId: string) {
-    return this.ops.snapshot(queueId);
+  snapshot(
+    @Param('queueId', ParseUUIDPipe) queueId: string,
+    @Req() req: { user?: AuthenticatedUser },
+  ) {
+    return this.ops.snapshot(queueId, req.user);
   }
 
   @Get('queues/:queueId/metrics')

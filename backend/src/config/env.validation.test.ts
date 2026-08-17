@@ -33,6 +33,27 @@ describe('getGitSha', () => {
     expect(getBuildMetadata().gitSha).toBe('railway-live-sha');
   });
 
+  it('uses RAILWAY_DEPLOYMENT_ID for buildNumber when set', () => {
+    const previous = {
+      railway: process.env.RAILWAY_DEPLOYMENT_ID,
+      build: process.env.BUILD_NUMBER,
+      github: process.env.GITHUB_RUN_NUMBER,
+    };
+    process.env.RAILWAY_DEPLOYMENT_ID = 'dep-123';
+    delete process.env.BUILD_NUMBER;
+    delete process.env.GITHUB_RUN_NUMBER;
+    try {
+      expect(getBuildMetadata().buildNumber).toBe('dep-123');
+    } finally {
+      if (previous.railway === undefined) delete process.env.RAILWAY_DEPLOYMENT_ID;
+      else process.env.RAILWAY_DEPLOYMENT_ID = previous.railway;
+      if (previous.build === undefined) delete process.env.BUILD_NUMBER;
+      else process.env.BUILD_NUMBER = previous.build;
+      if (previous.github === undefined) delete process.env.GITHUB_RUN_NUMBER;
+      else process.env.GITHUB_RUN_NUMBER = previous.github;
+    }
+  });
+
   it('falls back to GIT_SHA then GITHUB_SHA', () => {
     setShaEnv({
       RAILWAY_GIT_COMMIT_SHA: undefined,

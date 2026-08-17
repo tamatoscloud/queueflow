@@ -32,8 +32,10 @@ describe('BusinessController', () => {
     expect(service.create).toHaveBeenCalledWith(dto);
   });
 
-  it('get delegates to service', async () => {
+  it('get delegates to service with actor', async () => {
     service.get.mockResolvedValue({ id: 'biz-1' });
-    await expect(controller.get('biz-1')).resolves.toEqual({ id: 'biz-1' });
+    const actor = { businessId: 'biz-1', isPlatformAdmin: false };
+    await expect(controller.get('biz-1', actor as never)).resolves.toEqual({ id: 'biz-1' });
+    expect(service.get).toHaveBeenCalledWith('biz-1', actor);
   });
 });

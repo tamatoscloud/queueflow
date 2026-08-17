@@ -34,10 +34,7 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <p className="text-xs text-muted">
-          Ask staff for a queue QR code, or open{' '}
-          <span className="font-medium text-foreground">/q/&lt;queue-id&gt;</span>
-        </p>
+        <p className="text-xs text-muted">Ask staff for a queue QR code to get started.</p>
       </div>
     </PageShell>
   );

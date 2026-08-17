@@ -98,7 +98,12 @@ export function getBuildMetadata() {
   return {
     version: process.env.npm_package_version ?? '0.1.0',
     gitSha: getGitSha(),
-    buildNumber: process.env.BUILD_NUMBER ?? process.env.GITHUB_RUN_NUMBER ?? 'local',
+    buildNumber:
+      firstNonEmpty(
+        process.env.BUILD_NUMBER,
+        process.env.GITHUB_RUN_NUMBER,
+        process.env.RAILWAY_DEPLOYMENT_ID,
+      ) ?? 'local',
     environment: getAppEnvironment(),
   };
 }

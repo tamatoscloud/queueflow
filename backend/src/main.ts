@@ -63,25 +63,31 @@ async function bootstrap() {
     new ResponseEnvelopeInterceptor(),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('QueueFlow API')
-    .setDescription(
-      'REST application layer for QueueFlow with JWT auth and RBAC.',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addApiKey(
-      { type: 'apiKey', name: 'x-request-id', in: 'header' },
-      'request-id',
-    )
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  app.enableShutdownHooks();
+
+  if (env !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('QueueFlow API')
+      .setDescription(
+        'REST application layer for QueueFlow with JWT auth and RBAC.',
+      )
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addApiKey(
+        { type: 'apiKey', name: 'x-request-id', in: 'header' },
+        'request-id',
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port, '0.0.0.0');
   logger.log(`QueueFlow API listening on 0.0.0.0:${port}`);
-  logger.log(`OpenAPI docs at http://localhost:${port}/docs`);
+  if (env !== 'production') {
+    logger.log(`OpenAPI docs at http://localhost:${port}/docs`);
+  }
   logger.log(`Socket.IO realtime at ws://localhost:${port}/realtime`);
 }
 

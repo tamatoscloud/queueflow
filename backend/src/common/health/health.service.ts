@@ -6,7 +6,7 @@ import {
   NOTIFICATION_QUEUE,
   type NotificationQueuePort,
 } from '../../infrastructure/notifications/queue/notification-queue.port';
-import { getBuildMetadata } from '../../config/env.validation';
+import { getBuildMetadata, getAppEnvironment } from '../../config/env.validation';
 import * as os from 'node:os';
 
 export type HealthCheckResult = {
@@ -50,6 +50,14 @@ export class HealthService {
 
     const anyDown = Object.values(checks).some((c) => c.status === 'down');
     const anyDegraded = Object.values(checks).some((c) => c.status === 'degraded');
+
+    if (getAppEnvironment() === 'production') {
+      for (const check of Object.values(checks)) {
+        if (check.status === 'down' && typeof check.detail === 'string') {
+          check.detail = 'dependency error';
+        }
+      }
+    }
 
     return {
       status: anyDown ? 'down' : anyDegraded ? 'degraded' : 'ok',

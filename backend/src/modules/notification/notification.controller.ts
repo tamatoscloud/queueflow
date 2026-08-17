@@ -30,22 +30,31 @@ export class NotificationController {
   @Get()
   @RequirePermissions(Permission.NOTIFICATIONS_VIEW)
   @ApiOperation({ summary: 'Notification history' })
-  list(@Query() query: ListNotificationQueryDto) {
-    return this.notificationService.list(query);
+  list(
+    @Query() query: ListNotificationQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.notificationService.list(query, user);
   }
 
   @Get('stats')
   @RequirePermissions(Permission.NOTIFICATIONS_VIEW)
   @ApiOperation({ summary: 'Notification delivery statistics' })
-  stats(@Query() query: NotificationStatsQueryDto) {
-    return this.notificationService.getStats(query);
+  stats(
+    @Query() query: NotificationStatsQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.notificationService.getStats(query, user);
   }
 
   @Get('settings/:businessId')
   @RequirePermissions(Permission.SETTINGS_MANAGE)
   @ApiOperation({ summary: 'Get notification settings for a business' })
-  getSettings(@Param('businessId', ParseUUIDPipe) businessId: string) {
-    return this.notificationService.getSettings(businessId);
+  getSettings(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.notificationService.getSettings(businessId, user);
   }
 
   @Patch('settings/:businessId')
@@ -56,14 +65,17 @@ export class NotificationController {
     @Body() dto: UpdateNotificationSettingsDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.notificationService.updateSettings(businessId, dto, user.id);
+    return this.notificationService.updateSettings(businessId, dto, user);
   }
 
   @Get('templates/:businessId')
   @RequirePermissions(Permission.SETTINGS_MANAGE)
   @ApiOperation({ summary: 'List notification templates' })
-  listTemplates(@Param('businessId', ParseUUIDPipe) businessId: string) {
-    return this.notificationService.listTemplates(businessId);
+  listTemplates(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.notificationService.listTemplates(businessId, user);
   }
 
   @Post('templates/:businessId')
@@ -74,7 +86,7 @@ export class NotificationController {
     @Body() dto: UpsertNotificationTemplateDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.notificationService.upsertTemplate(businessId, dto, user.id);
+    return this.notificationService.upsertTemplate(businessId, dto, user);
   }
 
   @Post(':id/retry')
@@ -83,14 +95,18 @@ export class NotificationController {
   retry(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.notificationService.retryFailed(businessId, id);
+    return this.notificationService.retryFailed(businessId, id, user);
   }
 
   @Get(':id/logs')
   @RequirePermissions(Permission.NOTIFICATIONS_VIEW)
   @ApiOperation({ summary: 'Delivery logs for a notification' })
-  getLogs(@Param('id', ParseUUIDPipe) id: string) {
-    return this.notificationService.getLogs(id);
+  getLogs(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.notificationService.getLogs(id, user);
   }
 }

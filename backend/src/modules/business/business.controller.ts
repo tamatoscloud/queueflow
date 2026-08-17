@@ -12,6 +12,8 @@ import { ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ApiStandardCreatedResponse, ApiStandardOkResponse } from '../../common/swagger/api-responses.decorator';
 import { RequirePermissions, RequireAnyPermission } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/roles-permissions';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/interfaces/auth.interfaces';
 import { BusinessService } from './business.service';
 import {
   CreateBusinessDto,
@@ -51,8 +53,11 @@ export class BusinessController {
   @RequireAnyPermission(Permission.BUSINESS_MANAGE, Permission.PLATFORM_MANAGE_TENANTS)
   @ApiOperation({ summary: 'Get business by id' })
   @ApiStandardOkResponse('Business details')
-  get(@Param('id', ParseUUIDPipe) id: string) {
-    return this.businessService.get(id);
+  get(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.businessService.get(id, user);
   }
 
   @Patch(':id')
@@ -62,7 +67,8 @@ export class BusinessController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateBusinessDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.businessService.update(id, dto);
+    return this.businessService.update(id, dto, user);
   }
 }

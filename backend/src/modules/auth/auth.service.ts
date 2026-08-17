@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthTokenType } from '@prisma/client';
@@ -144,11 +143,11 @@ export class AuthService {
 
   async resendEmailVerification(email: string) {
     const user = await this.authRepo.findUserByEmail(email);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    if (user.emailVerifiedAt) {
-      throw new BadRequestException('Email is already verified');
+    const payload: Record<string, unknown> = {
+      message: 'If the email exists and is unverified, a verification message has been sent',
+    };
+    if (!user || user.emailVerifiedAt) {
+      return payload;
     }
     await this.authRepo.invalidateAuthTokens(user.id, AuthTokenType.EMAIL_VERIFICATION);
     const raw = generateOpaqueToken();
@@ -159,7 +158,6 @@ export class AuthService {
       tokenHash: hashToken(raw),
       expiresAt,
     });
-    const payload: Record<string, unknown> = { message: 'Verification email sent' };
     if (process.env.APP_ENV === 'development') {
       payload.verificationToken = raw;
     }

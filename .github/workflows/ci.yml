@@ -26,6 +26,7 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: backend
@@ -56,6 +57,7 @@ jobs:
   flutter:
     name: Flutter — ${{ matrix.app }}
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -66,6 +68,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: "3.38.5"
           cache: true
 
       - name: Bootstrap workspace
@@ -73,9 +76,15 @@ jobs:
           dart pub global activate melos
           melos bootstrap
 
-      - name: Code generation
-        run: melos run gen
-        working-directory: .
+      - name: Generate code
+        run: |
+          set -euo pipefail
+          # Full `melos run gen` hangs: unfiltered app build_runner compiles
+          # native plugin build hooks (mobile_scanner / jni).
+          melos exec -c 1 --scope="queueflow_core" --scope="queueflow_models" --scope="queueflow_network" -- "dart run build_runner build --delete-conflicting-outputs"
+          if [ "${{ matrix.app }}" = "business_app" ] || [ "${{ matrix.app }}" = "staff_app" ]; then
+            (cd "apps/${{ matrix.app }}" && dart run build_runner build --delete-conflicting-outputs --build-filter="lib/**/auth_user.dart")
+          fi
 
       - name: Prepare env assets for analyzer
         run: |
@@ -89,14 +98,17 @@ jobs:
       - name: Analyze
         run: flutter analyze --fatal-infos
         working-directory: apps/${{ matrix.app }}
+        timeout-minutes: 10
 
       - name: Test
         run: flutter test
         working-directory: apps/${{ matrix.app }}
+        timeout-minutes: 15
 
       - name: Build web
         run: flutter build web --release -t lib/main_production.dart
         working-directory: apps/${{ matrix.app }}
+        timeout-minutes: 15
 
   customer-portal:
     name: Customer Portal

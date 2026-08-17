@@ -138,6 +138,10 @@ describe('Queue APIs (integration, in-memory engine)', () => {
 
     expect(res.body.success).toBe(true);
     expect(res.body.data.metrics.waitingCount).toBe(1);
+    expect(res.body.data.entries[0].displayCode).toBe('A-001');
+    expect(res.body.data.entries[0].customerPhone).toBeUndefined();
+    expect(res.body.data.entries[0].customerName).toBeUndefined();
+    expect(res.body.data.entries[0].id).toBeUndefined();
   });
 
   it('call-next then complete', async () => {

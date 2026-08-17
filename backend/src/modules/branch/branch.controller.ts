@@ -21,12 +21,12 @@ import {
 
 @ApiTags('branches')
 @ApiBearerAuth()
-@RequirePermissions(Permission.BRANCH_MANAGE)
 @Controller({ path: 'branches', version: '1' })
 export class BranchController {
   constructor(private readonly branchService: BranchService) {}
 
   @Post()
+  @RequirePermissions(Permission.BRANCH_MANAGE)
   @ApiOperation({ summary: 'Create branch' })
   create(@Body() dto: CreateBranchDto) {
     return this.branchService.create(dto);
@@ -40,12 +40,14 @@ export class BranchController {
   }
 
   @Get(':id')
+  @RequireAnyPermission(Permission.BRANCH_MANAGE, Permission.REPORTS_VIEW, Permission.QUEUE_OPERATE)
   @ApiOperation({ summary: 'Get branch' })
   get(@Param('id', ParseUUIDPipe) id: string) {
     return this.branchService.get(id);
   }
 
   @Patch(':id')
+  @RequirePermissions(Permission.BRANCH_MANAGE)
   @ApiOperation({ summary: 'Update branch' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -55,6 +57,7 @@ export class BranchController {
   }
 
   @Delete(':id')
+  @RequirePermissions(Permission.BRANCH_MANAGE)
   @ApiOperation({ summary: 'Soft-delete branch' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.branchService.remove(id);

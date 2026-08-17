@@ -63,6 +63,9 @@ export class RestaurantService {
   // ---------------------------------------------------------------------------
 
   async listQrCodes(businessId: string, branchId?: string) {
+    if (branchId) {
+      await this.requireBranch(businessId, branchId);
+    }
     return this.prisma.qRCode.findMany({
       where: {
         businessId,
@@ -74,6 +77,10 @@ export class RestaurantService {
   }
 
   async createQrCode(businessId: string, dto: CreateQrCodeDto) {
+    await this.requireBranch(businessId, dto.branchId);
+    if (dto.queueId) {
+      await this.requireQueueForBusiness(businessId, dto.queueId);
+    }
     const portalBase = process.env.CUSTOMER_PORTAL_URL ?? 'http://localhost:3001';
     const code = randomBytes(6).toString('base64url').slice(0, 8);
     let targetUrl = `${portalBase}/q/${dto.branchId}`;
@@ -136,6 +143,7 @@ export class RestaurantService {
   // ---------------------------------------------------------------------------
 
   async listTables(businessId: string, branchId: string) {
+    await this.requireBranch(businessId, branchId);
     return this.prisma.restaurantTable.findMany({
       where: { businessId, branchId, deletedAt: null },
       include: {
@@ -149,6 +157,7 @@ export class RestaurantService {
   }
 
   async createTable(businessId: string, dto: CreateTableDto) {
+    await this.requireBranch(businessId, dto.branchId);
     return this.prisma.restaurantTable.create({
       data: {
         businessId,
@@ -208,6 +217,7 @@ export class RestaurantService {
   // ---------------------------------------------------------------------------
 
   async listWaiters(businessId: string, branchId: string) {
+    await this.requireBranch(businessId, branchId);
     return this.prisma.waiterProfile.findMany({
       where: { businessId, branchId },
       include: { user: { select: { id: true, fullName: true, email: true, avatarUrl: true } } },
@@ -216,6 +226,7 @@ export class RestaurantService {
   }
 
   async createWaiter(businessId: string, dto: CreateWaiterProfileDto) {
+    await this.requireBranch(businessId, dto.branchId);
     return this.prisma.waiterProfile.create({
       data: {
         businessId,
@@ -240,6 +251,7 @@ export class RestaurantService {
   // ---------------------------------------------------------------------------
 
   async getKitchenBoard(businessId: string, branchId: string) {
+    await this.requireBranch(businessId, branchId);
     const orders = await this.prisma.kitchenOrder.findMany({
       where: { businessId, branchId },
       include: {
@@ -315,6 +327,9 @@ export class RestaurantService {
   // ---------------------------------------------------------------------------
 
   async getModeAnalytics(businessId: string, branchId?: string) {
+    if (branchId) {
+      await this.requireBranch(businessId, branchId);
+    }
     const since = new Date();
     since.setHours(0, 0, 0, 0);
 
@@ -395,5 +410,23 @@ export class RestaurantService {
     });
     if (!waiter) throw new NotFoundException('Waiter not found');
     return waiter;
+  }
+
+  private async requireBranch(businessId: string, branchId: string) {
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, businessId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!branch) throw new NotFoundException('Branch not found');
+    return branch;
+  }
+
+  private async requireQueueForBusiness(businessId: string, queueId: string) {
+    const queue = await this.prisma.queue.findFirst({
+      where: { id: queueId, businessId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!queue) throw new NotFoundException('Queue not found');
+    return queue;
   }
 }

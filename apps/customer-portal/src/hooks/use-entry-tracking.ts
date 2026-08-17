@@ -10,6 +10,7 @@ import {
   loadQueueSession,
   saveTrackingTokenForEntry,
 } from '@/lib/storage/session';
+import { isQueueUuid } from '@/lib/queue-id';
 
 export const TRACKING_POLL_MS = 15_000;
 
@@ -23,6 +24,7 @@ function persistTokenFromTracking(entryId: string, data: EntryTracking): void {
 
 export function useEntryTracking(entryId: string) {
   const queryClient = useQueryClient();
+  const enabled = isQueueUuid(entryId);
 
   const query = useQuery({
     queryKey: queryKeys.entryTracking(entryId),
@@ -32,9 +34,11 @@ export function useEntryTracking(entryId: string) {
       return data;
     },
     staleTime: 5_000,
+    enabled,
   });
 
   useEffect(() => {
+    if (!enabled) return;
     const session = loadQueueSession();
     const initialToken =
       session?.entryId === entryId ? session.trackingToken : undefined;
@@ -65,7 +69,7 @@ export function useEntryTracking(entryId: string) {
       },
     );
     return () => sub.unsubscribe();
-  }, [entryId, queryClient]);
+  }, [entryId, queryClient, enabled]);
 
   return query;
 }

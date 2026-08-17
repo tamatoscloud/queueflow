@@ -3,13 +3,11 @@
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { CalmCompleted } from '@/components/customer/calm/calm-completed';
-import { CalmError } from '@/components/customer/calm/calm-error';
+import { TrackingPageError } from '@/components/customer/calm/queue-landing-error';
 import { CalmSkeleton } from '@/components/customer/calm/calm-skeleton';
 import { BookingShell } from '@/components/layout/booking-shell';
 import { useEntryTracking } from '@/hooks/use-entry-tracking';
 import { clearQueueSession } from '@/lib/storage/session';
-import { ApiClientError } from '@/lib/api/client';
-import { friendlyTrackingError } from '@/lib/errors/friendly-messages';
 
 export default function QueueCompletedPage() {
   const { entryId } = useParams<{ entryId: string }>();
@@ -30,13 +28,13 @@ export default function QueueCompletedPage() {
   }
 
   if (isError || !data) {
-    const message =
-      error instanceof ApiClientError
-        ? friendlyTrackingError(error)
-        : "We couldn't load your visit details.";
     return (
       <BookingShell>
-        <CalmError message={message} onRetry={() => void refetch()} />
+        <TrackingPageError
+          entryId={entryId}
+          error={error}
+          onRetry={() => void refetch()}
+        />
       </BookingShell>
     );
   }

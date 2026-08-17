@@ -29,7 +29,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) {
+    const request = context.switchToHttp().getRequest<{
+      headers?: { authorization?: string };
+      user?: AuthenticatedUser;
+    }>();
+    const hasBearer =
+      typeof request.headers?.authorization === 'string' &&
+      request.headers.authorization.toLowerCase().startsWith('bearer ');
+    if (isPublic && !hasBearer) {
       return true;
     }
 
@@ -38,7 +45,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return false;
     }
 
-    const request = context.switchToHttp().getRequest<{ user: AuthenticatedUser }>();
     const user = request.user;
     if (!user) {
       throw new UnauthorizedException('Authentication required');

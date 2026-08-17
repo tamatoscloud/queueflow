@@ -4,12 +4,11 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Info } from 'lucide-react';
 import { CalmLanding } from '@/components/customer/calm/calm-landing';
-import { CalmError } from '@/components/customer/calm/calm-error';
+import { QueueLandingError } from '@/components/customer/calm/queue-landing-error';
 import { CalmSkeleton } from '@/components/customer/calm/calm-skeleton';
 import { CalmCard } from '@/components/customer/calm/primitives';
 import { BookingShell } from '@/components/layout/booking-shell';
 import { useQueueLanding } from '@/hooks/use-queue-landing';
-import { ApiClientError } from '@/lib/api/client';
 
 function MissingQueueState({ mode }: { mode: 'takeaway' | 'drive' }) {
   return (
@@ -43,13 +42,13 @@ function BranchModeLanding({ queueId }: { queueId: string }) {
   }
 
   if (isError || !data) {
-    const message =
-      error instanceof ApiClientError
-        ? "We couldn't load this queue. Please try again."
-        : undefined;
     return (
       <BookingShell>
-        <CalmError message={message} onRetry={() => void refetch()} />
+        <QueueLandingError
+          queueId={queueId}
+          error={error}
+          onRetry={() => void refetch()}
+        />
       </BookingShell>
     );
   }
