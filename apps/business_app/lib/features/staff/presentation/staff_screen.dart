@@ -86,14 +86,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 const Icon(Icons.groups_outlined, size: 48, color: AppColors.calmViolet),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Staff list coming soon',
+                  'Invite your host team',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'You can invite team members now. A full staff list will appear when the invitations API supports it.',
+                  'Send an invite so staff can sign in and run the live queue on a tablet.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.calmWarmGray,
@@ -103,7 +103,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 FilledButton.icon(
                   onPressed: _invite,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.calmViolet,
+                    backgroundColor: AppColors.primaryDark,
                     minimumSize: const Size.fromHeight(48),
                   ),
                   icon: const Icon(Icons.person_add_outlined),

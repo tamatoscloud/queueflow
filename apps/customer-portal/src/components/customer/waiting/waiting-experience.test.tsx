@@ -95,9 +95,9 @@ describe('TableReadyExperience', () => {
       />,
     );
 
-    expect(screen.getByText('Your table is ready!')).toBeInTheDocument();
+    expect(screen.getByText("It's your turn!")).toBeInTheDocument();
     expect(screen.getByText('remaining')).toBeInTheDocument();
-    expect(screen.getByText('Your table will be held for 5 minutes.')).toBeInTheDocument();
+    expect(screen.getByText(/Please come now/i)).toBeInTheDocument();
   });
 });
 

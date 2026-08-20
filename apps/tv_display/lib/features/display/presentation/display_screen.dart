@@ -529,7 +529,7 @@ class _NowServingTokenState extends State<NowServingToken>
         name != null;
     final accent = _accentColor(widget.config);
     final scale = widget.config.fontScale;
-    final baseSize = widget.minimal ? 140.0 : 96.0;
+    final baseSize = widget.minimal ? 160.0 : 120.0;
 
     final tokenStyle = TextStyle(
       fontSize: baseSize * scale,

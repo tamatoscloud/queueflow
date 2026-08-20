@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
-/// Dominant staff action — Call Next, Seat, etc.
+/// Dominant staff action — CALL NEXT, COMPLETE, etc.
+/// Default height 80 for touchscreen / tablet host stands.
 class CalmPrimaryButton extends StatelessWidget {
   const CalmPrimaryButton({
     required this.label,
@@ -10,7 +11,7 @@ class CalmPrimaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.variant = CalmPrimaryVariant.violet,
-    this.height = 64,
+    this.height = 80,
   });
 
   final String label;
@@ -38,26 +39,31 @@ class CalmPrimaryButton extends StatelessWidget {
           foregroundColor: fg,
           disabledBackgroundColor: bg.withValues(alpha: 0.5),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          textStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
               ),
         ),
         child: isLoading
             ? SizedBox(
-                height: 22,
-                width: 22,
+                height: 26,
+                width: 26,
                 child: CircularProgressIndicator(strokeWidth: 2.5, color: fg),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 22),
-                    const SizedBox(width: 10),
+                    Icon(icon, size: 28),
+                    const SizedBox(width: 12),
                   ],
-                  Text(label),
+                  Flexible(
+                    child: Text(
+                      label.toUpperCase(),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ],
               ),
       ),

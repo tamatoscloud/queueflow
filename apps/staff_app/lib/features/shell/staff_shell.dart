@@ -16,8 +16,8 @@ class StaffShell extends ConsumerWidget {
   final Widget child;
 
   static const _destinations = [
-    (icon: Icons.bolt, label: 'Today', route: StaffRoutes.today),
-    (icon: Icons.people_outline, label: 'Customers', route: StaffRoutes.customers),
+    (icon: Icons.campaign_outlined, label: 'Live Queue', route: StaffRoutes.today),
+    (icon: Icons.people_outline, label: 'Guests', route: StaffRoutes.customers),
     (icon: Icons.notifications_outlined, label: 'Alerts', route: StaffRoutes.notifications),
     (icon: Icons.person_outline, label: 'Profile', route: StaffRoutes.profile),
   ];

@@ -230,6 +230,14 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
       ) : null}
 
       <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col gap-5">
+        {mode === 'DINE_IN' ? (
+          <LightPartySelect
+            value={form.watch('partySize')}
+            onChange={(n) => form.setValue('partySize', n, { shouldValidate: true })}
+            error={form.formState.errors.partySize?.message}
+          />
+        ) : null}
+
         {mode === 'TAKEAWAY' ? (
           <LightField
             label="What's your order number?"
@@ -276,14 +284,6 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
             {...form.register('fullName')}
           />
         </LightField>
-
-        {mode === 'DINE_IN' ? (
-          <LightPartySelect
-            value={form.watch('partySize')}
-            onChange={(n) => form.setValue('partySize', n, { shouldValidate: true })}
-            error={form.formState.errors.partySize?.message}
-          />
-        ) : null}
 
         <LightField label="Phone number" icon={Hash} error={form.formState.errors.phone?.message}>
           <LightInput

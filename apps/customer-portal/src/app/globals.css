@@ -106,6 +106,32 @@
   border-color: #6366f1;
 }
 
+/* Queue status pills (customer journey) */
+.status-waiting {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.status-called {
+  background: #4f46e5;
+  color: #ffffff;
+}
+.status-completed {
+  background: #d1fae5;
+  color: #047857;
+}
+.status-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.status-live {
+  background: #d1fae5;
+  color: #047857;
+}
+.status-updating {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .booking-light *,
   .booking-light *::before,

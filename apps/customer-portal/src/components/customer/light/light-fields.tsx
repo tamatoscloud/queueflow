@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Hash, Mail, Bell, Lock, Check, ChevronDown } from 'lucide-react';
+import { User, Users, Hash, Mail, Bell, Lock, Check } from 'lucide-react';
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 
@@ -68,24 +68,29 @@ export function LightPartySelect({
   error?: string;
 }) {
   return (
-    <LightField label="Party size" icon={Users} error={error}>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="h-12 w-full appearance-none rounded-full border border-neutral-200 bg-white px-5 pr-10 text-base text-neutral-900 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
-          aria-label="Party size"
+    <LightField label="How many people?" icon={Users} error={error}>
+      <div className="flex items-center justify-center gap-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+        <button
+          type="button"
+          aria-label="Decrease party size"
+          disabled={value <= 1}
+          onClick={() => onChange(Math.max(1, value - 1))}
+          className="flex h-14 w-14 items-center justify-center rounded-xl bg-neutral-100 text-2xl font-bold text-foreground disabled:opacity-40"
         >
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>
-              {String(n).padStart(2, '0')}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
-          aria-hidden
-        />
+          −
+        </button>
+        <span className="min-w-[3rem] text-center font-display text-4xl font-bold tabular-nums text-foreground">
+          {value}
+        </span>
+        <button
+          type="button"
+          aria-label="Increase party size"
+          disabled={value >= 20}
+          onClick={() => onChange(Math.min(20, value + 1))}
+          className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white disabled:opacity-40"
+        >
+          +
+        </button>
       </div>
     </LightField>
   );

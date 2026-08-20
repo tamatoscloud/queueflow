@@ -228,7 +228,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       AppSpacing.md,
                       AppSpacing.md,
                       AppSpacing.md,
-                      totalWaiting > 0 ? 140 : AppSpacing.xl,
+                      totalWaiting > 0 ? 160 : AppSpacing.xl,
                     ),
                     children: [
                       StaffGreetingHeader(
@@ -281,9 +281,21 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                               const CalmSectionLabel('UP NEXT'),
                               const SizedBox(height: AppSpacing.md),
                               Text(
+                                next.displayCode.isNotEmpty
+                                    ? next.displayCode
+                                    : (next.customerName ?? 'Guest'),
+                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primaryDark,
+                                      letterSpacing: 1,
+                                      fontFeatures: const [FontFeature.tabularFigures()],
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
                                 next.customerName ?? 'Guest',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
                                       color: AppColors.calmCharcoal,
                                     ),
                               ),
@@ -303,14 +315,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                                       ),
                                 ),
                               ],
-                              const SizedBox(height: 6),
-                              Text(
-                                modeInfo.label,
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                      color: AppColors.calmViolet,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
                             ],
                           ),
                         ),

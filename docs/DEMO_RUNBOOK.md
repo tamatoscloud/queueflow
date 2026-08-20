@@ -6,7 +6,68 @@ QueueFlow helps restaurants manage waiting guests, takeaway pickups, and drive-i
 
 ---
 
-## Before you begin
+## Production demo (start here)
+
+Use these live URLs. Do **not** invent credentials in this doc — ask your technical contact for the Bella Vista owner/staff passwords.
+
+### Open first (presenter laptop)
+
+1. **Business Dashboard:** https://queueflow-business-alpha.vercel.app  
+2. Sign in as the Bella Vista **owner**.  
+3. Open the **QR** tab in the side nav.  
+4. Select the **Dine-in** queue and show the large QR (or copy the join link).
+
+### Guest phone (scan or open)
+
+**Dine-in join URL (canonical):**  
+https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7
+
+### Staff tablet / second window
+
+**Staff Console:** https://queueflow-staff.vercel.app  
+Sign in as Bella Vista **staff** (same demo password as provided by your technical contact).
+
+### Optional lobby TV
+
+**TV Display:** https://queueflow-tv.vercel.app → pair with the dine-in queue ID from QR Center.
+
+### 14-step acceptance journey
+
+| Step | Who | Action | Expected |
+|------|-----|--------|----------|
+| 1 | Presenter | Open Business Dashboard | Login screen |
+| 2 | Presenter | Sign in as owner | Dashboard / restaurant home |
+| 3 | Presenter | Open **QR** | Large dine-in QR + join URL |
+| 4 | Guest phone | Scan QR or open join URL | Landing: restaurant name, wait, **Join queue** |
+| 5 | Guest | Tap Join queue | Party size stepper + name/phone |
+| 6 | Guest | Submit join | Live track: queue number, position, ETA |
+| 7 | Staff | Open Staff Console → Live Queue | Waiting count + Up next + **CALL NEXT** |
+| 8 | Staff | Tap **CALL NEXT** | Guest entry becomes called |
+| 9 | Guest | Watch phone | **It's your turn** (indigo full-screen) |
+| 10 | Staff | Tap **COMPLETE** (or Seat) | Visit completed |
+| 11 | Guest | Track updates | **You're all set** / completed |
+| 12 | Optional | TV Display | NOW SERVING shows the called number |
+| 13 | Optional | Business Queues | Waiting counts refresh live |
+| 14 | Presenter | Show Marketing | https://queueflow-marketing.vercel.app restaurant story |
+
+### Other production URLs
+
+| App | URL |
+|-----|-----|
+| Customer Portal | https://queueflow-six-beta.vercel.app |
+| Staff | https://queueflow-staff.vercel.app |
+| Business | https://queueflow-business-alpha.vercel.app |
+| Admin | https://queueflow-admin.vercel.app |
+| TV | https://queueflow-tv.vercel.app |
+| Marketing | https://queueflow-marketing.vercel.app |
+| API | https://queueflow-backend-production.up.railway.app/api/v1 |
+
+---
+
+## Local development demo (below)
+
+Use this section when demonstrating against a local backend instead of production.
+
 
 ### What you need
 

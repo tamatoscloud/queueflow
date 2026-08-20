@@ -61,8 +61,8 @@ describe('LightReadyExperience', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /Your table is ready/i })).toBeInTheDocument();
-    expect(screen.getByText('Your table will be held for 5 minutes.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /It's your turn/i })).toBeInTheDocument();
+    expect(screen.getByText(/Please come now/i)).toBeInTheDocument();
     expect(screen.getByText('W-123')).toBeInTheDocument();
   });
 });

@@ -18,7 +18,7 @@ describe('wait-helpers', () => {
   it('returns human smart wait messages', () => {
     expect(getSmartWaitMessage('WAITING', 0)).toContain('next');
     expect(getSmartWaitMessage('WAITING', 2)).toContain('2 parties');
-    expect(getSmartWaitMessage('CALLED', 0)).toContain('ready');
+    expect(getSmartWaitMessage('CALLED', 0)).toMatch(/turn/i);
   });
 
   it('computes wait progress from baseline snapshot', () => {

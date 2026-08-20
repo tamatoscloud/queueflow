@@ -119,7 +119,7 @@ class _HeroCopy extends StatelessWidget {
             borderRadius: AppRadius.fullAll,
           ),
           child: Text(
-            'Queue management for modern businesses',
+            'Digital queues for restaurants',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -128,7 +128,7 @@ class _HeroCopy extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          'Turn waiting into\na premium experience',
+          'Turn waiting lines into\na better guest experience',
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 height: 1.1,
@@ -136,8 +136,8 @@ class _HeroCopy extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          'QR join, live tracking, staff console, TV displays, and owner analytics — '
-          'one platform built for restaurants, clinics, and service businesses.',
+          'Guests scan a QR, join from their phone, and get called when ready. '
+          'Staff run the line on a tablet. Owners see live wait times — built for restaurants, cafés, and food courts.',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: AppColors.neutral600,
                 height: 1.6,
@@ -275,7 +275,7 @@ class _LogoStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const logos = ['Restaurants', 'Clinics', 'Salons', 'Government', 'Retail'];
+    const logos = ['Restaurants', 'Cafés', 'Food courts', 'QSR chains', 'Multi-branch'];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Wrap(
@@ -365,11 +365,11 @@ class _HowItWorksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const steps = [
-      ('1', 'Scan QR', 'Customers land on the live join page for that queue.'),
-      ('2', 'Join queue', 'Name and phone — they receive a queue number instantly.'),
-      ('3', 'Track position', 'Position and wait update in real time. No refresh needed.'),
-      ('4', 'Get called', 'Staff taps CALL NEXT. The customer screen switches to Called.'),
-      ('5', 'Complete', 'Staff completes the visit. The customer sees confirmation.'),
+      ('1', 'Scan QR', 'Guests open the join page on their phone — no app install.'),
+      ('2', 'Join queue', 'Party size, name, and phone — they get a queue number instantly.'),
+      ('3', 'Track live', 'Position and wait update on their phone. No refresh needed.'),
+      ('4', 'Get called', 'Staff taps CALL NEXT. The guest screen switches to It’s your turn.'),
+      ('5', 'Complete', 'Staff completes the visit. The guest sees You’re all set.'),
     ];
 
     return _Section(

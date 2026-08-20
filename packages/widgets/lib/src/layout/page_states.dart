@@ -41,11 +41,12 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-/// Maps status strings to semantic badge variants.
+/// Maps status strings to semantic badge variants (queue + platform).
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({super.key, required this.status});
+  const StatusBadge({super.key, required this.status, this.label});
 
   final String status;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -54,17 +55,18 @@ class StatusBadge extends StatelessWidget {
       'ACTIVE' || 'UP' || 'OPEN' || 'SENT' || 'DELIVERED' || 'CONNECTED' ||
       'COMPLETED' || 'LIVE' =>
         AppBadgeVariant.success,
-      'SUSPENDED' || 'DEGRADED' || 'IN_PROGRESS' || 'WAITING' || 'CALLED' ||
+      'WAITING' || 'CALLED' || 'HOLDING' => AppBadgeVariant.primary,
+      'SUSPENDED' || 'DEGRADED' || 'IN_PROGRESS' || 'PAUSED' ||
       'CONNECTING' || 'RECONNECTING' =>
         AppBadgeVariant.warning,
       'FAILED' || 'DOWN' || 'CANCELLED' || 'DEACTIVATED' || 'NO_SHOW' ||
-      'SKIPPED' || 'DISCONNECTED' =>
+      'SKIPPED' || 'DISCONNECTED' || 'CLOSED' || 'ARCHIVED' =>
         AppBadgeVariant.danger,
       _ => AppBadgeVariant.info,
     };
 
     return AppBadge(
-      label: status.replaceAll('_', ' '),
+      label: label ?? status.replaceAll('_', ' '),
       variant: variant,
     );
   }

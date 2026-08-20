@@ -160,8 +160,8 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
               padding: EdgeInsets.all(isTablet ? AppSpacing.lg : AppSpacing.md),
               children: [
                 const CalmSectionLabel(
-                  'QR Center',
-                  subtitle: 'How customers join your queues',
+                  'Customer QR codes',
+                  subtitle: 'Print or share so guests can scan and join',
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 SegmentedButton<int>(

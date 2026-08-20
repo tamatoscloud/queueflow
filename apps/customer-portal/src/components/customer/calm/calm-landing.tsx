@@ -74,10 +74,15 @@ export function CalmLanding({ data, queueId }: CalmLandingProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-6 pb-4">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">{data.queue.name}</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">{data.business.name}</h1>
-        <p className="mt-1 flex items-center gap-1 text-sm text-muted">
+      <div className="text-center sm:text-left">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Welcome to
+        </p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          {data.business.name}
+        </h1>
+        <p className="mt-2 text-base font-semibold text-foreground">{data.queue.name}</p>
+        <p className="mt-1 flex items-center justify-center gap-1 text-sm text-muted sm:justify-start">
           <MapPin className="h-3.5 w-3.5" aria-hidden />
           {data.branch.name}
           {data.branch.city ? ` · ${data.branch.city}` : ''}
@@ -91,7 +96,9 @@ export function CalmLanding({ data, queueId }: CalmLandingProps) {
               Estimated wait
             </p>
             <p className="mt-1 font-display text-4xl font-bold tabular-nums text-foreground">
-              {data.live.estimatedWaitMinutes > 0 ? `~${data.live.estimatedWaitMinutes} min` : 'Short wait'}
+              {data.live.estimatedWaitMinutes > 0
+                ? `${data.live.estimatedWaitMinutes} min`
+                : 'Any moment'}
             </p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}>
@@ -104,30 +111,21 @@ export function CalmLanding({ data, queueId }: CalmLandingProps) {
         </div>
       </CalmCard>
 
-      <ol className="space-y-2 text-sm text-muted">
-        <li>
-          <span className="font-semibold text-foreground">1.</span> Join with your name
-        </li>
-        <li>
-          <span className="font-semibold text-foreground">2.</span> Get your queue number
-        </li>
-        <li>
-          <span className="font-semibold text-foreground">3.</span> Watch your position live — we&apos;ll
-          tell you when you&apos;re called
-        </li>
-      </ol>
-
       <Link
         href={`/q/${queueId}/join`}
-        className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-white shadow-sm transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex h-16 w-full items-center justify-center rounded-2xl bg-primary-dark text-lg font-bold uppercase tracking-wide text-white shadow-md transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        Join the queue
+        Join queue
       </Link>
+
+      <p className="text-center text-sm text-muted">
+        No app download. Keep your phone handy — we&apos;ll tell you when it&apos;s your turn.
+      </p>
 
       <CalmCard className="text-center">
         <Clock className="mx-auto h-5 w-5 text-primary" aria-hidden />
-        <p className="mt-2 text-xs font-medium text-foreground">Realtime updates</p>
-        <p className="text-[10px] text-muted">Keep this page open. Your place is saved if you refresh.</p>
+        <p className="mt-2 text-xs font-medium text-foreground">Live updates on this page</p>
+        <p className="text-[10px] text-muted">Your place is saved if you refresh.</p>
       </CalmCard>
     </div>
   );

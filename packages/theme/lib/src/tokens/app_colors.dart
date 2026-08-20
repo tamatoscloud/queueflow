@@ -65,4 +65,17 @@ abstract final class AppColors {
   static const Color calmCharcoal = Color(0xFF17151A);
   static const Color calmWarmGray = Color(0xFF6B6870);
   static const Color calmBorder = Color(0xFFE8E3E8);
+
+  // Queue entry status (restaurant floor) — map to brand semantics
+  static const Color waiting = primary;
+  static const Color waitingSoft = Color(0xFFEEF2FF);
+  static const Color called = primaryDark;
+  static const Color calledSoft = Color(0xFFE0E7FF);
+  static const Color completed = success;
+  static const Color completedSoft = successLight;
+  static const Color cancelled = danger;
+  static const Color cancelledSoft = dangerLight;
+  static const Color holding = warning;
+  static const Color holdingSoft = warningLight;
+  static const Color disabled = neutral300;
 }

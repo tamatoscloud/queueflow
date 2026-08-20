@@ -71,6 +71,7 @@ class QueuesScreen extends ConsumerWidget {
     final name = TextEditingController();
     final prefix = TextEditingController(text: 'A');
     final description = TextEditingController();
+    var serviceMode = 'DINE_IN';
     final user = ref.read(currentUserProvider);
     final branchId = ref.read(selectedBranchIdProvider);
     if (user?.businessId == null || branchId == null) {
@@ -81,33 +82,49 @@ class QueuesScreen extends ConsumerWidget {
     }
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Create queue'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-            TextField(controller: prefix, decoration: const InputDecoration(labelText: 'Prefix')),
-            TextField(controller: description, decoration: const InputDecoration(labelText: 'Description')),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Create queue'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(controller: prefix, decoration: const InputDecoration(labelText: 'Prefix')),
+              TextField(controller: description, decoration: const InputDecoration(labelText: 'Description')),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: serviceMode,
+                decoration: const InputDecoration(labelText: 'Service mode'),
+                items: const [
+                  DropdownMenuItem(value: 'DINE_IN', child: Text('Dine-in')),
+                  DropdownMenuItem(value: 'TAKEAWAY', child: Text('Takeaway')),
+                  DropdownMenuItem(value: 'DRIVE_IN', child: Text('Drive-in')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setLocal(() => serviceMode = v);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                await ref.read(businessApiClientProvider).createQueue({
+                  'businessId': user!.businessId,
+                  'branchId': branchId,
+                  'name': name.text.trim(),
+                  'prefix': prefix.text.trim().isEmpty ? 'A' : prefix.text.trim(),
+                  'serviceMode': serviceMode,
+                  if (description.text.isNotEmpty) 'description': description.text.trim(),
+                });
+                ref.invalidate(queuesProvider);
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Create'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              await ref.read(businessApiClientProvider).createQueue({
-                'businessId': user!.businessId,
-                'branchId': branchId,
-                'name': name.text.trim(),
-                'prefix': prefix.text.trim().isEmpty ? 'A' : prefix.text.trim(),
-                if (description.text.isNotEmpty) 'description': description.text.trim(),
-              });
-              ref.invalidate(queuesProvider);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Create'),
-          ),
-        ],
       ),
     );
   }
@@ -146,48 +163,83 @@ class QueuesScreen extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                const CalmSectionLabel('Your queues', subtitle: 'Tap to manage'),
+                const CalmSectionLabel('Your queues', subtitle: 'Open console or show customer QR'),
                 const SizedBox(height: AppSpacing.sm),
                 ...queues.map((q) {
                   final info = ServiceModeInfo.forMode(q.serviceMode);
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: CalmCard(
-                      onTap: () => context.push(AppRoutes.queueDetail(q.id)),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(info.icon, color: AppColors.calmViolet),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  info.label,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                        color: AppColors.calmWarmGray,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                                Text(
-                                  q.name,
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${q.waitingCount} ${info.waitingLabel}',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppColors.calmWarmGray,
-                                      ),
-                                ),
-                              ],
+                          InkWell(
+                            onTap: () => context.push(AppRoutes.queueDetail(q.id)),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                              child: Row(
+                                children: [
+                                  Icon(info.icon, color: AppColors.primary),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          info.label,
+                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: AppColors.calmWarmGray,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        Text(
+                                          q.name,
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${q.waitingCount} ${info.waitingLabel}'
+                                          '${q.averageServiceTimeMinutes > 0 ? ' · ~${q.averageServiceTimeMinutes} min avg' : ''}',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: AppColors.calmWarmGray,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  StatusBadge(status: q.status),
+                                ],
+                              ),
                             ),
                           ),
-                          StatusBadge(status: q.status),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.chevron_right, color: AppColors.calmWarmGray),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => context.push(AppRoutes.restaurantQr),
+                                  icon: const Icon(Icons.qr_code_2),
+                                  label: const Text('QR'),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                flex: 2,
+                                child: FilledButton.icon(
+                                  onPressed: () => context.push(AppRoutes.queueConsole(q.id)),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.primaryDark,
+                                    minimumSize: const Size(0, 48),
+                                  ),
+                                  icon: const Icon(Icons.campaign_outlined),
+                                  label: const Text('Open console'),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),

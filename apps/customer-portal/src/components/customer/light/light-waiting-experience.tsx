@@ -130,6 +130,9 @@ export function LightWaitingExperience({
         <p className="mt-2 font-display text-4xl font-bold tabular-nums text-foreground">
           {estimatedWaitMinutes > 0 ? `~${waitDisplay} min` : waitDisplay}
         </p>
+        <p className="mt-3 text-sm font-medium text-foreground">
+          Keep this page open. We&apos;ll let you know when it&apos;s your turn.
+        </p>
         <span className="sr-only">{waitDisplay}</span>
       </CalmCard>
 

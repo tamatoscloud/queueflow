@@ -1,97 +1,97 @@
 {
   "business": {
-    "id": "3300373f-efce-4ed7-9997-f279163a329a",
+    "id": "2d2a76b7-bf02-44d8-b416-ea88f2a38bc5",
     "name": "Bella Vista",
     "slug": "bella-vista"
   },
   "branch": {
-    "id": "78e5b100-d970-4ab8-af72-b02df90616df",
+    "id": "5a2ccaf7-78c1-4db3-a16f-136dccb8c2fb",
     "name": "Bella Vista Downtown"
   },
   "owner": {
     "email": "owner@bellavista.example.com"
   },
-  "portalBaseUrl": "http://localhost:3001",
+  "portalBaseUrl": "https://queueflow-six-beta.vercel.app",
   "mainQueue": {
-    "id": "76f2a221-9d04-45ed-b353-acda1c5e885f",
+    "id": "5354156e-0e46-41a1-ab49-8c6dd9ac80f7",
     "name": "Dine-In Waiting List",
-    "joinUrl": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f",
+    "joinUrl": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7",
     "qrCodes": [
       {
         "label": "Restaurant Entrance",
         "code": "BV-ENTRANCE",
-        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+        "url": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7"
       },
       {
         "label": "Reception Desk",
         "code": "BV-RECEPTION",
-        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+        "url": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7"
       },
       {
         "label": "Window",
         "code": "BV-WINDOW",
-        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+        "url": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7"
       },
       {
         "label": "Outdoor Banner",
         "code": "BV-OUTDOOR",
-        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+        "url": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7"
       },
       {
         "label": "Parking Area",
         "code": "BV-PARKING",
-        "url": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+        "url": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7"
       }
     ]
   },
   "serviceModes": {
     "DINE_IN": {
-      "queueId": "76f2a221-9d04-45ed-b353-acda1c5e885f",
+      "queueId": "5354156e-0e46-41a1-ab49-8c6dd9ac80f7",
       "name": "Dine-In Waiting List",
-      "joinUrl": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f"
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7"
     },
     "TAKEAWAY": {
-      "queueId": "3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "queueId": "763167b4-7222-4970-ad13-c3cd34811feb",
       "name": "Takeaway Pickup",
-      "joinUrl": "http://localhost:3001/q/3764aa48-8355-4523-ab53-a6bac870f5fb",
-      "branchLandingUrl": "http://localhost:3001/takeaway/78e5b100-d970-4ab8-af72-b02df90616df?queue=3764aa48-8355-4523-ab53-a6bac870f5fb"
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/763167b4-7222-4970-ad13-c3cd34811feb",
+      "branchLandingUrl": "https://queueflow-six-beta.vercel.app/takeaway/5a2ccaf7-78c1-4db3-a16f-136dccb8c2fb?queue=763167b4-7222-4970-ad13-c3cd34811feb"
     },
     "DRIVE_IN": {
-      "queueId": "8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "queueId": "94f4d0c7-d458-431f-b27c-6995c223ffde",
       "name": "Drive-In Lane",
-      "joinUrl": "http://localhost:3001/q/8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
-      "branchLandingUrl": "http://localhost:3001/drive/78e5b100-d970-4ab8-af72-b02df90616df?queue=8e39f190-00ae-4e92-8f85-cc0a4ec772d8"
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/94f4d0c7-d458-431f-b27c-6995c223ffde",
+      "branchLandingUrl": "https://queueflow-six-beta.vercel.app/drive/5a2ccaf7-78c1-4db3-a16f-136dccb8c2fb?queue=94f4d0c7-d458-431f-b27c-6995c223ffde"
     }
   },
   "queues": [
     {
-      "id": "76f2a221-9d04-45ed-b353-acda1c5e885f",
+      "id": "5354156e-0e46-41a1-ab49-8c6dd9ac80f7",
       "name": "Dine-In Waiting List",
-      "joinUrl": "http://localhost:3001/q/76f2a221-9d04-45ed-b353-acda1c5e885f",
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/5354156e-0e46-41a1-ab49-8c6dd9ac80f7",
       "serviceMode": "DINE_IN"
     },
     {
-      "id": "3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "id": "763167b4-7222-4970-ad13-c3cd34811feb",
       "name": "Takeaway Pickup",
-      "joinUrl": "http://localhost:3001/q/3764aa48-8355-4523-ab53-a6bac870f5fb",
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/763167b4-7222-4970-ad13-c3cd34811feb",
       "serviceMode": "TAKEAWAY"
     },
     {
-      "id": "8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "id": "94f4d0c7-d458-431f-b27c-6995c223ffde",
       "name": "Drive-In Lane",
-      "joinUrl": "http://localhost:3001/q/8e39f190-00ae-4e92-8f85-cc0a4ec772d8",
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/94f4d0c7-d458-431f-b27c-6995c223ffde",
       "serviceMode": "DRIVE_IN"
     },
     {
-      "id": "952fcae5-2e28-43c9-90ae-102cc5cdfcfa",
+      "id": "297db535-ec41-45eb-854f-487ed136dbed",
       "name": "Reservation Waitlist",
-      "joinUrl": "http://localhost:3001/q/952fcae5-2e28-43c9-90ae-102cc5cdfcfa",
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/297db535-ec41-45eb-854f-487ed136dbed",
       "serviceMode": "DINE_IN"
     },
     {
-      "id": "ffc52fb7-43b8-47ca-81e1-fa827b24d580",
+      "id": "e2839cf1-9056-4227-86e6-f9867ac31689",
       "name": "VIP Guests",
-      "joinUrl": "http://localhost:3001/q/ffc52fb7-43b8-47ca-81e1-fa827b24d580",
+      "joinUrl": "https://queueflow-six-beta.vercel.app/q/e2839cf1-9056-4227-86e6-f9867ac31689",
       "serviceMode": "DINE_IN"
     }
   ],

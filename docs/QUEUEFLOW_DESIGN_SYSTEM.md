@@ -1,33 +1,43 @@
 # QueueFlow design system
 
-One product language for Customer, Business, Staff, Admin, and TV. Indigo SaaS, not a restaurant microsite and not five unrelated kits.
+One product language for Customer, Business, Staff, Admin, and TV. Indigo SaaS for restaurants and guest-facing businesses — not a clinic product and not five unrelated kits.
 
 ## Brand
 
 | Token | Value | Use |
 | --- | --- | --- |
 | Primary | `#6366F1` | Buttons, live accents, focus |
-| Primary dark | `#4F46E5` | Pressed / CALL NEXT |
+| Primary dark | `#4F46E5` | Pressed / CALL NEXT / COMPLETE |
 | Primary light | `#818CF8` | Charts, rings |
 | Success | `#10B981` | Open, live, complete |
 | Warning | `#F59E0B` | Paused, hold |
-| Danger | `#EF4444` | Closed, errors, skip |
+| Danger | `#EF4444` | Closed, errors, skip, cancel |
 | Foreground | `#0F172A` | Text |
 | Muted | `#64748B` | Labels |
 | Border | `#E2E8F0` | Dividers |
 | Surface | `#FFFFFF` | Cards |
 | Canvas | `#F8FAFC` | Page |
 
+### Queue status semantics
+
+| Status | Color role | Notes |
+| --- | --- | --- |
+| Waiting | Primary | Guest in line |
+| Called | Primary dark | Interrupt — full indigo canvas on customer phone |
+| Completed | Success | Served |
+| Cancelled / No-show / Skipped | Danger | Secondary confirmations |
+| Holding / Paused | Warning | Temporary |
+
 **Called state:** invert — indigo canvas, white type, max contrast. Optional `navigator.vibrate`. Honor `prefers-reduced-motion`.
 
-Deprecate hospitality-only `#8B7CF8` / `#FAF8F5` as the default portal skin. Flutter `calmViolet` maps to primary indigo in new chrome where practical; do not block the demo on a full Flutter token rename.
+Customer journey uses forced light `.booking-light`. Flutter `calmViolet` may remain in legacy calm widgets; new chrome uses primary indigo.
 
 ## Typography
 
-- UI: Geist / system sans (`font-sans`)
-- Ticket numbers: display serif or heavy sans, **tabular-nums**, 48–72px on mobile, larger on TV
+- UI: Geist / system sans (`font-sans`); Flutter Inter via theme
+- Ticket numbers: heavy sans, **tabular-nums**, 48–72px on mobile, ≥120px on TV
 - Scale: 12 / 14 / 16 / 20 / 24 / 32 / 48 / 64
-- Labels: 10–12px uppercase tracking for POS-style section titles (`YOUR NUMBER`)
+- Labels: 10–12px uppercase tracking for POS-style section titles (`YOUR NUMBER`, `NOW SERVING`)
 
 ## Spacing and grid
 
@@ -35,38 +45,49 @@ Deprecate hospitality-only `#8B7CF8` / `#FAF8F5` as the default portal skin. Flu
 
 Radius: 8 / 12 / 16 / 24 / pill 999. Shadows: sm/md only — no neon.
 
+## Touch targets (Staff)
+
+| Size | Min height | Use |
+| --- | --- | --- |
+| md | 48px | Forms |
+| lg | 56px | Standard primary |
+| xl | **80px** | CALL NEXT / COMPLETE on tablets & kiosks |
+
+Prefer one obvious primary CTA per screen. Secondary = outline. Destructive = danger with confirm.
+
 ## Components
 
-- **Buttons:** primary fill 56px min height (staff 64px). CALL NEXT uses primary dark, full width, icon `campaign`. Secondary outline. Destructive text+border danger.
-- **Inputs:** 48px height, visible label, error under field, `autocomplete`.
+- **Buttons:** primary fill; CALL NEXT uses primary dark, full width, icon `campaign`.
+- **Inputs:** 48px height, visible label, error under field.
 - **Cards:** white, 1px border, 16px radius, 16px padding.
-- **Badges:** Open/Paused/Closed/Live.
-- **Tables:** Flutter data rows; portal rarely tables.
-- **Dialogs / sheets:** QR sheet, Call next sheet, walk-in. Focus trap + Esc.
-- **Nav:** Customer — shell header (business name + Live). Business desktop — side nav with Live Queue first. Staff — bottom or rail, Live Queue only. Admin — side nav. TV — no nav.
+- **Badges:** Open / Paused / Closed / Live / Waiting / Called.
+- **Empty / Error:** one sentence + primary recovery (`EmptyStateView`, `PageError`).
+- **Nav:** Customer — shell header. Business — side nav (Home, Queues, **QR**, …). Staff — Live Queue first; minimize chrome on floor. Admin — side nav. TV — no nav.
 
 ## States
 
-- Loading: skeletons matching card layout (not blank).
-- Empty: one sentence + primary next step (“Waiting for the first guest”).
-- Error: title + recovery (Retry / Ask staff).
-- Offline: banner + last known ticket numbers remain visible.
-- Success: join confirmation uses the ticket hero, not a toast-only.
-- Permission: “You don’t have access to manage this queue.”
+- Loading: skeletons (not blank).
+- Empty: one sentence + next step (“Waiting for the first guest”).
+- Error: title + Retry.
+- Offline / reconnecting: soft “Updating…” — never alarming socket jargon for guests.
 - Session expired: Login CTA.
 
 ## Icons
 
-Lucide (web) and Material outlined (Flutter). One metaphor: QrCode, Campaign (call), Check (complete).
+Lucide (web) and Material outlined (Flutter). Metaphors: QrCode, Campaign (call), Check (complete).
 
 ## Accessibility
 
-WCAG AA contrast on text/buttons. `:focus-visible` 2px primary ring. `aria-live="polite"` for position; `assertive` for CALLED. Reduced motion: no conic spin.
+WCAG AA contrast. `:focus-visible` 2px primary ring. `aria-live="polite"` for position; `assertive` for CALLED. Reduced motion: no decorative spin.
 
 ## TV
 
-Black or deep slate, white numbers ≥ 120px, currently serving vs next contrast, 16:9 safe margins.
+Deep slate / black, white numbers ≥ 120px, currently serving vs waiting contrast, 16:9 safe margins.
+
+## Copy voice
+
+Restaurant-first: guests, parties, counters, queues — not patients, clinics, or appointments as the lead metaphor.
 
 ## Do not
 
-Unsplash venue photos in production UI, fake ratings, restaurant-only copy on generic tenants, five themes, decorative jazz pills without live meaning.
+Unsplash venue photos in production UI, fake ratings, five themes, hover-only actions on staff surfaces, equal visual weight for five CTAs on one screen.
