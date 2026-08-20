@@ -422,7 +422,7 @@ class _PublicPairScreenState extends ConsumerState<PublicPairScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      'QueueFlow TV Display',
+                      'QueueFlow Display',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -430,7 +430,7 @@ class _PublicPairScreenState extends ConsumerState<PublicPairScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Enter your display code or queue ID to start.',
+                      'Waiting for a queue to be connected.\nEnter your display code or queue ID to start.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,

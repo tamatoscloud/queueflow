@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:queueflow_network/queueflow_network.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
@@ -16,10 +17,17 @@ import '../../../features/auth/presentation/auth_controller.dart';
 import '../../../shared/widgets/common_widgets.dart';
 
 final staffQueuesProvider = FutureProvider.autoDispose((ref) async {
+  final auth = ref.watch(authControllerProvider);
+  if (!auth.isAuthenticated) return <QueueModel>[];
   final api = ref.watch(businessApiClientProvider);
-  final user = ref.watch(currentUserProvider);
+  final user = auth.session?.user;
   final branchId = ref.watch(selectedBranchIdProvider);
-  return api.getQueues(branchId: branchId, businessId: user?.businessId);
+  try {
+    return api.getQueues(branchId: branchId, businessId: user?.businessId);
+  } on UnauthorizedException {
+    await ref.read(authControllerProvider.notifier).sessionExpired();
+    rethrow;
+  }
 });
 
 final staffHomeRealtimeProvider = Provider.autoDispose<void>((ref) {

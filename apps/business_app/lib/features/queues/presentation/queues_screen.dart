@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:queueflow_network/queueflow_network.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
 
@@ -39,17 +40,24 @@ final queuesRealtimeProvider = Provider.autoDispose<void>((ref) {
 });
 
 final queuesProvider = FutureProvider.autoDispose<List<QueueModel>>((ref) async {
+  final auth = ref.watch(authControllerProvider);
+  if (!auth.isAuthenticated) return [];
   final api = ref.watch(businessApiClientProvider);
   final cache = ref.watch(offlineCacheProvider);
   final branchId = ref.watch(selectedBranchIdProvider);
-  final businessId = ref.watch(currentUserProvider)?.businessId;
-  return cachedFetchList(
-    cache: cache,
-    cacheKey: 'queues:${branchId ?? 'all'}:$businessId',
-    fetch: () => api.getQueues(branchId: branchId, businessId: businessId),
-    fromJson: QueueModel.fromJson,
-    toJson: (q) => q.toJson(),
-  );
+  final businessId = auth.session?.user.businessId;
+  try {
+    return cachedFetchList(
+      cache: cache,
+      cacheKey: 'queues:${branchId ?? 'all'}:$businessId',
+      fetch: () => api.getQueues(branchId: branchId, businessId: businessId),
+      fromJson: QueueModel.fromJson,
+      toJson: (q) => q.toJson(),
+    );
+  } on UnauthorizedException {
+    await ref.read(authControllerProvider.notifier).sessionExpired();
+    rethrow;
+  }
 });
 
 final queueDetailProvider = FutureProvider.autoDispose.family<QueueModel, String>((ref, id) async {

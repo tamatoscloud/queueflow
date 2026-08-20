@@ -26,16 +26,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final init = ref.watch(sessionInitProvider);
 
   return GoRouter(
-    initialLocation: AppRoutes.dashboard,
+    initialLocation: AppRoutes.boot,
     redirect: (context, state) {
-      if (init.isLoading) return null;
+      final loc = state.matchedLocation;
+      final isLogin = loc == AppRoutes.login;
+      final isBoot = loc == AppRoutes.boot;
+      if (init.isLoading) {
+        return isBoot || isLogin ? null : AppRoutes.boot;
+      }
       final isAuth = auth.isAuthenticated;
-      final isLogin = state.matchedLocation == AppRoutes.login;
       if (!isAuth && !isLogin) return AppRoutes.login;
-      if (isAuth && isLogin) return AppRoutes.dashboard;
+      if (isAuth && (isLogin || isBoot)) return AppRoutes.dashboard;
       return null;
     },
     routes: [
+      GoRoute(path: AppRoutes.boot, builder: (_, __) => const SessionLoadingScreen()),
       GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
       ShellRoute(
         builder: (context, state, child) => AdminShell(child: child),

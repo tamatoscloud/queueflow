@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:queueflow_network/queueflow_network.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
+import '../../../core/models/models.dart';
 import '../../../core/network/business_api_client.dart';
 import '../../../core/realtime/realtime_client.dart';
 import '../../../core/realtime/realtime_sync.dart';
@@ -19,22 +21,42 @@ import 'widgets/owner_quick_actions.dart';
 import 'widgets/service_performance_panel.dart';
 
 final dashboardProvider = FutureProvider.autoDispose((ref) async {
+  final auth = ref.watch(authControllerProvider);
+  if (!auth.isAuthenticated) {
+    return (
+      queues: <QueueModel>[],
+      summary: const DailySummaryModel(
+        date: '',
+        totalServed: 0,
+        averageWaitMinutes: 0,
+        noShows: 0,
+      ),
+      notifications: <NotificationModel>[],
+      waiting: 0,
+      businessName: 'Your restaurant',
+    );
+  }
   final api = ref.watch(businessApiClientProvider);
-  final user = ref.watch(currentUserProvider);
+  final user = auth.session?.user;
   final branchId = ref.watch(selectedBranchIdProvider);
   final businessId = user?.businessId;
-  final queues = await api.getQueues(branchId: branchId, businessId: businessId);
-  final summary = await api.getDailySummary(businessId: businessId);
-  final notifications = await api.getNotifications();
-  final waiting = queues.fold<int>(0, (sum, q) => sum + q.waitingCount);
-  final business = businessId != null ? await api.getBusiness(businessId) : null;
-  return (
-    queues: queues,
-    summary: summary,
-    notifications: notifications,
-    waiting: waiting,
-    businessName: business?['name'] as String? ?? 'Your restaurant',
-  );
+  try {
+    final queues = await api.getQueues(branchId: branchId, businessId: businessId);
+    final summary = await api.getDailySummary(businessId: businessId);
+    final notifications = await api.getNotifications();
+    final waiting = queues.fold<int>(0, (sum, q) => sum + q.waitingCount);
+    final business = businessId != null ? await api.getBusiness(businessId) : null;
+    return (
+      queues: queues,
+      summary: summary,
+      notifications: notifications,
+      waiting: waiting,
+      businessName: business?['name'] as String? ?? 'Your restaurant',
+    );
+  } on UnauthorizedException {
+    await ref.read(authControllerProvider.notifier).sessionExpired();
+    rethrow;
+  }
 });
 
 final dashboardRealtimeBindingProvider = Provider.autoDispose<void>((ref) {

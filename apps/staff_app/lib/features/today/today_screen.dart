@@ -31,10 +31,17 @@ import '../../shared/widgets/staff/staff_empty_states.dart';
 import '../../shared/widgets/staff/staff_greeting.dart';
 
 final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
+  final auth = ref.watch(authControllerProvider);
+  if (!auth.isAuthenticated) return <QueueModel>[];
   final api = ref.watch(businessApiClientProvider);
-  final user = ref.watch(currentUserProvider);
+  final user = auth.session?.user;
   final branchId = ref.watch(selectedBranchIdProvider);
-  return api.getQueues(branchId: branchId, businessId: user?.businessId);
+  try {
+    return api.getQueues(branchId: branchId, businessId: user?.businessId);
+  } on UnauthorizedException {
+    await ref.read(authControllerProvider.notifier).sessionExpired();
+    rethrow;
+  }
 });
 
 final todayQueueSnapshotProvider =

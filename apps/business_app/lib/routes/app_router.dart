@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,14 +27,17 @@ final routerProvider = Provider<GoRouter>((ref) {
   final init = ref.watch(sessionInitProvider);
 
   return GoRouter(
-    initialLocation: AppRoutes.dashboard,
+    initialLocation: AppRoutes.boot,
     redirect: (context, state) {
-      if (init.isLoading) return null;
+      final loc = state.matchedLocation;
+      final isLogin = loc == AppRoutes.login || loc == AppRoutes.forgotPassword;
+      final isBoot = loc == AppRoutes.boot;
+      if (init.isLoading) {
+        return isBoot || isLogin ? null : AppRoutes.boot;
+      }
       final isAuth = auth.isAuthenticated;
-      final isLogin = state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.forgotPassword;
       if (!isAuth && !isLogin) return AppRoutes.login;
-      if (isAuth && isLogin) {
+      if (isAuth && (isLogin || isBoot)) {
         return defaultRouteForPersona(personaFromUser(auth.session?.user));
       }
       if (isAuth) {
@@ -50,6 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: AppRoutes.boot, builder: (_, __) => const _SessionBootScreen()),
       GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
       GoRoute(path: AppRoutes.forgotPassword, builder: (_, __) => const ForgotPasswordScreen()),
       ShellRoute(
@@ -99,3 +104,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class _SessionBootScreen extends StatelessWidget {
+  const _SessionBootScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}

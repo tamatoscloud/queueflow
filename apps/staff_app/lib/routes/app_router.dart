@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,17 +19,21 @@ final routerProvider = Provider<GoRouter>((ref) {
   final init = ref.watch(sessionInitProvider);
 
   return GoRouter(
-    initialLocation: StaffRoutes.today,
+    initialLocation: StaffRoutes.boot,
     redirect: (context, state) {
-      if (init.isLoading) return null;
+      final loc = state.matchedLocation;
+      final isLogin = loc == StaffRoutes.login || loc == StaffRoutes.forgotPassword;
+      final isBoot = loc == StaffRoutes.boot;
+      if (init.isLoading) {
+        return isBoot || isLogin ? null : StaffRoutes.boot;
+      }
       final isAuth = auth.isAuthenticated;
-      final isLogin = state.matchedLocation == StaffRoutes.login ||
-          state.matchedLocation == StaffRoutes.forgotPassword;
       if (!isAuth && !isLogin) return StaffRoutes.login;
-      if (isAuth && isLogin) return StaffRoutes.today;
+      if (isAuth && (isLogin || isBoot)) return StaffRoutes.today;
       return null;
     },
     routes: [
+      GoRoute(path: StaffRoutes.boot, builder: (_, __) => const _SessionBootScreen()),
       GoRoute(path: StaffRoutes.login, builder: (_, __) => const LoginScreen()),
       GoRoute(path: StaffRoutes.forgotPassword, builder: (_, __) => const ForgotPasswordScreen()),
       ShellRoute(
@@ -51,3 +56,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class _SessionBootScreen extends StatelessWidget {
+  const _SessionBootScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}

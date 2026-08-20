@@ -2,6 +2,7 @@
 abstract final class StaffRoutes {
   static const login = '/login';
   static const forgotPassword = '/forgot-password';
+  static const boot = '/boot';
   static const today = '/';
   static const customers = '/customers';
   static const notifications = '/notifications';

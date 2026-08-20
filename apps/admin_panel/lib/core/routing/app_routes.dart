@@ -1,5 +1,6 @@
 abstract final class AppRoutes {
   static const login = '/login';
+  static const boot = '/boot';
   static const dashboard = '/dashboard';
   static const tenants = '/tenants';
   static const branches = '/branches';

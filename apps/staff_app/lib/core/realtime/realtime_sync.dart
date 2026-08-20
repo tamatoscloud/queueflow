@@ -19,7 +19,6 @@ void bindRealtimeRefresh({
 
   void startPolling() {
     if (pollTimer != null) return;
-    onRefresh();
     pollTimer = Timer.periodic(pollInterval, (_) => onRefresh());
   }
 
@@ -33,9 +32,8 @@ void bindRealtimeRefresh({
   client.registerOnConnected(subscribe);
 
   Future.microtask(() async {
-    startPolling();
     await client.connect();
-    onRefresh();
+    startPolling();
   });
 
   final eventSub = client.events.listen((_) => onRefresh());

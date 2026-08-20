@@ -2,6 +2,7 @@
 abstract final class AppRoutes {
   static const login = '/login';
   static const forgotPassword = '/forgot-password';
+  static const boot = '/boot';
   static const shell = '/';
   static const dashboard = '/dashboard';
   static const staffToday = '/today';

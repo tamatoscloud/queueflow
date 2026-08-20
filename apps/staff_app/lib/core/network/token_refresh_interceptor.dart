@@ -7,7 +7,7 @@ import 'api_response_parser.dart';
 /// Retries failed requests after refreshing the access token via the public
 /// auth endpoint. Uses [AuthTokenStorage] + [publicDio] only — no dependency
 /// on [AuthRepository], avoiding a circular provider graph.
-final class TokenRefreshInterceptor extends Interceptor {
+final class TokenRefreshInterceptor extends QueuedInterceptor {
   TokenRefreshInterceptor({
     required this.storage,
     required this.tokenHolder,
@@ -46,6 +46,7 @@ final class TokenRefreshInterceptor extends Interceptor {
       final refreshToken = await storage.getRefreshToken();
       final userJson = await storage.getUserJson();
       if (refreshToken == null || userJson == null) {
+        tokenHolder.setAccessToken(null);
         return handler.next(err);
       }
 
@@ -69,6 +70,8 @@ final class TokenRefreshInterceptor extends Interceptor {
       final response = await retryDio().fetch<dynamic>(opts);
       return handler.resolve(response);
     } catch (_) {
+      tokenHolder.setAccessToken(null);
+      await storage.clear();
       return handler.next(err);
     } finally {
       _refreshing = false;

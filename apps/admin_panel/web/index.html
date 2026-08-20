@@ -1,38 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="QueueFlow admin panel (web)">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="QueueFlow platform admin panel">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="admin_panel">
+  <meta name="apple-mobile-web-app-title" content="QueueFlow Admin">
+  <meta name="theme-color" content="#6366F1">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>admin_panel</title>
+  <title>QueueFlow Admin</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { height: 100%; margin: 0; background: #F8FAFC; }
+    #qf-boot {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-family: Inter, Segoe UI, system-ui, sans-serif;
+      background: #F8FAFC; color: #0F172A;
+    }
+    #qf-boot .mark {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, #6366F1, #4F46E5);
+      margin-bottom: 16px;
+    }
+    #qf-boot h1 { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
+    #qf-boot p { margin: 0; color: #64748B; font-size: 14px; }
+  </style>
 </head>
 <body>
+  <div id="qf-boot">
+    <div class="mark"></div>
+    <h1>QueueFlow Admin</h1>
+    <p>Loading platform console…</p>
+  </div>
+  <script>
+    // Clear stale PWA workers from older deploys so users never get a blank cached shell.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (reg) { reg.unregister(); });
+      });
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (key) { caches.delete(key); });
+        });
+      }
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('qf-boot');
+      if (el) el.remove();
+    });
+  </script>
 </body>
 </html>

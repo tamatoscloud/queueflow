@@ -38,6 +38,11 @@ class AuthController extends StateNotifier<AuthState> {
     state = AuthState(status: AuthStatus.authenticated, session: session);
   }
 
+  Future<void> sessionExpired() async {
+    await _repo.clearSession();
+    state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
   Future<void> logout() async {
     await _repo.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
