@@ -28,9 +28,28 @@ final sessionBootstrapProvider = Provider<SessionBootstrap>((ref) {
 });
 
 final sessionInitProvider = FutureProvider<void>((ref) async {
-  await ref.read(authControllerProvider.notifier).bootstrap();
-  final branchId = await ref.read(sessionBootstrapProvider).loadBranchId();
-  if (branchId != null) {
-    ref.read(selectedBranchIdProvider.notifier).state = branchId;
+  try {
+    await ref
+        .read(authControllerProvider.notifier)
+        .bootstrap()
+        .timeout(const Duration(seconds: 8));
+  } catch (_) {
+    // Prefer login over an endless /boot spinner if secure storage hangs.
+    final status = ref.read(authControllerProvider).status;
+    if (status == AuthStatus.unknown) {
+      // Force unauthenticated so router can leave /boot.
+      await ref.read(authControllerProvider.notifier).sessionExpired();
+    }
+  }
+  try {
+    final branchId = await ref
+        .read(sessionBootstrapProvider)
+        .loadBranchId()
+        .timeout(const Duration(seconds: 2));
+    if (branchId != null) {
+      ref.read(selectedBranchIdProvider.notifier).state = branchId;
+    }
+  } catch (_) {
+    // Branch preference is optional.
   }
 });

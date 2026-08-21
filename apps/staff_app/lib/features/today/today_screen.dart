@@ -44,10 +44,10 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
   }
 });
 
-final todayQueueSnapshotProvider =
-    FutureProvider.autoDispose.family<QueueSnapshotModel, String>((ref, queueId) async {
-  return ref.read(businessApiClientProvider).getQueueSnapshot(queueId);
-});
+final todayQueueSnapshotProvider = FutureProvider.autoDispose
+    .family<QueueSnapshotModel, String>((ref, queueId) async {
+      return ref.read(businessApiClientProvider).getQueueSnapshot(queueId);
+    });
 
 final todayRealtimeProvider = Provider.autoDispose<void>((ref) {
   final user = ref.watch(currentUserProvider);
@@ -88,11 +88,11 @@ String? _venueName(WidgetRef ref) {
 }
 
 String _realtimeLabel(RealtimeStatus status) => switch (status) {
-      RealtimeStatus.connected => 'Live',
-      RealtimeStatus.connecting => 'Connecting',
-      RealtimeStatus.reconnecting => 'Reconnecting',
-      RealtimeStatus.disconnected => 'Updating',
-    };
+  RealtimeStatus.connected => 'Live',
+  RealtimeStatus.connecting => 'Connecting',
+  RealtimeStatus.reconnecting => 'Reconnecting',
+  RealtimeStatus.disconnected => 'Updating',
+};
 
 /// Calm operational home — who is waiting, who is next, one obvious Call Next.
 class TodayScreen extends ConsumerStatefulWidget {
@@ -107,7 +107,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   QueueEntryModel? _nextWaiting(QueueSnapshotModel? snapshot) {
     if (snapshot == null) return null;
-    final waiting = snapshot.entries.where((e) => e.status == 'WAITING').toList();
+    final waiting = snapshot.entries
+        .where((e) => e.status == 'WAITING')
+        .toList();
     if (waiting.isEmpty) return null;
     waiting.sort((a, b) => (a.position ?? 999).compareTo(b.position ?? 999));
     return waiting.first;
@@ -121,7 +123,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
     setState(() => _selectedQueueId = queue.id);
-    final snapshot = await ref.read(todayQueueSnapshotProvider(queue.id).future);
+    final snapshot = await ref.read(
+      todayQueueSnapshotProvider(queue.id).future,
+    );
     final next = _nextWaiting(snapshot);
     if (!context.mounted) return;
     await showCallNextSheet(
@@ -179,285 +183,301 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       return const _BreakModeView();
     }
 
-    return online.when(
-      data: (isOnline) {
-        if (!isOnline) {
-          return StaffOfflineState(
-            showCachedHint: queuesAsync.hasValue,
-            onRetry: () => ref.invalidate(todayQueuesProvider),
+    // Treat connectivity "loading" as online so Live Queue never gates forever
+    // on web when connectivity_plus has not emitted an initial event yet.
+    final isOnline = online.valueOrNull ?? true;
+    if (!isOnline) {
+      return StaffOfflineState(
+        showCachedHint: queuesAsync.hasValue,
+        onRetry: () => ref.invalidate(todayQueuesProvider),
+      );
+    }
+
+    return queuesAsync.when(
+      loading: () => const PageLoading(message: "Loading today's queue…"),
+      error: (e, _) =>
+          _queueLoadError(e, () => ref.invalidate(todayQueuesProvider)),
+      data: (queues) {
+        if (queues.isEmpty) {
+          return const StaffQueueClosedState();
+        }
+
+        final primary =
+            selectCallNextQueue(queues, preferredQueueId: _selectedQueueId) ??
+            queues.firstWhere((q) => q.isActive, orElse: () => queues.first);
+        final snapshotAsync = ref.watch(todayQueueSnapshotProvider(primary.id));
+
+        if (primary.isPaused) {
+          return StaffQueuePausedState(
+            onResume: () => queueAction(ref, primary.id, 'resume', () async {
+              _invalidateSnapshots(queues);
+            }),
           );
         }
-        return queuesAsync.when(
-          loading: () => const PageLoading(message: "Loading today's queue…"),
-          error: (e, _) => _queueLoadError(e, () => ref.invalidate(todayQueuesProvider)),
-          data: (queues) {
-            if (queues.isEmpty) {
-              return const StaffQueueClosedState();
-            }
 
-            final primary = selectCallNextQueue(queues, preferredQueueId: _selectedQueueId) ??
-                queues.firstWhere((q) => q.isActive, orElse: () => queues.first);
-            final snapshotAsync = ref.watch(todayQueueSnapshotProvider(primary.id));
+        final totalWaiting = queues.fold<int>(0, (s, q) => s + q.waitingCount);
+        final snapshot = snapshotAsync.valueOrNull;
+        final next = _nextWaiting(snapshot);
+        final modeInfo = ServiceModeInfo.forMode(primary.serviceMode);
+        final waitingUnit = _aggregateWaitingUnit(queues);
+        final estWait =
+            snapshot?.metrics.averageWaitMinutes ??
+            primary.averageServiceTimeMinutes;
+        final liveLabel = realtimeStatus.when(
+          data: _realtimeLabel,
+          loading: () => 'Connecting',
+          error: (_, __) => 'Updating',
+        );
 
-            if (primary.isPaused) {
-              return StaffQueuePausedState(
-                onResume: () => queueAction(ref, primary.id, 'resume', () async {
-                  _invalidateSnapshots(queues);
-                }),
-              );
-            }
-
-            final totalWaiting = queues.fold<int>(0, (s, q) => s + q.waitingCount);
-            final snapshot = snapshotAsync.valueOrNull;
-            final next = _nextWaiting(snapshot);
-            final modeInfo = ServiceModeInfo.forMode(primary.serviceMode);
-            final waitingUnit = _aggregateWaitingUnit(queues);
-            final estWait = snapshot?.metrics.averageWaitMinutes ?? primary.averageServiceTimeMinutes;
-            final liveLabel = realtimeStatus.when(
-              data: _realtimeLabel,
-              loading: () => 'Connecting',
-              error: (_, __) => 'Updating',
-            );
-
-            return Stack(
-              children: [
-                RefreshIndicator(
-                  onRefresh: () async => _invalidateSnapshots(queues),
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.md,
-                      AppSpacing.md,
-                      totalWaiting > 0 ? 160 : AppSpacing.xl,
-                    ),
-                    children: [
-                      StaffGreetingHeader(
-                        name: user?.fullName.split(' ').first ?? 'Staff',
-                        venueName: venueName ?? primary.name,
-                        trailing: CalmLiveIndicator(label: liveLabel),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      CalmCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: () async => _invalidateSnapshots(queues),
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  totalWaiting > 0 ? 160 : AppSpacing.xl,
+                ),
+                children: [
+                  StaffGreetingHeader(
+                    name: user?.fullName.split(' ').first ?? 'Staff',
+                    venueName: venueName ?? primary.name,
+                    trailing: CalmLiveIndicator(label: liveLabel),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  CalmCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const CalmSectionLabel('WAITING NOW'),
+                        const SizedBox(height: AppSpacing.sm),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            const CalmSectionLabel('WAITING NOW'),
-                            const SizedBox(height: AppSpacing.sm),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                AnimatedCounter(
-                                  value: totalWaiting,
-                                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.calmCharcoal,
-                                        height: 1,
-                                        fontSize: 56,
-                                      ),
-                                ),
-                                const SizedBox(width: 10),
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: Text(
-                                    waitingUnit,
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          color: AppColors.calmWarmGray,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                            AnimatedCounter(
+                              value: totalWaiting,
+                              style: Theme.of(context).textTheme.displayLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.calmCharcoal,
+                                    height: 1,
+                                    fontSize: 56,
                                   ),
-                                ),
-                              ],
+                            ),
+                            const SizedBox(width: 10),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                waitingUnit,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      color: AppColors.calmWarmGray,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                      if (next != null) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        CalmCard(
-                          highlighted: true,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const CalmSectionLabel('UP NEXT'),
-                              const SizedBox(height: AppSpacing.md),
-                              Text(
-                                next.displayCode.isNotEmpty
-                                    ? next.displayCode
-                                    : (next.customerName ?? 'Guest'),
-                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primaryDark,
-                                      letterSpacing: 1,
-                                      fontFeatures: const [FontFeature.tabularFigures()],
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                next.customerName ?? 'Guest',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.calmCharcoal,
-                                    ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _upNextDetail(next, primary.serviceMode),
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: AppColors.calmWarmGray,
-                                    ),
-                              ),
-                              if (estWait > 0) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Estimated wait · ~$estWait min',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: AppColors.calmWarmGray,
-                                      ),
-                                ),
-                              ],
-                            ],
-                          ),
                         ),
                       ],
-                      if (totalWaiting == 0) ...[
-                        const SizedBox(height: AppSpacing.xl),
-                        StaffQueueEmptyState(
-                          onAddCustomer: () => showWalkIn(context, ref, primary.id, () async {
-                            _invalidateSnapshots(queues);
-                          }),
-                        ),
-                      ] else ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppButton(
-                                label: 'Add customer',
-                                icon: Icons.person_add_outlined,
-                                variant: AppButtonVariant.secondary,
-                                fullWidth: true,
-                                onPressed: () => showWalkIn(context, ref, primary.id, () async {
-                                  _invalidateSnapshots(queues);
-                                }),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: AppButton(
-                                label: 'View queue',
-                                icon: Icons.list_alt,
-                                variant: AppButtonVariant.outline,
-                                fullWidth: true,
-                                onPressed: () => context.push(StaffRoutes.queueConsole(primary.id)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        const CalmSectionLabel('SERVICE MODES'),
-                        const SizedBox(height: AppSpacing.sm),
-                        ...calmServiceModeRows(
-                          context,
-                          queues,
-                          onModeTap: (mode) {
-                            final target = selectCallNextQueue(
-                              queues,
-                              preferredServiceMode: mode,
-                            );
-                            if (target != null) {
-                              context.push(StaffRoutes.queueConsole(target.id));
-                            }
-                          },
-                        ),
-                        if (queues.length > 1) ...[
+                    ),
+                  ),
+                  if (next != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    CalmCard(
+                      highlighted: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const CalmSectionLabel('UP NEXT'),
                           const SizedBox(height: AppSpacing.md),
-                          const CalmSectionLabel('ALL QUEUES'),
-                          const SizedBox(height: AppSpacing.sm),
-                          ...queues.map(
-                            (q) => Padding(
-                              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                              child: CalmCard(
-                                onTap: () {
-                                  setState(() => _selectedQueueId = q.id);
-                                  context.push(StaffRoutes.queueConsole(q.id));
-                                },
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.md,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            q.name,
-                                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                          Text(
-                                            '${ServiceModeInfo.forMode(q.serviceMode).label} · ${q.waitingCount} waiting',
-                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                  color: AppColors.calmWarmGray,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(Icons.chevron_right, color: AppColors.calmWarmGray),
+                          Text(
+                            next.displayCode.isNotEmpty
+                                ? next.displayCode
+                                : (next.customerName ?? 'Guest'),
+                            style: Theme.of(context).textTheme.displaySmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryDark,
+                                  letterSpacing: 1,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
                                   ],
                                 ),
-                              ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            next.customerName ?? 'Guest',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.calmCharcoal,
+                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _upNextDetail(next, primary.serviceMode),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(color: AppColors.calmWarmGray),
+                          ),
+                          if (estWait > 0) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Estimated wait · ~$estWait min',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: AppColors.calmWarmGray),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ],
-                  ),
-                ),
-                if (totalWaiting > 0)
-                  Positioned(
-                    left: isTablet ? 32 : 16,
-                    right: isTablet ? 32 : 16,
-                    bottom: 0,
-                    child: SafeArea(
-                      top: false,
-                      child: Container(
-                        padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.calmIvory.withValues(alpha: 0),
-                              AppColors.calmIvory,
-                            ],
-                          ),
-                        ),
-                        child: CalmPrimaryButton(
-                          label: modeInfo.callNextActionLabel,
-                          icon: Icons.campaign_outlined,
-                          onPressed: () => _callNext(context, primary),
-                        ),
                       ),
                     ),
+                  ],
+                  if (totalWaiting == 0) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    StaffQueueEmptyState(
+                      onAddCustomer: () =>
+                          showWalkIn(context, ref, primary.id, () async {
+                            _invalidateSnapshots(queues);
+                          }),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            label: 'Add customer',
+                            icon: Icons.person_add_outlined,
+                            variant: AppButtonVariant.secondary,
+                            fullWidth: true,
+                            onPressed: () =>
+                                showWalkIn(context, ref, primary.id, () async {
+                                  _invalidateSnapshots(queues);
+                                }),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: AppButton(
+                            label: 'View queue',
+                            icon: Icons.list_alt,
+                            variant: AppButtonVariant.outline,
+                            fullWidth: true,
+                            onPressed: () => context.push(
+                              StaffRoutes.queueConsole(primary.id),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const CalmSectionLabel('SERVICE MODES'),
+                    const SizedBox(height: AppSpacing.sm),
+                    ...calmServiceModeRows(
+                      context,
+                      queues,
+                      onModeTap: (mode) {
+                        final target = selectCallNextQueue(
+                          queues,
+                          preferredServiceMode: mode,
+                        );
+                        if (target != null) {
+                          context.push(StaffRoutes.queueConsole(target.id));
+                        }
+                      },
+                    ),
+                    if (queues.length > 1) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      const CalmSectionLabel('ALL QUEUES'),
+                      const SizedBox(height: AppSpacing.sm),
+                      ...queues.map(
+                        (q) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: CalmCard(
+                            onTap: () {
+                              setState(() => _selectedQueueId = q.id);
+                              context.push(StaffRoutes.queueConsole(q.id));
+                            },
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        q.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      Text(
+                                        '${ServiceModeInfo.forMode(q.serviceMode).label} · ${q.waitingCount} waiting',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: AppColors.calmWarmGray,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: AppColors.calmWarmGray,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+            if (totalWaiting > 0)
+              Positioned(
+                left: isTablet ? 32 : 16,
+                right: isTablet ? 32 : 16,
+                bottom: 0,
+                child: SafeArea(
+                  top: false,
+                  child: Container(
+                    padding: const EdgeInsets.only(
+                      top: AppSpacing.sm,
+                      bottom: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.calmIvory.withValues(alpha: 0),
+                          AppColors.calmIvory,
+                        ],
+                      ),
+                    ),
+                    child: CalmPrimaryButton(
+                      label: modeInfo.callNextActionLabel,
+                      icon: Icons.campaign_outlined,
+                      onPressed: () => _callNext(context, primary),
+                    ),
                   ),
-              ],
-            );
-          },
+                ),
+              ),
+          ],
         );
       },
-      loading: () => const PageLoading(),
-      error: (_, __) => queuesAsync.when(
-        loading: () => const PageLoading(),
-        error: (e, _) => PageError(
-          message: apiExceptionMessage(e),
-          onRetry: () => ref.invalidate(todayQueuesProvider),
-        ),
-        data: (_) => const SizedBox.shrink(),
-      ),
     );
   }
 
@@ -466,15 +486,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final waitText = wait < 1 ? '<1 min wait' : '$wait min wait';
     return switch (serviceMode) {
       'TAKEAWAY' => [
-          if (entry.metadata?['orderNumber'] != null)
-            'Order #${entry.metadata!['orderNumber']}',
-          waitText,
-        ].join(' · '),
+        if (entry.metadata?['orderNumber'] != null)
+          'Order #${entry.metadata!['orderNumber']}',
+        waitText,
+      ].join(' · '),
       'DRIVE_IN' => [
-          if (entry.metadata?['vehiclePlate'] != null) entry.metadata!['vehiclePlate'] as String,
-          if (entry.metadata?['vehicleColor'] != null) entry.metadata!['vehicleColor'] as String,
-          waitText,
-        ].where((s) => s.isNotEmpty).join(' · '),
+        if (entry.metadata?['vehiclePlate'] != null)
+          entry.metadata!['vehiclePlate'] as String,
+        if (entry.metadata?['vehicleColor'] != null)
+          entry.metadata!['vehicleColor'] as String,
+        waitText,
+      ].where((s) => s.isNotEmpty).join(' · '),
       _ => 'Party of ${entry.partySize} · $waitText',
     };
   }
@@ -491,23 +513,32 @@ class _BreakModeView extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.coffee_outlined, size: 64, color: AppColors.warning),
+            const Icon(
+              Icons.coffee_outlined,
+              size: 64,
+              color: AppColors.warning,
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               "You're on break",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Queue operations are paused for you.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.calmWarmGray),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.calmWarmGray),
             ),
             const SizedBox(height: AppSpacing.xl),
             CalmPrimaryButton(
               label: 'End break',
               icon: Icons.play_arrow,
-              onPressed: () => ref.read(breakModeProvider.notifier).state = false,
+              onPressed: () =>
+                  ref.read(breakModeProvider.notifier).state = false,
             ),
           ],
         ),

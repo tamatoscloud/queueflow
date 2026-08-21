@@ -80,12 +80,20 @@ class AuthRepository {
   Future<void> forgotPassword(String email) => _publicRemote.forgotPassword(email);
 
   Future<void> _persist(AuthSession session) async {
+    // In-memory token must be set before any authenticated API call.
     _holder.setAccessToken(session.tokens.accessToken);
-    await _storage.saveTokens(
-      accessToken: session.tokens.accessToken,
-      refreshToken: session.tokens.refreshToken,
-      userJson: jsonEncode(session.user.toJson()),
-    );
+    try {
+      await _storage
+          .saveTokens(
+            accessToken: session.tokens.accessToken,
+            refreshToken: session.tokens.refreshToken,
+            userJson: jsonEncode(session.user.toJson()),
+          )
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Login still succeeds if secure storage is slow/unavailable (common on
+      // some Windows/web hosts). Session lives in memory until refresh.
+    }
   }
 
   Future<void> clearSession() async {
