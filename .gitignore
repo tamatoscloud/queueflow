@@ -94,3 +94,9 @@ Thumbs.db
 coverage/
 .vercel
 .env*
+
+# Supabase CLI local link state
+supabase/.temp/
+backend/supabase/.temp/
+.cursor/
+
