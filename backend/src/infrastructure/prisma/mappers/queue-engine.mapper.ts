@@ -173,7 +173,10 @@ export function toPrismaQueueEntryUpdate(entry: QueueEntry) {
     isVip: p.isVip,
     sortOrder: p.sortOrder,
     lastKnownPosition: p.lastKnownPosition,
-    estimatedWaitMinutes: p.estimatedWaitMinutes,
+    estimatedWaitMinutes:
+      p.estimatedWaitMinutes == null
+        ? null
+        : Math.round(p.estimatedWaitMinutes),
     actualWaitMinutes: p.actualWaitMinutes,
     joinedAt: p.joinedAt,
     calledAt: p.calledAt,

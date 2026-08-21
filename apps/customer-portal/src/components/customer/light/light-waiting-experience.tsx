@@ -10,6 +10,8 @@ import {
   getServiceModeCopy,
 } from '@/lib/restaurant/service-mode-config';
 import { formatConnectionLabel } from '@/lib/waiting/wait-helpers';
+import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
+import { useWaitCountdown } from '@/hooks/use-wait-countdown';
 import { CalmCard, CalmLivePill, CalmSectionLabel } from '@/components/customer/calm/primitives';
 import { cn } from '@/lib/utils';
 
@@ -70,11 +72,12 @@ export function LightWaitingExperience({
     [tracking.queue.serviceMode],
   );
   const { customersAhead, estimatedWaitMinutes, position } = tracking;
+  const clampedEstimate = clampEstimatedWaitMinutes(estimatedWaitMinutes);
+  const countdown = useWaitCountdown(tracking.entry.id, clampedEstimate, true);
   const isAlmostUp = customersAhead <= 2;
   const headline = waitHeadline(customersAhead, copy);
   const connectionLabel = formatConnectionLabel(connection);
   const contextLine = passContextLine(tracking);
-  const waitDisplay = estimatedWaitMinutes > 0 ? String(estimatedWaitMinutes) : '—';
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -127,13 +130,24 @@ export function LightWaitingExperience({
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
           Estimated wait
         </p>
-        <p className="mt-2 font-display text-4xl font-bold tabular-nums text-foreground">
-          {estimatedWaitMinutes > 0 ? `~${waitDisplay} min` : waitDisplay}
+        <p
+          className="mt-2 font-display text-5xl font-bold tabular-nums tracking-tight text-foreground"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {countdown.finished ? 'Soon' : countdown.clock}
+        </p>
+        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+          {countdown.finished ? 'Any moment now' : 'remaining'}
         </p>
         <p className="mt-3 text-sm font-medium text-foreground">
           Keep this page open. We&apos;ll let you know when it&apos;s your turn.
         </p>
-        <span className="sr-only">{waitDisplay}</span>
+        <span className="sr-only">
+          {countdown.finished
+            ? 'Wait almost over'
+            : `${countdown.remainingSeconds} seconds remaining`}
+        </span>
       </CalmCard>
 
       <section aria-labelledby="while-you-wait-heading">

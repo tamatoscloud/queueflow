@@ -3,9 +3,10 @@ import type { Queue } from '../entities/queue.entity';
 import type { QueueEntry } from '../entities/queue-entry.entity';
 import type { QueueMetrics, WaitEstimate } from '../value-objects';
 import { OrderingPolicy } from '../policies/queue-policies';
+import { clampEstimatedWaitMinutes } from './wait-estimate-bounds';
 
 /**
- * ETA = customersAhead * averageServiceTimeMinutes.
+ * ETA = customersAhead * averageServiceTimeMinutes, clamped to 2.5–30 min.
  * Recalculated after every join / call / complete / reorder.
  */
 export class WaitTimeCalculator {
@@ -18,8 +19,9 @@ export class WaitTimeCalculator {
     const index = waiting.findIndex((e) => e.id === entry.id);
     const position = index >= 0 ? index + 1 : waiting.length + 1;
     const customersAhead = Math.max(0, position - 1);
-    const estimatedWaitMinutes =
-      customersAhead * queue.averageServiceTimeMinutes;
+    const estimatedWaitMinutes = clampEstimatedWaitMinutes(
+      customersAhead * queue.averageServiceTimeMinutes,
+    );
     return {
       position,
       customersAhead,
@@ -39,7 +41,9 @@ export class WaitTimeCalculator {
       const customersAhead = i;
       entry.updateEstimate(
         i + 1,
-        customersAhead * queue.averageServiceTimeMinutes,
+        clampEstimatedWaitMinutes(
+          customersAhead * queue.averageServiceTimeMinutes,
+        ),
         now,
       );
     }

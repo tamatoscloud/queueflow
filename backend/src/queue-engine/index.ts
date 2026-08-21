@@ -58,6 +58,11 @@ export {
   WaitTimeCalculator,
   MetricsCalculator,
 } from './domain/services/calculators';
+export {
+  clampEstimatedWaitMinutes,
+  MIN_ESTIMATED_WAIT_MINUTES,
+  MAX_ESTIMATED_WAIT_MINUTES,
+} from './domain/services/wait-estimate-bounds';
 export { TokenFactory } from './domain/factories/token-factory';
 export {
   PhoneNumber,

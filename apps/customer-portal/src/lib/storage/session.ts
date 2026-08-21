@@ -5,6 +5,10 @@ export interface QueueSession {
   queueId: string;
   displayCode: string;
   joinedAt: string;
+  /** Epoch ms when the guest ETA countdown should hit zero (set at join). */
+  waitDeadlineAt?: number;
+  /** Last server estimate (minutes) used to (re)anchor the deadline. */
+  waitEstimateMinutes?: number;
   /** Entry-scoped Socket.IO credential — never put in URL or logs. */
   trackingToken?: string;
   fullName?: string;

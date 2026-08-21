@@ -23,6 +23,7 @@ import {
   type ModeJoinFormValues,
 } from '@/lib/schemas/forms';
 import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
+import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
 import { CalmReturningCustomer } from '@/components/customer/calm/calm-returning-customer';
 import { CalmButton, CalmCard } from '@/components/customer/calm/primitives';
 import {
@@ -159,11 +160,16 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
         metadata: buildJoinMetadata(mode, formValues),
         notificationPreference: formValues.notificationPreference,
       });
+      const waitMinutes = clampEstimatedWaitMinutes(
+        result.estimate.estimatedWaitMinutes,
+      );
       saveQueueSession({
         entryId: result.entryId,
         queueId,
         displayCode: result.displayCode,
         joinedAt: new Date().toISOString(),
+        waitEstimateMinutes: waitMinutes,
+        waitDeadlineAt: Date.now() + Math.round(waitMinutes * 60_000),
         trackingToken: result.trackingToken,
         fullName: formValues.fullName,
         phone: formValues.phone,

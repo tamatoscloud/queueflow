@@ -7,6 +7,7 @@ import {
 import { FeedbackStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { QueueEngineService } from '../../queue-engine';
+import { clampEstimatedWaitMinutes } from '../../queue-engine/domain/services/wait-estimate-bounds';
 import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import type { SubmitFeedbackDto } from './dto/customer-portal.dto';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
@@ -43,7 +44,10 @@ export class CustomerPortalService {
     const snapshot = await this.engine.getLiveQueueSnapshot(queueId);
     const estimatedWaitMinutes =
       snapshot.metrics.waitingCount > 0
-        ? snapshot.metrics.averageServiceTimeMinutes * snapshot.metrics.waitingCount
+        ? clampEstimatedWaitMinutes(
+            snapshot.metrics.averageServiceTimeMinutes *
+              snapshot.metrics.waitingCount,
+          )
         : 0;
 
     return {

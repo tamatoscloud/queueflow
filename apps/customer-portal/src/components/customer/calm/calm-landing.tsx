@@ -9,6 +9,7 @@ import {
   formatWaitingCount,
   getServiceModeCopy,
 } from '@/lib/restaurant/service-mode-config';
+import { formatEstimatedWaitLabel } from '@/lib/waiting/wait-estimate';
 import { loadQueueSession } from '@/lib/storage/session';
 import { CalmCard, CalmHeading } from '@/components/customer/calm/primitives';
 import { CalmReturningCustomer } from '@/components/customer/calm/calm-returning-customer';
@@ -97,7 +98,7 @@ export function CalmLanding({ data, queueId }: CalmLandingProps) {
             </p>
             <p className="mt-1 font-display text-4xl font-bold tabular-nums text-foreground">
               {data.live.estimatedWaitMinutes > 0
-                ? `${data.live.estimatedWaitMinutes} min`
+                ? formatEstimatedWaitLabel(data.live.estimatedWaitMinutes)
                 : 'Any moment'}
             </p>
           </div>

@@ -17,7 +17,8 @@ describe('LightWaitingExperience', () => {
     expect(screen.getByRole('heading', { name: /You're in the queue/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Black Stone Café' })).toBeInTheDocument();
     expect(screen.getAllByText('3 parties ahead').length).toBeGreaterThan(0);
-    expect(screen.getByText('18')).toBeInTheDocument();
+    expect(screen.getByText('18:00')).toBeInTheDocument();
+    expect(screen.getByText('remaining')).toBeInTheDocument();
   });
 
   it('does not show restaurant demo menu copy for any business name', () => {
