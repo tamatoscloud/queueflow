@@ -138,15 +138,19 @@ export class PrismaQueueEntryRepository implements QueueEntryRepository {
     for (const entry of entries) {
       const p = entry.toProps();
       const update = toPrismaQueueEntryUpdate(entry);
-      const existing = await this.prisma.queueEntry.findUnique({
-        where: { id: p.id },
-      });
-      if (existing) {
+      try {
         await this.prisma.queueEntry.update({
           where: { id: p.id },
           data: update,
         });
-      } else {
+      } catch (err) {
+        const code =
+          err && typeof err === 'object' && 'code' in err
+            ? String((err as { code: unknown }).code)
+            : '';
+        if (code !== 'P2025') {
+          throw err;
+        }
         await this.prisma.queueEntry.create({
           data: {
             id: p.id,

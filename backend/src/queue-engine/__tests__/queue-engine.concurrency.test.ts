@@ -300,6 +300,37 @@ describe('QueueEngine concurrency (Wave 1C-B)', () => {
     expect(joinedEvents).toHaveLength(1);
   });
 
+  it('10 concurrent joins get unique sequential tokens and positions', async () => {
+    const queue = await seedQueue(ctx.engine, { maxCapacity: 20 });
+    const phones = Array.from({ length: 10 }, (_, i) => `+92300900${1000 + i}`);
+
+    const results = await Promise.all(
+      phones.map((phone) =>
+        ctx.engine.joinQueue({
+          queueId: queue.id,
+          ...joinBody(phone),
+          source: 'QR_LANDING' as never,
+        }),
+      ),
+    );
+
+    const codes = results.map((r) => r.displayCode).sort();
+    expect(new Set(codes).size).toBe(10);
+    expect(codes[0]).toBe('A-001');
+    expect(codes[9]).toBe('A-010');
+
+    const positions = results.map((r) => r.estimate.position).sort((a, b) => a - b);
+    expect(positions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+    const snap = await ctx.engine.getLiveQueueSnapshot(queue.id);
+    expect(snap.metrics.waitingCount).toBe(10);
+    const snapPositions = snap.entries
+      .filter((e) => e.status === QueueEntryStatus.WAITING)
+      .map((e) => e.position)
+      .sort((a, b) => (a ?? 0) - (b ?? 0));
+    expect(snapPositions).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  });
+
   it('rolled-back mutation emits no successful mutation event', async () => {
     const queue = await seedQueue(ctx.engine, { maxCapacity: 1 });
     await ctx.engine.joinQueue({

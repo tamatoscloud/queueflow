@@ -20,6 +20,7 @@ import {
   MetricsCalculator,
   WaitTimeCalculator,
 } from '../domain/services/calculators';
+import { clampEstimatedWaitMinutes } from '../domain/services/wait-estimate-bounds';
 import { JoinQueueValidator } from '../domain/validators/join-queue-validator';
 import { SortOrder, PhoneNumber } from '../domain/value-objects';
 import {
@@ -210,10 +211,12 @@ export class QueueEngineService {
       const allActive = [...active, entry];
       const estimate = WaitTimeCalculator.estimateForEntry(queue, entry, allActive);
       entry.updateEstimate(estimate.position, estimate.estimatedWaitMinutes, now);
-      WaitTimeCalculator.recalculateAll(queue, allActive, now);
 
+      // Persist only the new entry. Sibling ETA/position rows used to be
+      // rewritten via saveMany (findUnique+update per waiter) inside this
+      // interactive transaction — that caused ~20s timeouts under production
+      // DB latency. Positions and ETAs are derived on read instead.
       await repos.entries.save(entry);
-      await repos.entries.saveMany(allActive.filter((e) => e.id !== entry.id));
 
       return {
         value: {
@@ -707,6 +710,16 @@ export class QueueEngineService {
       )
       .map((e) => {
         const position = positionById.get(e.id) ?? e.lastKnownPosition ?? null;
+        const customersAhead =
+          position != null && e.status === QueueEntryStatus.WAITING
+            ? Math.max(0, position - 1)
+            : 0;
+        const estimatedWaitMinutes =
+          e.status === QueueEntryStatus.WAITING
+            ? clampEstimatedWaitMinutes(
+                customersAhead * queue.averageServiceTimeMinutes,
+              )
+            : e.estimatedWaitMinutes;
         return {
           id: e.id,
           displayCode: e.displayCode,
@@ -715,7 +728,7 @@ export class QueueEngineService {
           customerPhone: e.customerPhone,
           partySize: e.partySize,
           position,
-          estimatedWaitMinutes: e.estimatedWaitMinutes,
+          estimatedWaitMinutes,
           priority: e.priority,
           isVip: e.isVip,
           sortOrder: e.sortOrder,
@@ -762,18 +775,19 @@ export class QueueEngineService {
   }
 
   private async recalculateWaits(
-    queue: Queue,
-    repos: TransactionRepositories = {
+    _queue: Queue,
+    _repos: TransactionRepositories = {
       queues: this.deps.queues,
       entries: this.deps.entries,
       customers: this.deps.customers,
       tokens: this.deps.tokens,
     },
   ): Promise<void> {
-    const now = this.deps.clock.now();
-    const active = await repos.entries.findActiveByQueueId(queue.id);
-    WaitTimeCalculator.recalculateAll(queue, active, now);
-    await repos.entries.saveMany(active);
+    // Intentionally a no-op for persistence.
+    // Waiting positions/ETAs are derived on read (getLiveQueueSnapshot /
+    // estimateWaitTime). Rewriting every active row inside interactive
+    // transactions caused production join/call timeouts (~20s) under
+    // Supabase round-trip latency.
   }
 
   private async commitMutation<T>(

@@ -219,15 +219,19 @@ export class TransactionalPrismaQueueEntryRepository implements QueueEntryReposi
     for (const entry of entries) {
       const p = entry.toProps();
       const update = toPrismaQueueEntryUpdate(entry);
-      const existing = await this.tx.queueEntry.findUnique({
-        where: { id: p.id },
-      });
-      if (existing) {
+      try {
         await this.tx.queueEntry.update({
           where: { id: p.id },
           data: update,
         });
-      } else {
+      } catch (err) {
+        const code =
+          err && typeof err === 'object' && 'code' in err
+            ? String((err as { code: unknown }).code)
+            : '';
+        if (code !== 'P2025') {
+          throw err;
+        }
         await this.tx.queueEntry.create({
           data: {
             id: p.id,
