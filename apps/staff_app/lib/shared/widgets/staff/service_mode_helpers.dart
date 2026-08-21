@@ -70,16 +70,30 @@ QueueModel? selectCallNextQueue(
     }
   }
 
+  List<QueueModel> scoped = operable;
   if (preferredServiceMode != null) {
-    final modeQueues = operable.where((q) => q.serviceMode == preferredServiceMode).toList()
-      ..sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
-    if (modeQueues.isNotEmpty) return modeQueues.first;
+    final modeQueues =
+        operable.where((q) => q.serviceMode == preferredServiceMode).toList();
+    if (modeQueues.isNotEmpty) scoped = modeQueues;
   }
 
-  final dineIn = operable.where((q) => q.serviceMode == 'DINE_IN').toList()
+  // Never prefer an empty queue when another operable queue has waiters.
+  final withWaiters = scoped.where((q) => q.waitingCount > 0).toList()
     ..sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
-  if (dineIn.isNotEmpty) return dineIn.first;
+  if (withWaiters.isNotEmpty) {
+    final dineInWaiting =
+        withWaiters.where((q) => q.serviceMode == 'DINE_IN').toList();
+    if (preferredServiceMode == null && dineInWaiting.isNotEmpty) {
+      return dineInWaiting.first;
+    }
+    return withWaiters.first;
+  }
 
-  operable.sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
-  return operable.first;
+  if (preferredServiceMode == null) {
+    final dineIn = scoped.where((q) => q.serviceMode == 'DINE_IN').toList();
+    if (dineIn.isNotEmpty) return dineIn.first;
+  }
+
+  scoped.sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
+  return scoped.first;
 }

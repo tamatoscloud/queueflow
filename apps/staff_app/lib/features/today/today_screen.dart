@@ -23,6 +23,7 @@ import '../../features/settings/break_mode_provider.dart';
 import '../../shared/widgets/calm/calm_card.dart';
 import '../../shared/widgets/calm/calm_live_indicator.dart';
 import '../../shared/widgets/calm/calm_primary_button.dart';
+import '../../shared/widgets/calm/calm_queue_entry_card.dart';
 import '../../shared/widgets/calm/calm_section_label.dart';
 import '../../shared/widgets/calm/calm_service_mode_row.dart';
 import '../../shared/widgets/staff/call_next_sheet.dart';
@@ -235,13 +236,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         }
 
         final totalWaiting = queues.fold<int>(0, (s, q) => s + q.waitingCount);
-        final snapshot = snapshotAsync.valueOrNull;
-        final next = _nextWaiting(snapshot);
         final modeInfo = ServiceModeInfo.forMode(primary.serviceMode);
         final waitingUnit = _aggregateWaitingUnit(queues);
-        final estWait =
-            snapshot?.metrics.averageWaitMinutes ??
-            primary.averageServiceTimeMinutes;
         final liveLabel = realtimeStatus.when(
           data: _realtimeLabel,
           loading: () => 'Connecting',
@@ -302,56 +298,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       ],
                     ),
                   ),
-                  if (next != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    CalmCard(
-                      highlighted: true,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const CalmSectionLabel('UP NEXT'),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            next.displayCode.isNotEmpty
-                                ? next.displayCode
-                                : (next.customerName ?? 'Guest'),
-                            style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryDark,
-                                  letterSpacing: 1,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            next.customerName ?? 'Guest',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.calmCharcoal,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _upNextDetail(next, primary.serviceMode),
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(color: AppColors.calmWarmGray),
-                          ),
-                          if (estWait > 0) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Estimated wait · ~$estWait min',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.calmWarmGray),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                  ..._guestBoard(
+                    context: context,
+                    snapshotAsync: snapshotAsync,
+                    primary: primary,
+                    totalWaiting: totalWaiting,
+                    modeInfo: modeInfo,
+                    queues: queues,
+                  ),
                   if (totalWaiting == 0) ...[
                     const SizedBox(height: AppSpacing.xl),
                     StaffQueueEmptyState(
@@ -496,6 +450,162 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
           ],
         );
+      },
+    );
+  }
+
+  List<Widget> _guestBoard({
+    required BuildContext context,
+    required AsyncValue<QueueSnapshotModel> snapshotAsync,
+    required QueueModel primary,
+    required int totalWaiting,
+    required ServiceModeInfo modeInfo,
+    required List<QueueModel> queues,
+  }) {
+    if (totalWaiting <= 0) return const [];
+
+    return snapshotAsync.when(
+      loading: () => [
+        const SizedBox(height: AppSpacing.md),
+        const CalmCard(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+        ),
+      ],
+      error: (e, _) => [
+        const SizedBox(height: AppSpacing.md),
+        CalmCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Could not load waiting guests',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                apiExceptionMessage(e),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.calmWarmGray,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                label: 'Retry',
+                icon: Icons.refresh,
+                variant: AppButtonVariant.secondary,
+                onPressed: () {
+                  ref.invalidate(todayQueueSnapshotProvider(primary.id));
+                  ref.invalidate(todayQueuesProvider);
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+      data: (snapshot) {
+        final waiting = snapshot.entries
+            .where((e) => e.status == 'WAITING')
+            .toList()
+          ..sort((a, b) => (a.position ?? 999).compareTo(b.position ?? 999));
+        final next = waiting.isEmpty ? null : waiting.first;
+        final estWait = snapshot.metrics.averageWaitMinutes > 0
+            ? snapshot.metrics.averageWaitMinutes
+            : primary.averageServiceTimeMinutes;
+        final rest = waiting.skip(1).take(5).toList();
+
+        return [
+          if (next != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            CalmCard(
+              highlighted: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const CalmSectionLabel('UP NEXT'),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    next.displayCode.isNotEmpty
+                        ? next.displayCode
+                        : (next.customerName ?? 'Guest'),
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryDark,
+                          letterSpacing: 1,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    next.customerName ?? 'Guest',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.calmCharcoal,
+                        ),
+                  ),
+                  if (next.customerPhone != null &&
+                      next.customerPhone!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      next.customerPhone!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.calmWarmGray,
+                          ),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Text(
+                    _upNextDetail(next, primary.serviceMode),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.calmWarmGray,
+                        ),
+                  ),
+                  if (estWait > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Estimated wait · ~$estWait min',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.calmWarmGray,
+                          ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: AppSpacing.md),
+            CalmCard(
+              child: Text(
+                'Waiting count is ${queues.fold<int>(0, (s, q) => s + q.waitingCount)}, '
+                'but no WAITING guests were returned for ${primary.name}. '
+                'Open another queue below or tap View queue.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.calmWarmGray,
+                    ),
+              ),
+            ),
+          ],
+          if (rest.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            const CalmSectionLabel('WAITING LINE'),
+            const SizedBox(height: AppSpacing.sm),
+            ...rest.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: CalmQueueEntryCard(
+                  entry: entry,
+                  serviceMode: primary.serviceMode,
+                  compact: true,
+                  onTap: () => context.push(StaffRoutes.queueConsole(primary.id)),
+                ),
+              ),
+            ),
+          ],
+        ];
       },
     );
   }
