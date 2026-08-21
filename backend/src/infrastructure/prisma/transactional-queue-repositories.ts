@@ -178,6 +178,28 @@ export class TransactionalPrismaQueueEntryRepository implements QueueEntryReposi
     });
   }
 
+  async countWaiting(queueId: string): Promise<number> {
+    return this.tx.queueEntry.count({
+      where: {
+        queueId,
+        deletedAt: null,
+        status: 'WAITING',
+      },
+    });
+  }
+
+  async nextSortOrder(queueId: string): Promise<number> {
+    const rows = await this.tx.$queryRaw<Array<{ next: number | null }>>`
+      SELECT MAX(sort_order) + 1 AS next
+      FROM queue_entries
+      WHERE queue_id = ${queueId}::uuid
+        AND deleted_at IS NULL
+        AND status IN ('WAITING','CALLED','HOLDING','SKIPPED')
+    `;
+    const next = rows[0]?.next;
+    return next != null && Number.isFinite(Number(next)) ? Number(next) : 1;
+  }
+
   async claimNextWaiting(
     queueId: string,
     priorityEnabled: boolean,

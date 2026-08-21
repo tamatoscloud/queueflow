@@ -30,6 +30,10 @@ export interface QueueEntryRepository {
     queueId: string,
   ): Promise<Array<{ entryId: string; phone: string; status: QueueEntryStatus }>>;
   countActive(queueId: string): Promise<number>;
+  /** Count WAITING entries only (for join position when not priority-inserting). */
+  countWaiting(queueId: string): Promise<number>;
+  /** Next append sort order without loading full entry rows. */
+  nextSortOrder(queueId: string): Promise<number>;
   save(entry: QueueEntry): Promise<void>;
   saveMany(entries: readonly QueueEntry[]): Promise<void>;
   /** Lock the entry row for the duration of the current transaction. */

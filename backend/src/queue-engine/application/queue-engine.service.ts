@@ -141,10 +141,8 @@ export class QueueEngineService {
         throw new QueueNotFoundError(command.queueId);
       }
 
-      const activeCount = await repos.entries.countActive(queue.id);
-      CapacityPolicy.assertCanJoin(queue, activeCount);
-
       const activePhones = await repos.entries.findActivePhones(queue.id);
+      CapacityPolicy.assertCanJoin(queue, activePhones.length);
       DuplicateJoinPolicy.assertPhoneNotActive(validated.phone, activePhones);
 
       const existingCustomer = await repos.customers.findByBusinessAndPhone(
@@ -174,8 +172,9 @@ export class QueueEngineService {
         requestedPriority: command.priority,
       });
 
-      const active = await repos.entries.findActiveByQueueId(queue.id);
-      const sortOrder = OrderingPolicy.nextSortOrder(active);
+      const priorityInsert = queue.priorityEnabled && (isVip || priority > 0);
+      let sortOrder: number;
+      let estimate: WaitEstimate;
 
       const counter = await repos.queues.incrementTokenNumber(queue.id);
       const token = TokenFactory.issueWithNumber(
@@ -185,6 +184,74 @@ export class QueueEngineService {
         now,
       );
       await repos.tokens.save(token);
+
+      if (priorityInsert) {
+        const active = await repos.entries.findActiveByQueueId(queue.id);
+        sortOrder = OrderingPolicy.nextSortOrder(active);
+        const entry = QueueEntry.create(
+          {
+            businessId: queue.businessId,
+            branchId: queue.branchId,
+            queueId: queue.id,
+            customerId: customer.id,
+            queueTokenId: token.id,
+            displayCode: token.displayCode,
+            tokenNumber: token.tokenNumber,
+            source: validated.source,
+            partySize: validated.partySize.value,
+            notes: command.notes,
+            notificationPreference: validated.preference,
+            priority,
+            isVip,
+            sortOrder,
+            customerPhone: customer.phone,
+            customerName: customer.fullName,
+          },
+          now,
+        );
+        estimate = WaitTimeCalculator.estimateForEntry(queue, entry, [
+          ...active,
+          entry,
+        ]);
+        entry.updateEstimate(estimate.position, estimate.estimatedWaitMinutes, now);
+        await repos.entries.save(entry);
+        return {
+          value: {
+            entryId: entry.id,
+            customerId: customer.id,
+            displayCode: token.displayCode,
+            tokenNumber: token.tokenNumber,
+            estimate,
+          },
+          events: [
+            QueueEvents.customerJoined(
+              queue.id,
+              queue.businessId,
+              {
+                entryId: entry.id,
+                customerId: customer.id,
+                displayCode: token.displayCode,
+                position: estimate.position,
+                source: validated.source,
+              },
+              now,
+            ),
+          ],
+        };
+      }
+
+      sortOrder = await repos.entries.nextSortOrder(queue.id);
+      const waitingCount = await repos.entries.countWaiting(queue.id);
+      const customersAhead = waitingCount;
+      const position = waitingCount + 1;
+      estimate = {
+        position,
+        customersAhead,
+        estimatedWaitMinutes: clampEstimatedWaitMinutes(
+          customersAhead * queue.averageServiceTimeMinutes,
+        ),
+        averageServiceTimeMinutes: queue.averageServiceTimeMinutes,
+      };
 
       const entry = QueueEntry.create(
         {
@@ -207,15 +274,7 @@ export class QueueEngineService {
         },
         now,
       );
-
-      const allActive = [...active, entry];
-      const estimate = WaitTimeCalculator.estimateForEntry(queue, entry, allActive);
       entry.updateEstimate(estimate.position, estimate.estimatedWaitMinutes, now);
-
-      // Persist only the new entry. Sibling ETA/position rows used to be
-      // rewritten via saveMany (findUnique+update per waiter) inside this
-      // interactive transaction — that caused ~20s timeouts under production
-      // DB latency. Positions and ETAs are derived on read instead.
       await repos.entries.save(entry);
 
       return {

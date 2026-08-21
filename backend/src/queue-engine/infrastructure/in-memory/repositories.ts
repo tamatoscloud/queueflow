@@ -96,6 +96,17 @@ export class InMemoryQueueEntryRepository implements QueueEntryRepository {
     return (await this.findActiveByQueueId(queueId)).length;
   }
 
+  async countWaiting(queueId: string): Promise<number> {
+    return (await this.findByQueueId(queueId)).filter(
+      (e) => e.status === QueueEntryStatus.WAITING,
+    ).length;
+  }
+
+  async nextSortOrder(queueId: string): Promise<number> {
+    const active = await this.findActiveByQueueId(queueId);
+    return OrderingPolicy.nextSortOrder(active);
+  }
+
   async claimNextWaiting(
     queueId: string,
     priorityEnabled: boolean,

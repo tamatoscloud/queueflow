@@ -27,8 +27,8 @@ export class PrismaUnitOfWork implements UnitOfWork {
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-        maxWait: 5_000,
-        timeout: 15_000,
+        maxWait: 10_000,
+        timeout: 20_000,
       },
     );
   }
