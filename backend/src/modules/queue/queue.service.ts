@@ -103,7 +103,33 @@ export class QueueService {
         orderBy: { [sortBy]: sortOrder },
       }),
     ]);
-    return { data, meta: paginatedMeta(page, pageSize, totalItems) };
+
+    // Staff Live Queue aggregates waitingCount from this list. Without it the
+    // console always shows "You're all clear" even when guests have joined.
+    const queueIds = data.map((q) => q.id);
+    const waitingByQueue = new Map<string, number>();
+    if (queueIds.length > 0) {
+      const grouped = await this.prisma.queueEntry.groupBy({
+        by: ['queueId'],
+        where: {
+          queueId: { in: queueIds },
+          deletedAt: null,
+          status: 'WAITING',
+        },
+        _count: { _all: true },
+      });
+      for (const row of grouped) {
+        waitingByQueue.set(row.queueId, row._count._all);
+      }
+    }
+
+    return {
+      data: data.map((q) => ({
+        ...q,
+        waitingCount: waitingByQueue.get(q.id) ?? 0,
+      })),
+      meta: paginatedMeta(page, pageSize, totalItems),
+    };
   }
 
   async open(id: string) {

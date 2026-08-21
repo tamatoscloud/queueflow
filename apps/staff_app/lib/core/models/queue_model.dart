@@ -67,4 +67,20 @@ class QueueModel {
         'waitingCount': waitingCount,
         'serviceMode': serviceMode,
       };
+
+  QueueModel copyWith({int? waitingCount}) => QueueModel(
+        id: id,
+        businessId: businessId,
+        branchId: branchId,
+        name: name,
+        description: description,
+        status: status,
+        prefix: prefix,
+        maxCapacity: maxCapacity,
+        averageServiceTimeMinutes: averageServiceTimeMinutes,
+        priorityEnabled: priorityEnabled,
+        isAcceptingEntries: isAcceptingEntries,
+        waitingCount: waitingCount ?? this.waitingCount,
+        serviceMode: serviceMode,
+      );
 }

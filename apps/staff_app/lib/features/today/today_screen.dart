@@ -37,7 +37,26 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
   final user = auth.session?.user;
   final branchId = ref.watch(selectedBranchIdProvider);
   try {
-    return api.getQueues(branchId: branchId, businessId: user?.businessId);
+    final queues = await api.getQueues(
+      branchId: branchId,
+      businessId: user?.businessId,
+    );
+    // Backward-compatible: older API responses omit waitingCount (always 0),
+    // which made Live Queue show "You're all clear" despite real waiters.
+    final listedWaiting = queues.fold<int>(0, (s, q) => s + q.waitingCount);
+    if (listedWaiting > 0 || queues.isEmpty) return queues;
+
+    final snaps = await Future.wait(
+      queues.map((q) => api.getQueueSnapshot(q.id)),
+    );
+    return [
+      for (var i = 0; i < queues.length; i++)
+        queues[i].copyWith(
+          waitingCount: snaps[i].entries
+              .where((e) => e.status == 'WAITING')
+              .length,
+        ),
+    ];
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;
