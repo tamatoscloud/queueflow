@@ -10,6 +10,26 @@ QueueFlow helps restaurants manage waiting guests, takeaway pickups, and drive-i
 
 Use these live URLs. Do **not** invent credentials in this doc — ask your technical contact for the Bella Vista owner/staff passwords.
 
+### Demo credential provisioning (technical contact only)
+
+Bella Vista accounts are provisioned with the normal bcrypt password path (no JWT bypass). Never commit the password.
+
+```bash
+# Generate a strong password, store it only in Railway / a gitignored operator file.
+# Then, with DATABASE_URL pointing at production (prefer `railway run`):
+cd backend
+SEED_DEMO_PASSWORD='…' npm run demo:provision-passwords
+```
+
+Allowlisted emails only:
+
+- `owner@bellavista.example.com`
+- `manager.dt@bellavista.example.com`
+- `staff1.dt@bellavista.example.com`
+- `staff2.dt@bellavista.example.com`
+
+Do **not** run `demo:reset` against production unless you intend to delete and recreate Bella Vista (queue UUIDs / QR URLs will change).
+
 ### Open first (presenter laptop)
 
 1. **Business Dashboard:** https://queueflow-business-alpha.vercel.app  

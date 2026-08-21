@@ -41,17 +41,89 @@ export class TransactionalPrismaQueueRepository implements QueueRepository {
   }
 
   async lockById(id: string): Promise<Queue | null> {
-    const rows = await this.tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
+    // Single round-trip: lock + hydrate. Avoids SELECT FOR UPDATE then findById
+    // under high Railway↔Supabase latency.
+    const rows = await this.tx.$queryRaw<
+      Array<{
+        id: string;
+        business_id: string;
+        branch_id: string;
+        name: string;
+        description: string | null;
+        status: string;
+        prefix: string;
+        max_capacity: number | null;
+        average_service_time_minutes: number;
+        is_accepting_entries: boolean;
+        auto_call_next: boolean;
+        priority_enabled: boolean;
+        recall_timeout_seconds: number;
+        no_show_timeout_seconds: number;
+        notify_before_turns: number;
+        last_token_number: number;
+        last_token_reset_at: Date | null;
+        service_mode: string;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date | null;
+      }>
+    >`
+      SELECT
+        id,
+        business_id,
+        branch_id,
+        name,
+        description,
+        status,
+        prefix,
+        max_capacity,
+        average_service_time_minutes,
+        is_accepting_entries,
+        auto_call_next,
+        priority_enabled,
+        recall_timeout_seconds,
+        no_show_timeout_seconds,
+        notify_before_turns,
+        last_token_number,
+        last_token_reset_at,
+        service_mode,
+        created_at,
+        updated_at,
+        deleted_at
       FROM queues
       WHERE id = ${id}::uuid
         AND deleted_at IS NULL
       FOR UPDATE
     `;
-    if (!rows[0]) {
+    const row = rows[0];
+    if (!row) {
       return null;
     }
-    return this.findById(id);
+    return toDomainQueue({
+      id: row.id,
+      businessId: row.business_id,
+      branchId: row.branch_id,
+      name: row.name,
+      description: row.description,
+      status: row.status as never,
+      prefix: row.prefix,
+      maxCapacity: row.max_capacity,
+      averageServiceTimeMinutes: row.average_service_time_minutes,
+      isAcceptingEntries: row.is_accepting_entries,
+      autoCallNext: row.auto_call_next,
+      priorityEnabled: row.priority_enabled,
+      recallTimeoutSeconds: row.recall_timeout_seconds,
+      noShowTimeoutSeconds: row.no_show_timeout_seconds,
+      notifyBeforeTurns: row.notify_before_turns,
+      lastTokenNumber: row.last_token_number,
+      lastTokenResetAt: row.last_token_reset_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      deletedAt: row.deleted_at,
+      createdBy: null,
+      updatedBy: null,
+      serviceMode: row.service_mode as never,
+    });
   }
 
   async incrementTokenNumber(queueId: string): Promise<IncrementedTokenCounter> {

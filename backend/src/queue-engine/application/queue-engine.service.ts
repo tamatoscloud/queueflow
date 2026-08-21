@@ -126,29 +126,37 @@ export class QueueEngineService {
 
     const queuePreview = await this.requireQueue(command.queueId);
     if (!command.bypassOperatingHours) {
-      const windows = await this.deps.operatingHours.getWindowsForBranch(
-        queuePreview.branchId,
-      );
-      const offset = await this.deps.operatingHours.getTimezoneOffsetMinutes(
-        queuePreview.branchId,
-      );
+      const [windows, offset] = await Promise.all([
+        this.deps.operatingHours.getWindowsForBranch(queuePreview.branchId),
+        this.deps.operatingHours.getTimezoneOffsetMinutes(queuePreview.branchId),
+      ]);
       OperatingHoursPolicy.assertOpen(queuePreview.branchId, now, windows, offset);
     }
 
-    return this.commitMutation([command.queueId], async (repos) => {
-      const queue = await repos.queues.findById(command.queueId);
+    return this.commitMutation([command.queueId], async (repos, lockedQueues) => {
+      // Prefer the row already locked by the UoW to avoid a redundant findById
+      // round-trip under Railway↔Supabase latency.
+      const queue =
+        lockedQueues.get(command.queueId) ??
+        (await repos.queues.findById(command.queueId));
       if (!queue) {
         throw new QueueNotFoundError(command.queueId);
       }
 
-      const activePhones = await repos.entries.findActivePhones(queue.id);
+      const [activePhones, existingCustomer, sortOrder, waitingCount] =
+        await Promise.all([
+          repos.entries.findActivePhones(queue.id),
+          repos.customers.findByBusinessAndPhone(
+            queue.businessId,
+            validated.phone.value,
+          ),
+          repos.entries.nextSortOrder(queue.id),
+          repos.entries.countWaiting(queue.id),
+        ]);
+
       CapacityPolicy.assertCanJoin(queue, activePhones.length);
       DuplicateJoinPolicy.assertPhoneNotActive(validated.phone, activePhones);
 
-      const existingCustomer = await repos.customers.findByBusinessAndPhone(
-        queue.businessId,
-        validated.phone.value,
-      );
       const customer =
         existingCustomer ??
         Customer.create(
@@ -164,7 +172,6 @@ export class QueueEngineService {
       if (customer.isBlacklisted) {
         throw new ValidationError('Customer is blacklisted and cannot join');
       }
-      await repos.customers.save(customer);
 
       const { priority, isVip } = PriorityPolicy.resolveJoinPriority({
         priorityEnabled: queue.priorityEnabled,
@@ -173,10 +180,12 @@ export class QueueEngineService {
       });
 
       const priorityInsert = queue.priorityEnabled && (isVip || priority > 0);
-      let sortOrder: number;
-      let estimate: WaitEstimate;
 
-      const counter = await repos.queues.incrementTokenNumber(queue.id);
+      // Customer + token counter are independent after capacity checks.
+      const [, counter] = await Promise.all([
+        repos.customers.save(customer),
+        repos.queues.incrementTokenNumber(queue.id),
+      ]);
       const token = TokenFactory.issueWithNumber(
         queue.id,
         counter.prefix,
@@ -187,7 +196,7 @@ export class QueueEngineService {
 
       if (priorityInsert) {
         const active = await repos.entries.findActiveByQueueId(queue.id);
-        sortOrder = OrderingPolicy.nextSortOrder(active);
+        const prioritySortOrder = OrderingPolicy.nextSortOrder(active);
         const entry = QueueEntry.create(
           {
             businessId: queue.businessId,
@@ -203,13 +212,13 @@ export class QueueEngineService {
             notificationPreference: validated.preference,
             priority,
             isVip,
-            sortOrder,
+            sortOrder: prioritySortOrder,
             customerPhone: customer.phone,
             customerName: customer.fullName,
           },
           now,
         );
-        estimate = WaitTimeCalculator.estimateForEntry(queue, entry, [
+        const estimate = WaitTimeCalculator.estimateForEntry(queue, entry, [
           ...active,
           entry,
         ]);
@@ -240,11 +249,9 @@ export class QueueEngineService {
         };
       }
 
-      sortOrder = await repos.entries.nextSortOrder(queue.id);
-      const waitingCount = await repos.entries.countWaiting(queue.id);
       const customersAhead = waitingCount;
       const position = waitingCount + 1;
-      estimate = {
+      const estimate: WaitEstimate = {
         position,
         customersAhead,
         estimatedWaitMinutes: clampEstimatedWaitMinutes(
@@ -853,6 +860,7 @@ export class QueueEngineService {
     queueIds: readonly string[],
     work: (
       repos: TransactionRepositories,
+      lockedQueues: ReadonlyMap<string, Queue>,
     ) => Promise<{ value: T; events: DomainEvent[] }>,
   ): Promise<T> {
     const { value, events } = await this.deps.unitOfWork.runForQueues(

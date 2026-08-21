@@ -71,6 +71,8 @@ out/
 *.env.local
 .env.*.local
 **/backend/.env.local
+.demo-credentials.local
+**/.demo-credentials.local
 
 # --- Local runtime artifacts ---
 docker/dump.rdb
@@ -90,3 +92,5 @@ Thumbs.db
 
 # --- Coverage ---
 coverage/
+.vercel
+.env*

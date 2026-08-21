@@ -19,7 +19,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   async runForQueues<T>(
     queueIds: readonly string[],
-    work: (repos: TransactionRepositories) => Promise<T>,
+    work: (
+      repos: TransactionRepositories,
+      lockedQueues: ReadonlyMap<string, import('../../domain/entities/queue.entity').Queue>,
+    ) => Promise<T>,
   ): Promise<T> {
     return this.locks.runExclusive(queueIds, async () => {
       const snapshot = {
@@ -34,8 +37,15 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         customers: this.customers,
         tokens: this.tokens,
       };
+      const lockedQueues = new Map<string, import('../../domain/entities/queue.entity').Queue>();
+      for (const queueId of [...new Set(queueIds)].sort()) {
+        const locked = await this.queues.lockById(queueId);
+        if (locked) {
+          lockedQueues.set(queueId, locked);
+        }
+      }
       try {
-        return await work(repos);
+        return await work(repos, lockedQueues);
       } catch (err) {
         this.queues.restore(snapshot.queues);
         this.entries.restore(snapshot.entries);

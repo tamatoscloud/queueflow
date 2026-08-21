@@ -26,6 +26,7 @@
     "db:reset": "npm run prisma:reset",
     "demo:reset": "dotenv -c development -- npx ts-node --transpile-only scripts/demo-reset.ts reset",
     "demo:clear": "dotenv -c development -- npx ts-node --transpile-only scripts/demo-reset.ts clear",
+    "demo:provision-passwords": "npx ts-node --transpile-only scripts/provision-demo-passwords.ts",
     "db:check": "dotenv -c development -- node scripts/check-database-url.mjs && dotenv -c development -- npx ts-node --transpile-only scripts/test-db-connection.ts",
     "validate:env": "dotenv -c development -- npx ts-node --transpile-only scripts/validate-env.ts",
     "typecheck": "tsc --noEmit",

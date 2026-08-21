@@ -1,3 +1,4 @@
+import type { Queue } from '../../domain/entities/queue.entity';
 import type {
   CustomerRepository,
   QueueEntryRepository,
@@ -16,10 +17,16 @@ export interface TransactionRepositories {
 /**
  * Serializes multi-write queue mutations with database-backed locking (Prisma)
  * or in-memory snapshot rollback for tests.
+ *
+ * `lockedQueues` contains the rows already locked for this mutation — callers
+ * should prefer these over a redundant findById round-trip.
  */
 export interface UnitOfWork {
   runForQueues<T>(
     queueIds: readonly string[],
-    work: (repos: TransactionRepositories) => Promise<T>,
+    work: (
+      repos: TransactionRepositories,
+      lockedQueues: ReadonlyMap<string, Queue>,
+    ) => Promise<T>,
   ): Promise<T>;
 }

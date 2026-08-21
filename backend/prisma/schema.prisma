@@ -31,8 +31,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Used by migrate/introspect. Prefer a session-mode or direct Postgres URL.
+  // Runtime Prisma Client uses `url` — interactive transactions require session
+  // mode (pooler :5432) or a direct connection; transaction-mode :6543 is unsafe.
+  directUrl = env("DIRECT_URL")
 }
 
 // =============================================================================
