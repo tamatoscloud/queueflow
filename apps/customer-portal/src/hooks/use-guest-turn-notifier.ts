@@ -62,7 +62,6 @@ export function useGuestTurnNotifier({
         const n = new Notification(title, {
           body: body || 'Please come to the counter',
           tag: `queueflow-turn-${entryId}`,
-          renotify: true,
         });
         window.setTimeout(() => n.close(), 12_000);
       }
