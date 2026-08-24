@@ -67,10 +67,12 @@ export class CustomerService {
       query.phone && !query.q
         ? await (async () => {
             assertValidPhone(query.phone!);
-            return this.repository.findByBusinessAndPhone(
+            const exact = await this.repository.findByBusinessAndPhone(
               businessId,
               query.phone!.replace(/\s/g, ''),
             );
+            if (exact) return exact;
+            return this.repository.findByBusinessQuery(businessId, query.phone!);
           })()
         : await this.repository.findByBusinessQuery(businessId, raw);
 

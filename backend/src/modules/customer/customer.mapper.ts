@@ -57,8 +57,12 @@ export function toActiveStatusResponse(
   customer: Customer,
   activeEntries: ActiveEntryResponse[],
 ) {
+  const profile = toCustomerResponse(customer);
+  // Flatten profile fields at the top level so older staff clients that
+  // parse the envelope as CustomerModel still get id/fullName/phone.
   return {
-    customer: toCustomerResponse(customer),
+    ...profile,
+    customer: profile,
     activeEntries,
     hasActiveEntry: activeEntries.length > 0,
   };
