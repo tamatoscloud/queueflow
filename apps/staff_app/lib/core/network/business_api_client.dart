@@ -107,10 +107,22 @@ class BusinessApiClient {
       );
 
   // Customers
-  Future<CustomerModel?> lookupCustomer(String phone) async {
+  Future<List<CustomerModel>> listCustomers({String? q, bool activeOnly = true}) =>
+      _parser.getList(
+        () => _dio.get('/customers', queryParameters: {
+          if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+          'activeOnly': activeOnly,
+          'pageSize': 50,
+        }),
+        CustomerModel.fromJson,
+      );
+
+  Future<CustomerModel?> lookupCustomer(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return null;
     try {
       return await _parser.getData(
-        () => _dio.get('/customers/lookup/active', queryParameters: {'phone': phone}),
+        () => _dio.get('/customers/lookup/active', queryParameters: {'q': q}),
         CustomerModel.fromJson,
       );
     } catch (_) {

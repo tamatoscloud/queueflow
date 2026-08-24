@@ -6,6 +6,7 @@ import { ApiStandardOkResponse } from '../../common/swagger/api-responses.decora
 import { CustomerService } from './customer.service';
 import {
   CustomerHistoryQueryDto,
+  CustomerListQueryDto,
   CustomerLookupQueryDto,
   GetCustomerQueryDto,
 } from './dto/customer.dto';
@@ -17,11 +18,22 @@ import {
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
+  @Get()
+  @ApiOperation({
+    summary: 'List guests for the staff business',
+    description:
+      'Returns guests (default: currently in an active queue). Supports q= name, phone, or ticket code.',
+  })
+  @ApiStandardOkResponse('Paginated guest list')
+  list(@Query() query: CustomerListQueryDto) {
+    return this.customerService.list(query);
+  }
+
   @Get('lookup/active')
   @ApiOperation({
-    summary: 'Lookup customer active queue entries by phone',
+    summary: 'Lookup guest by phone, name, or ticket code',
     description:
-      'Finds a customer by business + phone and returns any active queue entries.',
+      'Finds a customer in the staff business and returns any active queue entries.',
   })
   @ApiStandardOkResponse('Customer with active entries')
   lookupActive(@Query() query: CustomerLookupQueryDto) {

@@ -5,6 +5,10 @@ class CustomerModel {
     required this.phone,
     this.email,
     this.totalVisits = 0,
+    this.activeStatus,
+    this.displayCode,
+    this.queueName,
+    this.entryId,
   });
 
   final String id;
@@ -12,14 +16,27 @@ class CustomerModel {
   final String phone;
   final String? email;
   final int totalVisits;
+  final String? activeStatus;
+  final String? displayCode;
+  final String? queueName;
+  final String? entryId;
 
-  factory CustomerModel.fromJson(Map<String, dynamic> json) => CustomerModel(
-        id: json['id'] as String,
-        fullName: json['fullName'] as String? ?? json['name'] as String? ?? '',
-        phone: json['phone'] as String? ?? '',
-        email: json['email'] as String?,
-        totalVisits: json['totalVisits'] as int? ?? 0,
-      );
+  factory CustomerModel.fromJson(Map<String, dynamic> json) {
+    // lookup/active wraps the profile under `customer`
+    final nested = json['customer'];
+    final src = nested is Map<String, dynamic> ? nested : json;
+    return CustomerModel(
+      id: src['id'] as String? ?? '',
+      fullName: src['fullName'] as String? ?? src['name'] as String? ?? '',
+      phone: src['phone'] as String? ?? '',
+      email: src['email'] as String?,
+      totalVisits: src['totalVisits'] as int? ?? json['totalVisits'] as int? ?? 0,
+      activeStatus: src['activeStatus'] as String? ?? json['activeStatus'] as String?,
+      displayCode: src['displayCode'] as String? ?? json['displayCode'] as String?,
+      queueName: src['queueName'] as String? ?? json['queueName'] as String?,
+      entryId: src['entryId'] as String? ?? json['entryId'] as String?,
+    );
+  }
 }
 
 class CustomerHistoryEntry {
@@ -29,6 +46,7 @@ class CustomerHistoryEntry {
     required this.status,
     required this.joinedAt,
     this.completedAt,
+    this.displayCode,
   });
 
   final String entryId;
@@ -36,6 +54,7 @@ class CustomerHistoryEntry {
   final String status;
   final DateTime joinedAt;
   final DateTime? completedAt;
+  final String? displayCode;
 
   factory CustomerHistoryEntry.fromJson(Map<String, dynamic> json) => CustomerHistoryEntry(
         entryId: json['entryId'] as String? ?? json['id'] as String? ?? '',
@@ -45,5 +64,6 @@ class CustomerHistoryEntry {
         completedAt: json['completedAt'] != null
             ? DateTime.tryParse(json['completedAt'] as String)
             : null,
+        displayCode: json['displayCode'] as String?,
       );
 }
