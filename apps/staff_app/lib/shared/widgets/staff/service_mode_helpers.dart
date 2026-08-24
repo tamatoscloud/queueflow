@@ -79,7 +79,7 @@ QueueModel? selectCallNextQueue(
 
   // Never prefer an empty queue when another operable queue has waiters.
   final withWaiters = scoped.where((q) => q.waitingCount > 0).toList()
-    ..sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
+    ..sort(_compareCallNextQueues);
   if (withWaiters.isNotEmpty) {
     final dineInWaiting =
         withWaiters.where((q) => q.serviceMode == 'DINE_IN').toList();
@@ -90,10 +90,28 @@ QueueModel? selectCallNextQueue(
   }
 
   if (preferredServiceMode == null) {
-    final dineIn = scoped.where((q) => q.serviceMode == 'DINE_IN').toList();
+    final dineIn = scoped.where((q) => q.serviceMode == 'DINE_IN').toList()
+      ..sort(_compareCallNextQueues);
     if (dineIn.isNotEmpty) return dineIn.first;
   }
 
-  scoped.sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
+  scoped.sort(_compareCallNextQueues);
   return scoped.first;
+}
+
+/// Prefer more waiters, then the main walk-in list over VIP/reservation queues.
+int _compareCallNextQueues(QueueModel a, QueueModel b) {
+  final byWait = b.waitingCount.compareTo(a.waitingCount);
+  if (byWait != 0) return byWait;
+  return _mainQueueScore(b).compareTo(_mainQueueScore(a));
+}
+
+int _mainQueueScore(QueueModel q) {
+  final name = q.name.toLowerCase();
+  if (name.contains('dine-in waiting') || name.contains('waiting list')) {
+    return 3;
+  }
+  if (q.prefix.toUpperCase() == 'A') return 2;
+  if (name.contains('vip') || name.contains('reservation')) return 0;
+  return 1;
 }
