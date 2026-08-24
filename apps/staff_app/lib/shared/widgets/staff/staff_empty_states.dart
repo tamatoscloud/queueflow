@@ -12,9 +12,9 @@ class StaffQueueEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyStateView(
       title: "You're all clear 🎉",
-      message: 'Nobody is waiting right now.',
+      message: 'Nobody is waiting. Take a breath — or add a walk-in guest.',
       icon: Icons.celebration_outlined,
-      actionLabel: onAddCustomer == null ? null : 'Add customer',
+      actionLabel: onAddCustomer == null ? null : 'Add a walk-in guest',
       onAction: onAddCustomer,
     );
   }

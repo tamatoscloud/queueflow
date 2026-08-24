@@ -8,7 +8,7 @@ class CalmLiveIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLive = label == 'Live';
+    final isLive = label == 'Live' || label == 'Online';
     final color = isLive ? AppColors.success : AppColors.calmWarmGray;
 
     return Row(
