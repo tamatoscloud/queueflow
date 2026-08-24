@@ -11,7 +11,9 @@ import { QueueEnded } from '@/components/customer/queue-ended';
 import { getServiceModeCopy } from '@/lib/restaurant/service-mode-config';
 import { BookingShell } from '@/components/layout/booking-shell';
 import { useEntryTracking } from '@/hooks/use-entry-tracking';
+import { useGuestTurnNotifier } from '@/hooks/use-guest-turn-notifier';
 import { useRealtimeConnection } from '@/hooks/use-realtime-connection';
+import { GuestTurnToast } from '@/components/customer/guest-turn-toast';
 import { clearQueueSession } from '@/lib/storage/session';
 
 export default function TrackQueuePage() {
@@ -21,6 +23,15 @@ export default function TrackQueuePage() {
   const connection = useRealtimeConnection();
   const { data, isLoading, isError, error, refetch } = useEntryTracking(entryId);
   const [showWelcome, setShowWelcome] = useState(searchParams.get('welcome') === '1');
+
+  const readyCopy = data ? getServiceModeCopy(data.queue.serviceMode) : null;
+  useGuestTurnNotifier({
+    entryId,
+    status: data?.entry.status,
+    displayCode: data?.entry.displayCode,
+    businessName: data?.business.name,
+    readyTitle: readyCopy?.readyTitle,
+  });
 
   useEffect(() => {
     if (!showWelcome) return;
@@ -90,6 +101,7 @@ export default function TrackQueuePage() {
   if (data.entry.status === 'CALLED') {
     return (
       <BookingShell venueName={venueName} showJazzPill tone="called">
+        <GuestTurnToast />
         <LightReadyExperience
           displayCode={data.entry.displayCode}
           calledAt={data.entry.calledAt}
@@ -105,6 +117,7 @@ export default function TrackQueuePage() {
 
   return (
     <BookingShell venueName={venueName} showJazzPill>
+      <GuestTurnToast />
       {showWelcome ? (
         <CalmWelcomeBanner copy={copy} onDismiss={() => setShowWelcome(false)} />
       ) : null}

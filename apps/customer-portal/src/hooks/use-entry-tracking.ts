@@ -12,7 +12,8 @@ import {
 } from '@/lib/storage/session';
 import { isQueueUuid } from '@/lib/queue-id';
 
-export const TRACKING_POLL_MS = 15_000;
+/** Fallback when socket is slow/offline — keep short so "Call" feels instant. */
+export const TRACKING_POLL_MS = 5_000;
 
 function persistTokenFromTracking(entryId: string, data: EntryTracking): void {
   if (!data.trackingToken) return;
