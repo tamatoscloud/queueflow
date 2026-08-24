@@ -63,10 +63,18 @@ class QueueMetricsModel {
   final int noShowCount;
 
   factory QueueMetricsModel.fromJson(Map<String, dynamic> json) => QueueMetricsModel(
-        waitingCount: json['waitingCount'] as int? ?? 0,
-        calledCount: json['calledCount'] as int? ?? 0,
-        completedToday: json['completedToday'] as int? ?? json['completedCount'] as int? ?? 0,
-        averageWaitMinutes: json['averageWaitMinutes'] as int? ?? 0,
-        noShowCount: json['noShowCount'] as int? ?? 0,
+        waitingCount: _metricInt(json['waitingCount']),
+        calledCount: _metricInt(json['calledCount']),
+        completedToday: _metricInt(json['completedToday'] ?? json['completedCount']),
+        averageWaitMinutes: _metricInt(json['averageWaitMinutes']),
+        noShowCount: _metricInt(json['noShowCount']),
       );
+}
+
+int _metricInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is num) return value.round();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
 }

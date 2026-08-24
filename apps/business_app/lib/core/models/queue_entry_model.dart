@@ -35,14 +35,22 @@ class QueueEntryModel {
         id: json['id'] as String,
         displayCode: json['displayCode'] as String? ?? '',
         status: json['status'] as String? ?? 'WAITING',
-        partySize: json['partySize'] as int? ?? 1,
+        partySize: _asInt(json['partySize']) ?? 1,
         customerName: json['customerName'] as String?,
         customerPhone: json['customerPhone'] as String?,
-        position: json['position'] as int?,
-        estimatedWaitMinutes: json['estimatedWaitMinutes'] as int?,
-        priority: json['priority'] as int? ?? 0,
+        position: _asInt(json['position']),
+        estimatedWaitMinutes: _asInt(json['estimatedWaitMinutes']),
+        priority: _asInt(json['priority']) ?? 0,
         isVip: json['isVip'] as bool? ?? false,
         calledAt: json['calledAt'] != null ? DateTime.tryParse(json['calledAt'] as String) : null,
         joinedAt: json['joinedAt'] != null ? DateTime.tryParse(json['joinedAt'] as String) : null,
       );
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.round();
+  if (value is String) return int.tryParse(value);
+  return null;
 }
