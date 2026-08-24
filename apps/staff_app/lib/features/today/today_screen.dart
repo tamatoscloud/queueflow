@@ -141,6 +141,21 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     return DateTime.now().difference(joined).inMinutes;
   }
 
+  /// Prefer the live entry estimate; ignore absurd historical averages (e.g. 829).
+  int _displayWaitMinutes({
+    required QueueEntryModel? entry,
+    required int metricsMinutes,
+    required int fallbackMinutes,
+  }) {
+    const maxReasonable = 180;
+    final fromEntry = entry?.estimatedWaitMinutes ?? 0;
+    if (fromEntry > 0 && fromEntry <= maxReasonable) return fromEntry;
+    if (metricsMinutes > 0 && metricsMinutes <= maxReasonable) {
+      return metricsMinutes;
+    }
+    return fallbackMinutes > 0 ? fallbackMinutes : 0;
+  }
+
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
     setState(() => _selectedQueueId = queue.id);
     final snapshot = await ref.read(
@@ -537,9 +552,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             .toList()
           ..sort((a, b) => (a.position ?? 999).compareTo(b.position ?? 999));
         final next = waiting.isEmpty ? null : waiting.first;
-        final estWait = snapshot.metrics.averageWaitMinutes > 0
-            ? snapshot.metrics.averageWaitMinutes
-            : primary.averageServiceTimeMinutes;
+        final estWait = _displayWaitMinutes(
+          entry: next,
+          metricsMinutes: snapshot.metrics.averageWaitMinutes,
+          fallbackMinutes: primary.averageServiceTimeMinutes,
+        );
         final rest = waiting.skip(1).take(5).toList();
 
         return [
