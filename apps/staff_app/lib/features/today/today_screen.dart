@@ -36,26 +36,15 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
   final user = auth.session?.user;
   final branchId = ref.watch(selectedBranchIdProvider);
   try {
-    final queues = await api.getQueues(
-      branchId: branchId,
-      businessId: user?.businessId,
-    );
-    // Backward-compatible: older API responses omit waitingCount (always 0),
-    // which made Live Queue show "You're all clear" despite real waiters.
-    final listedWaiting = queues.fold<int>(0, (s, q) => s + q.waitingCount);
-    if (listedWaiting > 0 || queues.isEmpty) return queues;
-
-    final snaps = await Future.wait(
-      queues.map((q) => api.getQueueSnapshot(q.id)),
-    );
-    return [
-      for (var i = 0; i < queues.length; i++)
-        queues[i].copyWith(
-          waitingCount: snaps[i].entries
-              .where((e) => e.status == 'WAITING')
-              .length,
-        ),
-    ];
+    // Keep this path fast. Never await N queue snapshots here — realtime /
+    // polling invalidate this provider and a slow enrich loop caused an
+    // endless "Loading today's queue…" spinner after login.
+    return await api
+        .getQueues(
+          branchId: branchId,
+          businessId: user?.businessId,
+        )
+        .timeout(const Duration(seconds: 15));
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;
@@ -72,12 +61,25 @@ final todayRealtimeProvider = Provider.autoDispose<void>((ref) {
   final businessId = user?.businessId;
   if (businessId == null) return;
   final client = ref.watch(realtimeClientProvider);
+  var disposed = false;
+  var refreshScheduled = false;
+  ref.onDispose(() => disposed = true);
+  void scheduleRefresh() {
+    // Coalesce bursty socket/poll invalidations so Live Queue doesn't
+    // restart loading mid-request.
+    if (refreshScheduled || disposed) return;
+    refreshScheduled = true;
+    Future<void>.delayed(const Duration(milliseconds: 750), () {
+      refreshScheduled = false;
+      if (disposed) return;
+      ref.invalidate(todayQueuesProvider);
+    });
+  }
+
   bindRealtimeRefresh(
     ref: ref,
     client: client,
-    onRefresh: () {
-      ref.invalidate(todayQueuesProvider);
-    },
+    onRefresh: scheduleRefresh,
     onSubscribe: () async {
       await client.connect();
       return client.subscribeBusinessQueues(businessId);
@@ -225,6 +227,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
 
     return queuesAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => const PageLoading(message: "Loading today's queue…"),
       error: (e, _) =>
           _queueLoadError(e, () => ref.invalidate(todayQueuesProvider)),
