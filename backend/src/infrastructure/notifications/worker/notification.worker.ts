@@ -36,10 +36,20 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
     });
     this.logger.log('NotificationWorker bound to notification queue');
 
-    void this.dispatch.reconcilePending();
+    // Never let reconcile failures become unhandled rejections — a transient
+    // DB blip previously crashed the whole API process mid-demo.
+    void this.safeReconcile();
     this.reconcileTimer = setInterval(() => {
-      void this.dispatch.reconcilePending();
+      void this.safeReconcile();
     }, RECONCILE_INTERVAL_MS);
+  }
+
+  private async safeReconcile(): Promise<void> {
+    try {
+      await this.dispatch.reconcilePending();
+    } catch (err) {
+      this.logger.warn(`Notification reconcile skipped: ${String(err)}`);
+    }
   }
 
   onModuleDestroy(): void {
