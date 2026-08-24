@@ -22,6 +22,7 @@ class AdminCommandPaletteEntry {
 const adminCommandPaletteEntries = [
   AdminCommandPaletteEntry(label: 'Overview', route: AppRoutes.dashboard, icon: Icons.home_outlined),
   AdminCommandPaletteEntry(label: 'Businesses', route: AppRoutes.tenants, icon: Icons.business_outlined, keywords: ['tenants']),
+  AdminCommandPaletteEntry(label: 'Reviews', route: AppRoutes.reviews, icon: Icons.star_outline, keywords: ['feedback', 'ratings']),
   AdminCommandPaletteEntry(label: 'Alerts', route: AppRoutes.notifications, icon: Icons.notifications_outlined),
   AdminCommandPaletteEntry(label: 'Support', route: AppRoutes.support, icon: Icons.support_agent_outlined),
   AdminCommandPaletteEntry(label: 'Analytics', route: AppRoutes.analytics, icon: Icons.analytics_outlined),

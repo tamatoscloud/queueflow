@@ -11,6 +11,7 @@ import '../features/customers/presentation/customers_screen.dart';
 import '../features/notifications/presentation/notifications_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/queue_console/presentation/queue_console_screen.dart';
+import '../features/reviews/presentation/reviews_screen.dart';
 import '../features/shell/staff_shell.dart';
 import '../features/today/today_screen.dart';
 
@@ -44,6 +45,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: StaffRoutes.today, builder: (_, __) => const TodayScreen()),
           GoRoute(path: StaffRoutes.customers, builder: (_, __) => const CustomersScreen()),
+          GoRoute(path: StaffRoutes.reviews, builder: (_, __) => const ReviewsScreen()),
           GoRoute(path: StaffRoutes.notifications, builder: (_, __) => const NotificationsScreen()),
           GoRoute(path: StaffRoutes.profile, builder: (_, __) => const ProfileScreen()),
         ],

@@ -5,6 +5,7 @@ abstract final class StaffRoutes {
   static const boot = '/boot';
   static const today = '/';
   static const customers = '/customers';
+  static const reviews = '/reviews';
   static const notifications = '/notifications';
   static const profile = '/profile';
   static const settings = '/settings';

@@ -25,6 +25,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   static const _primaryDestinations = [
     (icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Overview', route: AppRoutes.dashboard),
     (icon: Icons.business_outlined, selectedIcon: Icons.business, label: 'Businesses', route: AppRoutes.tenants),
+    (icon: Icons.star_outline, selectedIcon: Icons.star, label: 'Reviews', route: AppRoutes.reviews),
     (icon: Icons.notifications_outlined, selectedIcon: Icons.notifications, label: 'Alerts', route: AppRoutes.notifications),
     (icon: Icons.support_agent_outlined, selectedIcon: Icons.support_agent, label: 'Support', route: AppRoutes.support),
     (icon: Icons.analytics_outlined, selectedIcon: Icons.analytics, label: 'Analytics', route: AppRoutes.analytics),

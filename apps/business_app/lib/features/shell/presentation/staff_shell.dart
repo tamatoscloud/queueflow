@@ -37,10 +37,10 @@ class StaffShell extends ConsumerStatefulWidget {
       route: AppRoutes.customers,
     ),
     (
-      icon: Icons.table_restaurant_outlined,
-      selectedIcon: Icons.table_restaurant,
-      label: 'Tables',
-      route: AppRoutes.restaurantTables,
+      icon: Icons.star_outline,
+      selectedIcon: Icons.star,
+      label: 'Reviews',
+      route: AppRoutes.reviews,
     ),
     (
       icon: Icons.notifications_outlined,

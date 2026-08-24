@@ -18,6 +18,7 @@ class StaffShell extends ConsumerWidget {
   static const _destinations = [
     (icon: Icons.campaign_outlined, label: 'Live Queue', route: StaffRoutes.today),
     (icon: Icons.people_outline, label: 'Guests', route: StaffRoutes.customers),
+    (icon: Icons.star_outline, label: 'Reviews', route: StaffRoutes.reviews),
     (icon: Icons.notifications_outlined, label: 'Alerts', route: StaffRoutes.notifications),
     (icon: Icons.person_outline, label: 'Profile', route: StaffRoutes.profile),
   ];
@@ -95,7 +96,8 @@ class StaffShell extends ConsumerWidget {
   int _indexFor(String path) {
     for (var i = 0; i < _destinations.length; i++) {
       if (path == _destinations[i].route ||
-          (i == 1 && path.startsWith('/customers'))) {
+          (i == 1 && path.startsWith('/customers')) ||
+          (i == 2 && path.startsWith('/reviews'))) {
         return i;
       }
     }

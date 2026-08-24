@@ -126,6 +126,22 @@ class BusinessApiClient {
         CustomerHistoryEntry.fromJson,
       );
 
+  // Feedback / reviews
+  Future<List<FeedbackModel>> getFeedback({
+    int page = 1,
+    int? rating,
+    String? branchId,
+  }) =>
+      _parser.getList(
+        () => _dio.get('/feedback', queryParameters: {
+          'page': page,
+          'pageSize': 30,
+          if (rating != null) 'rating': rating,
+          if (branchId != null) 'branchId': branchId,
+        }),
+        FeedbackModel.fromJson,
+      );
+
   // Reports
   Future<DailySummaryModel> getDailySummary({String? businessId, String? queueId}) =>
       _parser.getData(

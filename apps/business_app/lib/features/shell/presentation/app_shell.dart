@@ -18,6 +18,7 @@ import '../../reports/presentation/reports_screen.dart';
 import '../../restaurant_demo/presentation/demo_simulator_screen.dart';
 import '../../restaurant_demo/presentation/qr_center_screen.dart';
 import '../../restaurant_demo/presentation/table_floor_screen.dart';
+import '../../reviews/presentation/reviews_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -33,6 +34,7 @@ class AppShell extends ConsumerStatefulWidget {
     (icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: 'Reports', route: AppRoutes.reports),
     (icon: Icons.store_outlined, selectedIcon: Icons.store, label: 'Branches', route: AppRoutes.branches),
     (icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Customers', route: AppRoutes.customers),
+    (icon: Icons.star_outline, selectedIcon: Icons.star, label: 'Reviews', route: AppRoutes.reviews),
     (icon: Icons.notifications_outlined, selectedIcon: Icons.notifications, label: 'Alerts', route: AppRoutes.notifications),
     (icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings', route: AppRoutes.settings),
   ];
@@ -317,6 +319,7 @@ Widget shellChildForRoute(String path) {
   if (path.startsWith(AppRoutes.queues)) return const QueuesScreen();
   if (path.startsWith(AppRoutes.branches)) return const BranchesScreen();
   if (path.startsWith(AppRoutes.customers)) return const CustomersScreen();
+  if (path.startsWith(AppRoutes.reviews)) return const ReviewsScreen();
   if (path.startsWith(AppRoutes.reports)) return const ReportsScreen();
   if (path.startsWith(AppRoutes.notifications)) return const NotificationsScreen();
   if (path.startsWith(AppRoutes.settings)) return const SettingsScreen();

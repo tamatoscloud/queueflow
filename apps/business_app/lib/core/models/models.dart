@@ -3,6 +3,7 @@ library;
 
 export 'branch_model.dart';
 export 'customer_model.dart';
+export 'feedback_model.dart';
 export 'notification_model.dart';
 export 'queue_entry_model.dart';
 export 'queue_model.dart';

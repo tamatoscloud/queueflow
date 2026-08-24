@@ -14,6 +14,7 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/feature_flags/feature_flags_screen.dart';
 import '../features/health/health_screen.dart';
 import '../features/notifications/notifications_screen.dart';
+import '../features/reviews/reviews_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/shell/admin_shell.dart';
 import '../features/subscriptions/subscriptions_screen.dart';
@@ -51,6 +52,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: AppRoutes.users, builder: (_, __) => const UsersScreen()),
           GoRoute(path: AppRoutes.subscriptions, builder: (_, __) => const SubscriptionsScreen()),
           GoRoute(path: AppRoutes.notifications, builder: (_, __) => const NotificationsScreen()),
+          GoRoute(path: AppRoutes.reviews, builder: (_, __) => const ReviewsScreen()),
           GoRoute(path: AppRoutes.audit, builder: (_, __) => const AuditScreen()),
           GoRoute(path: AppRoutes.activity, builder: (_, __) => const ActivityScreen()),
           GoRoute(path: AppRoutes.support, builder: (_, __) => const SupportScreen()),

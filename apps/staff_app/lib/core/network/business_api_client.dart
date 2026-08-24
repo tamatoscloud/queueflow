@@ -159,6 +159,22 @@ class BusinessApiClient {
         NotificationModel.fromJson,
       );
 
+  // Feedback / reviews
+  Future<List<FeedbackModel>> getFeedback({
+    int page = 1,
+    int? rating,
+    String? branchId,
+  }) =>
+      _parser.getList(
+        () => _dio.get('/feedback', queryParameters: {
+          'page': page,
+          'pageSize': 30,
+          if (rating != null) 'rating': rating,
+          if (branchId != null) 'branchId': branchId,
+        }),
+        FeedbackModel.fromJson,
+      );
+
   // Staff
   Future<void> inviteStaff(StaffInviteRequest request) =>
       _parser.postVoid(() => _dio.post('/staff/invitations', data: request.toJson()));

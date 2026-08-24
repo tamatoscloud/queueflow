@@ -15,6 +15,7 @@ abstract final class AppRoutes {
   static String queueSettings(String id) => '/queues/$id/settings';
   static const customers = '/customers';
   static String customerDetail(String id) => '/customers/$id';
+  static const reviews = '/reviews';
   static const reports = '/reports';
   static const settings = '/settings';
   static const staff = '/staff';

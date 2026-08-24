@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_models/queueflow_models.dart';
 
+import '../models/feedback_model.dart';
 import '../models/platform_models.dart';
 import 'api_response_parser.dart';
 import 'dio_providers.dart';
@@ -188,6 +189,22 @@ class PlatformApiClient {
           '/platform/feature-flags/businesses/$businessId',
           data: {'featureFlags': flags},
         ),
+      );
+
+  /// Cross-tenant guest reviews (platform admin sees all businesses).
+  Future<List<FeedbackModel>> listFeedback({
+    int page = 1,
+    int? rating,
+    String? businessId,
+  }) =>
+      _parser.getList(
+        () => _dio.get('/feedback', queryParameters: {
+          'page': page,
+          'pageSize': 40,
+          if (rating != null) 'rating': rating,
+          if (businessId != null) 'businessId': businessId,
+        }),
+        FeedbackModel.fromJson,
       );
 }
 

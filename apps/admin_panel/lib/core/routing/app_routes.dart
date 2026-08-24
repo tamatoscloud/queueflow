@@ -7,6 +7,7 @@ abstract final class AppRoutes {
   static const users = '/users';
   static const subscriptions = '/subscriptions';
   static const notifications = '/notifications';
+  static const reviews = '/reviews';
   static const audit = '/audit';
   static const activity = '/activity';
   static const support = '/support';
