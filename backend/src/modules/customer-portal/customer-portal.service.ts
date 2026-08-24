@@ -12,6 +12,9 @@ import { RealtimeCredentialService } from '../../infrastructure/realtime/service
 import type { SubmitFeedbackDto } from './dto/customer-portal.dto';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
 
+const LANDING_CACHE_TTL_MS = 12_000;
+const landingCache = new Map<string, { expiresAt: number; payload: unknown }>();
+
 @Injectable()
 export class CustomerPortalService {
   constructor(
@@ -21,36 +24,50 @@ export class CustomerPortalService {
   ) {}
 
   async getQueueLanding(queueId: string) {
-    const queue = await this.prisma.queue.findFirst({
-      where: { id: queueId, deletedAt: null },
-      include: {
-        business: {
-          select: {
-            id: true,
-            name: true,
-            logoUrl: true,
-            timezone: true,
-            businessType: true,
-            settings: { select: { enabledModes: true } },
+    const cached = landingCache.get(queueId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.payload;
+    }
+
+    // Avoid full live snapshot here — that path loads every active entry and
+    // was ~10s+ under Railway↔Supabase latency. Landing only needs counts.
+    const [queue, waitingCount] = await Promise.all([
+      this.prisma.queue.findFirst({
+        where: { id: queueId, deletedAt: null },
+        include: {
+          business: {
+            select: {
+              id: true,
+              name: true,
+              logoUrl: true,
+              timezone: true,
+              businessType: true,
+              settings: { select: { enabledModes: true } },
+            },
           },
+          branch: { select: { id: true, name: true, city: true } },
         },
-        branch: { select: { id: true, name: true, city: true } },
-      },
-    });
+      }),
+      this.prisma.queueEntry.count({
+        where: {
+          queueId,
+          deletedAt: null,
+          status: 'WAITING',
+        },
+      }),
+    ]);
     if (!queue) {
       throw new NotFoundException('Queue not found');
     }
 
-    const snapshot = await this.engine.getLiveQueueSnapshot(queueId);
     const estimatedWaitMinutes =
-      snapshot.metrics.waitingCount > 0
+      waitingCount > 0
         ? clampEstimatedWaitMinutes(
-            snapshot.metrics.averageServiceTimeMinutes *
-              snapshot.metrics.waitingCount,
+            queue.averageServiceTimeMinutes * waitingCount,
           )
         : 0;
 
-    return {
+    const payload = {
       business: {
         id: queue.business.id,
         name: queue.business.name,
@@ -70,13 +87,19 @@ export class CustomerPortalService {
         serviceMode: queue.serviceMode,
       },
       live: {
-        waitingCount: snapshot.metrics.waitingCount,
+        waitingCount,
         estimatedWaitMinutes,
-        averageServiceTimeMinutes: snapshot.metrics.averageServiceTimeMinutes,
+        averageServiceTimeMinutes: queue.averageServiceTimeMinutes,
         isOpen: queue.status === 'ACTIVE' && queue.isAcceptingEntries,
-        generatedAt: snapshot.generatedAt,
+        generatedAt: new Date(),
       },
     };
+
+    landingCache.set(queueId, {
+      expiresAt: Date.now() + LANDING_CACHE_TTL_MS,
+      payload,
+    });
+    return payload;
   }
 
   async getEntryTracking(entryId: string) {

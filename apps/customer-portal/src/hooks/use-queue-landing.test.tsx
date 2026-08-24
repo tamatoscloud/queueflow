@@ -4,17 +4,10 @@ import { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useQueueLanding } from '@/hooks/use-queue-landing';
 import { customerApi } from '@/lib/api/customer-api';
-import { queueRealtime } from '@/lib/realtime/queue-realtime';
 
 vi.mock('@/lib/api/customer-api', () => ({
   customerApi: {
     getQueueLanding: vi.fn(),
-  },
-}));
-
-vi.mock('@/lib/realtime/queue-realtime', () => ({
-  queueRealtime: {
-    subscribeQueueLanding: vi.fn(() => ({ unsubscribe: vi.fn() })),
   },
 }));
 
@@ -27,10 +20,6 @@ function wrapper({ children }: { children: ReactNode }) {
 
 afterEach(() => {
   vi.mocked(customerApi.getQueueLanding).mockReset();
-  vi.mocked(queueRealtime.subscribeQueueLanding).mockReset();
-  vi.mocked(queueRealtime.subscribeQueueLanding).mockReturnValue({
-    unsubscribe: vi.fn(),
-  });
 });
 
 describe('useQueueLanding', () => {
@@ -39,7 +28,6 @@ describe('useQueueLanding', () => {
 
     await waitFor(() => {
       expect(customerApi.getQueueLanding).not.toHaveBeenCalled();
-      expect(queueRealtime.subscribeQueueLanding).not.toHaveBeenCalled();
     });
   });
 
@@ -52,7 +40,6 @@ describe('useQueueLanding', () => {
 
     await waitFor(() => {
       expect(customerApi.getQueueLanding).toHaveBeenCalledTimes(1);
-      expect(queueRealtime.subscribeQueueLanding).toHaveBeenCalledTimes(1);
     });
   });
 });

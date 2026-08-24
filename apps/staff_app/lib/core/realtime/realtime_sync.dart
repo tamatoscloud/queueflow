@@ -31,10 +31,12 @@ void bindRealtimeRefresh({
 
   client.registerOnConnected(subscribe);
 
-  Future.microtask(() async {
-    await client.connect();
+  // Poll immediately — do not wait for Socket.IO connect (up to 15s).
+  Future.microtask(() {
     startPolling();
+    onRefresh();
   });
+  unawaited(client.connect());
 
   final eventSub = client.events.listen((_) => onRefresh());
   final authSub = client.subscriptionAuthorized.listen((authorized) {

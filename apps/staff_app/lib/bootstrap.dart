@@ -5,6 +5,7 @@ import 'package:queueflow_shared/queueflow_shared.dart';
 
 import 'app.dart';
 import 'core/config/platform_url_resolver.dart';
+import 'core/session/session_providers.dart';
 
 Future<void> bootstrap(Flavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +15,9 @@ Future<void> bootstrap(Flavor flavor) async {
     AppConfig.fromEnvMap(dotenv.env, flavor),
   );
 
+  // Start Hive init without blocking first paint — session restore awaits it.
   final storageService = HiveStorageService(boxName: 'staff_app_storage');
-  await storageService.init();
+  final storageReady = storageService.init();
 
   final dio = const DioClientFactory().create(
     baseUrl: appConfig.apiBaseUrl,
@@ -34,6 +36,7 @@ Future<void> bootstrap(Flavor flavor) async {
             appConfigProvider.overrideWithValue(appConfig),
             dioProvider.overrideWithValue(dio),
             storageServiceProvider.overrideWithValue(storageService),
+            staffStorageReadyProvider.overrideWithValue(storageReady),
           ],
           child: const StaffApp(),
         ),

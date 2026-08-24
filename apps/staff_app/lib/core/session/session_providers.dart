@@ -3,6 +3,11 @@ import 'package:queueflow_services/queueflow_services.dart';
 
 import '../../features/auth/presentation/auth_controller.dart';
 
+/// Completes when Hive (IndexedDB on web) is ready for session restore.
+final staffStorageReadyProvider = Provider<Future<void>>(
+  (ref) => Future<void>.value(),
+);
+
 /// Currently selected branch for filtering queues and console.
 final selectedBranchIdProvider = StateProvider<String?>((ref) => null);
 
@@ -29,10 +34,15 @@ final sessionBootstrapProvider = Provider<SessionBootstrap>((ref) {
 
 final sessionInitProvider = FutureProvider<void>((ref) async {
   try {
+    await ref.watch(staffStorageReadyProvider).timeout(const Duration(seconds: 2));
+  } catch (_) {
+    // Continue — restore may still work from in-memory defaults.
+  }
+  try {
     await ref
         .read(authControllerProvider.notifier)
         .bootstrap()
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 3));
   } catch (_) {
     // Prefer login over an endless /boot spinner if secure storage hangs.
     final status = ref.read(authControllerProvider).status;
@@ -45,7 +55,7 @@ final sessionInitProvider = FutureProvider<void>((ref) async {
     final branchId = await ref
         .read(sessionBootstrapProvider)
         .loadBranchId()
-        .timeout(const Duration(seconds: 2));
+        .timeout(const Duration(seconds: 1));
     if (branchId != null) {
       ref.read(selectedBranchIdProvider.notifier).state = branchId;
     }

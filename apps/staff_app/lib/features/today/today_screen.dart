@@ -44,7 +44,7 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
           branchId: branchId,
           businessId: user?.businessId,
         )
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 10));
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;
@@ -203,11 +203,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(todayRealtimeProvider);
     final onBreak = ref.watch(breakModeProvider);
     final user = ref.watch(currentUserProvider);
     final online = ref.watch(connectivityProvider);
     final queuesAsync = ref.watch(todayQueuesProvider);
+    // Defer socket/poll until the first queues response so REST isn't starved.
+    if (queuesAsync.hasValue || queuesAsync.hasError) {
+      ref.watch(todayRealtimeProvider);
+    }
     final realtimeStatus = ref.watch(realtimeStatusProvider);
     final venueName = _venueName(ref);
     final isTablet = Breakpoints.isTablet(context);

@@ -19,13 +19,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   final init = ref.watch(sessionInitProvider);
 
   return GoRouter(
-    initialLocation: StaffRoutes.boot,
+    initialLocation: StaffRoutes.login,
     redirect: (context, state) {
       final loc = state.matchedLocation;
       final isLogin = loc == StaffRoutes.login || loc == StaffRoutes.forgotPassword;
       final isBoot = loc == StaffRoutes.boot;
+      // Show login immediately while session restore runs — never park on /boot
+      // for cold visitors who have no tokens.
       if (init.isLoading) {
-        return isBoot || isLogin ? null : StaffRoutes.boot;
+        if (isLogin || isBoot) return null;
+        return StaffRoutes.login;
       }
       final isAuth = auth.isAuthenticated;
       if (!isAuth && !isLogin) return StaffRoutes.login;

@@ -6,7 +6,7 @@ import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_utils/queueflow_utils.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
 
-import '../../../core/network/connection_diagnostics.dart';
+import '../../../core/network/api_error_message.dart' show apiExceptionMessage;
 import '../../../core/routing/staff_routes.dart';
 import 'auth_controller.dart';
 
@@ -52,8 +52,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final diagnostics = ref.watch(connectionDiagnosticsProvider);
-
     return Scaffold(
       backgroundColor: AppColors.lightBackground,
       body: Column(
@@ -75,79 +73,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          diagnostics.when(
-                            loading: () => const LinearProgressIndicator(
-                              color: AppColors.primary,
-                              backgroundColor: AppColors.neutral100,
-                            ),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (result) => switch (result) {
-                              ConnectionOk(:final apiBaseUrl, :final latencyMs) => Container(
-                                  padding: const EdgeInsets.all(AppSpacing.sm),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.successLight,
-                                    borderRadius: AppRadius.lgAll,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.check_circle_outline,
-                                          size: 18, color: AppColors.success),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Connected to $apiBaseUrl (${latencyMs}ms)',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(color: AppColors.success),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ConnectionFailed(:final apiBaseUrl, :final message, :final hint) =>
-                                AppCard(
-                                  variant: AppCardVariant.outlined,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.cloud_off_outlined,
-                                              color: AppColors.danger, size: 20),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Cannot reach backend',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(color: AppColors.danger),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(apiBaseUrl,
-                                          style: Theme.of(context).textTheme.bodySmall),
-                                      const SizedBox(height: 4),
-                                      Text(message),
-                                      if (hint != null) ...[
-                                        const SizedBox(height: 4),
-                                        Text(hint,
-                                            style: Theme.of(context).textTheme.bodySmall),
-                                      ],
-                                      AppButton(
-                                        label: 'Retry connection',
-                                        variant: AppButtonVariant.ghost,
-                                        size: AppButtonSize.sm,
-                                        onPressed: () =>
-                                            ref.invalidate(connectionDiagnosticsProvider),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.md),
                           AppTextField(
                             controller: _email,
                             label: 'Email',

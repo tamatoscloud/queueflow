@@ -22,9 +22,14 @@ class AuthRepository {
   }
 
   Future<AuthSession?> restoreSession() async {
-    final access = await _storage.getAccessToken();
-    final refresh = await _storage.getRefreshToken();
-    final userJson = await _storage.getUserJson();
+    final results = await Future.wait([
+      _storage.getAccessToken(),
+      _storage.getRefreshToken(),
+      _storage.getUserJson(),
+    ]);
+    final access = results[0];
+    final refresh = results[1];
+    final userJson = results[2];
     if (access == null || refresh == null || userJson == null) return null;
     try {
       final user = AuthUser.fromJson(

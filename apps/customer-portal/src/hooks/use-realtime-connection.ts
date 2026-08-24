@@ -3,18 +3,18 @@
 import { useEffect, useState } from 'react';
 import {
   getRealtimeConnectionState,
-  getSharedSocket,
   onRealtimeConnectionState,
 } from '@/lib/realtime/socket-client';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
 
+/**
+ * Observes socket state without forcing a connection.
+ * Only pages that actually subscribe (track/join) should open the socket.
+ */
 export function useRealtimeConnection(): RealtimeConnectionState {
   const [state, setState] = useState<RealtimeConnectionState>('disconnected');
 
   useEffect(() => {
-    // Ensure the shared socket is created; otherwise the banner can stay on
-    // "Updating…" forever when no other subscriber has connected yet.
-    getSharedSocket();
     setState(getRealtimeConnectionState());
     return onRealtimeConnectionState(setState);
   }, []);

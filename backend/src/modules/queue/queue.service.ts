@@ -94,7 +94,8 @@ export class QueueService {
     };
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
-    const [totalItems, data] = await this.prisma.$transaction([
+    // Parallel queries beat a serial $transaction under high DB RTT.
+    const [totalItems, data] = await Promise.all([
       this.prisma.queue.count({ where }),
       this.prisma.queue.findMany({
         where,
