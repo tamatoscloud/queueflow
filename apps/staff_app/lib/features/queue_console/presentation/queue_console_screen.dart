@@ -548,13 +548,16 @@ Future<void> queueAction(
   await refresh();
 }
 
-Future<void> entryAction(
+/// Returns `true` when the action ran successfully.
+/// Returns `false` if the user cancelled (e.g. No show dialog) or the API failed.
+Future<bool> entryAction(
   WidgetRef ref,
   String queueId,
   String entryId,
   String action,
-  Future<void> Function() refresh,
-) async {
+  Future<void> Function() refresh, {
+  bool showSnackOnError = true,
+}) async {
   final context = ref.context;
   if (action == 'skip') {
     final confirmed = await showDialog<bool>(
@@ -568,7 +571,7 @@ Future<void> entryAction(
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) return false;
   }
 
   try {
@@ -591,14 +594,18 @@ Future<void> entryAction(
         await api.setPriority(entryId, 10);
       case 'transfer':
         await transferEntry(ref, queueId, entryId, refresh);
-        return;
+        return true;
     }
     await refresh();
+    return true;
   } catch (e) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(apiExceptionMessage(e))),
-    );
+    if (showSnackOnError && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiExceptionMessage(e))),
+      );
+    }
+    if (!showSnackOnError) rethrow;
+    return false;
   }
 }
 

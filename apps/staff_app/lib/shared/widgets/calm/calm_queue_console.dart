@@ -127,7 +127,10 @@ class CalmQueueDetailPanel extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         _DetailRow(label: 'Service', value: modeInfo.label),
-        _DetailRow(label: 'Wait', value: calmWaitLabel(entry)),
+        _DetailRow(
+          label: 'Status',
+          value: calmElapsedStatusLine(entry, serviceMode: serviceMode),
+        ),
         if (serviceMode == 'DINE_IN')
           _DetailRow(label: 'Party', value: '${entry.partySize}'),
         if (serviceMode == 'TAKEAWAY' && meta.orderNumber != null)

@@ -10,7 +10,10 @@ import 'calm_section_label.dart';
 import 'calm_status_badge.dart';
 
 int calmWaitMinutes(QueueEntryModel entry) {
-  final start = entry.joinedAt;
+  final start = switch (entry.status) {
+    'CALLED' || 'HOLDING' => entry.calledAt ?? entry.joinedAt,
+    _ => entry.joinedAt,
+  };
   if (start == null) return 0;
   return DateTime.now().difference(start).inMinutes;
 }
@@ -19,6 +22,23 @@ String calmWaitLabel(QueueEntryModel entry) {
   final mins = calmWaitMinutes(entry);
   if (mins < 1) return '<1 min';
   return '$mins min';
+}
+
+/// Status-aware time line, e.g. "Called · 3 min" instead of always "Waiting".
+String calmElapsedStatusLine(QueueEntryModel entry, {String serviceMode = 'DINE_IN'}) {
+  final time = calmWaitLabel(entry);
+  return switch (entry.status) {
+    'CALLED' => serviceMode == 'TAKEAWAY' ? 'Ready · $time' : 'Called · $time',
+    'HOLDING' => 'On hold · $time',
+    'COMPLETED' => serviceMode == 'TAKEAWAY'
+        ? 'Collected'
+        : serviceMode == 'DRIVE_IN'
+            ? 'Served'
+            : 'Seated',
+    'NO_SHOW' || 'SKIPPED' => 'No show',
+    'CANCELLED' => 'Cancelled',
+    _ => 'Waiting · $time',
+  };
 }
 
 /// Operational queue card — token, identity, mode context, wait, action.
@@ -101,7 +121,7 @@ class CalmQueueEntryCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Waiting · ${calmWaitLabel(entry)}',
+                calmElapsedStatusLine(entry, serviceMode: serviceMode),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.calmWarmGray,
                       fontWeight: FontWeight.w500,

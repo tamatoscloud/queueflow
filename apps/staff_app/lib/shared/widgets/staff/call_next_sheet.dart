@@ -55,8 +55,11 @@ class _CallNextSheet extends ConsumerStatefulWidget {
 
 class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
   bool _calling = false;
+  bool _actionBusy = false;
   bool _notified = false;
   String? _errorMessage;
+  String? _successMessage;
+  String? _busyAction;
   QueueEntryModel? _calledEntry;
 
   @override
@@ -68,26 +71,48 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
   }
 
   int _waitMinutes(QueueEntryModel entry) {
-    final joined = entry.joinedAt;
-    if (joined == null) return 0;
-    return DateTime.now().difference(joined).inMinutes;
+    final start = entry.status == 'CALLED' || entry.status == 'HOLDING'
+        ? (entry.calledAt ?? entry.joinedAt)
+        : entry.joinedAt;
+    if (start == null) return 0;
+    return DateTime.now().difference(start).inMinutes;
   }
 
   String _entryDetail(QueueEntryModel entry) {
     final wait = _waitMinutes(entry);
-    final waitText = wait < 1 ? '<1 min wait' : '$wait min wait';
+    final waitText = wait < 1 ? '<1 min' : '$wait min';
+    final statusTime = switch (entry.status) {
+      'CALLED' => 'Called · $waitText',
+      'HOLDING' => 'On hold · $waitText',
+      _ => '$waitText wait',
+    };
     final meta = entry.metadata;
     return switch (widget.serviceMode) {
       'TAKEAWAY' => [
           if (meta?['orderNumber'] != null) 'Order #${meta!['orderNumber']}',
-          waitText,
+          statusTime,
         ].join(' · '),
       'DRIVE_IN' => [
           if (meta?['vehiclePlate'] != null) '${meta!['vehiclePlate']}',
           if (meta?['vehicleColor'] != null) '${meta!['vehicleColor']}',
-          waitText,
+          statusTime,
         ].where((s) => s.isNotEmpty).join(' · '),
-      _ => 'Party of ${entry.partySize} · $waitText',
+      _ => 'Party of ${entry.partySize} · $statusTime',
+    };
+  }
+
+  String _successCopy(String action) {
+    final modeInfo = ServiceModeInfo.forMode(widget.serviceMode);
+    return switch (action) {
+      'complete' => switch (widget.serviceMode) {
+          'TAKEAWAY' => 'Collected — done',
+          'DRIVE_IN' => 'Served — done',
+          _ => 'Seated — done',
+        },
+      'recall' => 'Called again — guest notified',
+      'hold' => 'Guest put on hold',
+      'skip' => 'Marked as no show',
+      _ => '${modeInfo.completeLabel} complete',
     };
   }
 
@@ -95,6 +120,7 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
     setState(() {
       _calling = true;
       _errorMessage = null;
+      _successMessage = null;
     });
     try {
       final entry = await ref.read(businessApiClientProvider).callNext(widget.queueId);
@@ -116,13 +142,44 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
 
   Future<void> _entryAction(String action) async {
     final entry = _calledEntry ?? widget.nextEntry;
-    if (entry == null) return;
+    if (entry == null || _actionBusy) return;
+    setState(() {
+      _actionBusy = true;
+      _busyAction = action;
+      _errorMessage = null;
+      _successMessage = null;
+    });
     try {
-      await entryAction(ref, widget.queueId, entry.id, action, widget.onRefresh);
+      final ok = await entryAction(
+        ref,
+        widget.queueId,
+        entry.id,
+        action,
+        widget.onRefresh,
+        showSnackOnError: false,
+      );
+      if (!mounted) return;
+      if (!ok) {
+        setState(() {
+          _actionBusy = false;
+          _busyAction = null;
+        });
+        return;
+      }
+      setState(() {
+        _actionBusy = false;
+        _busyAction = null;
+        _successMessage = _successCopy(action);
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = apiExceptionMessage(e));
+      setState(() {
+        _actionBusy = false;
+        _busyAction = null;
+        _errorMessage = apiExceptionMessage(e);
+      });
     }
   }
 
@@ -131,6 +188,7 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
     final entry = _calledEntry ?? widget.nextEntry;
     final modeInfo = ServiceModeInfo.forMode(widget.serviceMode);
     final isCalled = entry?.status == 'CALLED' || _calledEntry != null;
+    final showingSuccess = _successMessage != null;
 
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
@@ -158,7 +216,35 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            if (_calling)
+            if (showingSuccess)
+              Column(
+                children: [
+                  const Icon(Icons.check_circle, color: AppColors.success, size: 56),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    _successMessage!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.calmCharcoal,
+                        ),
+                  ),
+                  if (entry != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      [
+                        if (entry.displayCode.isNotEmpty) entry.displayCode,
+                        entry.customerName ?? 'Guest',
+                      ].join(' · '),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppColors.calmWarmGray,
+                          ),
+                    ),
+                  ],
+                ],
+              )
+            else if (_calling)
               Column(
                 children: [
                   const SizedBox(
@@ -263,7 +349,8 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
                 CalmPrimaryButton(
                   label: 'Call customer',
                   icon: Icons.campaign_outlined,
-                  onPressed: _runCallNext,
+                  isLoading: _actionBusy,
+                  onPressed: _actionBusy ? null : _runCallNext,
                 ),
               ],
               if (isCalled) ...[
@@ -271,45 +358,49 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
                   label: modeInfo.completeLabel,
                   icon: Icons.check_circle_outline,
                   variant: CalmPrimaryVariant.success,
-                  onPressed: () => _entryAction('complete'),
+                  isLoading: _busyAction == 'complete',
+                  onPressed: _actionBusy ? null : () => _entryAction('complete'),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 CalmPrimaryButton(
                   label: 'Call again',
                   icon: Icons.replay,
-                  onPressed: () => _entryAction('recall'),
+                  isLoading: _busyAction == 'recall',
+                  onPressed: _actionBusy ? null : () => _entryAction('recall'),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     Expanded(
                       child: AppButton(
-                        label: 'Hold',
+                        label: _busyAction == 'hold' ? 'Holding…' : 'Hold',
                         icon: Icons.pause_circle_outline,
                         variant: AppButtonVariant.secondary,
                         fullWidth: true,
-                        onPressed: () => _entryAction('hold'),
+                        onPressed: _actionBusy ? null : () => _entryAction('hold'),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: AppButton(
-                        label: 'No show',
+                        label: _busyAction == 'skip' ? 'Saving…' : 'No show',
                         icon: Icons.person_off_outlined,
                         variant: AppButtonVariant.danger,
                         fullWidth: true,
-                        onPressed: () => _entryAction('skip'),
+                        onPressed: _actionBusy ? null : () => _entryAction('skip'),
                       ),
                     ),
                   ],
                 ),
               ],
             ],
-            const SizedBox(height: AppSpacing.md),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
+            if (!showingSuccess) ...[
+              const SizedBox(height: AppSpacing.md),
+              TextButton(
+                onPressed: _actionBusy ? null : () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
           ],
         ),
       ),

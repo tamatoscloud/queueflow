@@ -161,7 +161,13 @@ class StaffQueueEntryCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 _MetaChip(
                   icon: Icons.timer_outlined,
-                  label: 'Waiting ${_waitLabel()}',
+                  label: switch (entry.status) {
+                    'CALLED' => 'Called ${_waitLabel()}',
+                    'HOLDING' => 'On hold ${_waitLabel()}',
+                    'COMPLETED' => 'Seated',
+                    'NO_SHOW' || 'SKIPPED' => 'No show',
+                    _ => 'Waiting ${_waitLabel()}',
+                  },
                   light: isCalled,
                 ),
               ],
