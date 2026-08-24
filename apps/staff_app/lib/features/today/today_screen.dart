@@ -253,7 +253,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   AppSpacing.md,
                   AppSpacing.md,
                   AppSpacing.md,
-                  totalWaiting > 0 ? 160 : AppSpacing.xl,
+                  totalWaiting > 0 ? 200 : AppSpacing.xl,
                 ),
                 children: [
                   StaffGreetingHeader(
@@ -294,6 +294,30 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        // Keep the next guest visible above the sticky CALL NEXT
+                        // bar on short web viewports (demo tablets / laptop panes).
+                        ...snapshotAsync.maybeWhen(
+                          data: (snapshot) {
+                            final next = _nextWaiting(snapshot);
+                            if (next == null) return const <Widget>[];
+                            final code = next.displayCode.isNotEmpty
+                                ? next.displayCode
+                                : 'Guest';
+                            final name = next.customerName ?? 'Guest';
+                            return [
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                'Next · $code · $name',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryDark,
+                                    ),
+                              ),
+                            ];
+                          },
+                          orElse: () => const <Widget>[],
                         ),
                       ],
                     ),
