@@ -28,10 +28,18 @@ export function queueLandingErrorView(
         retry: false,
       };
     }
-    if (error.status === 0 || error.code === 'NETWORK_ERROR' || error.status >= 500) {
+    if (
+      error.code === 'TIMEOUT' ||
+      error.status === 0 ||
+      error.code === 'NETWORK_ERROR' ||
+      error.status >= 500
+    ) {
       return {
-        title: 'Service unavailable',
-        message: 'The queue service is temporarily unavailable. Please try again in a moment.',
+        title: error.code === 'TIMEOUT' ? 'Still loading' : 'Service is busy',
+        message:
+          error.code === 'TIMEOUT'
+            ? 'The queue is taking longer than usual. Tap retry — your place is not lost.'
+            : 'The queue service is temporarily slow. Please try again in a moment.',
         retry: true,
       };
     }
@@ -63,11 +71,18 @@ export function trackingPageErrorView(
         retry: false,
       };
     }
-    if (error.status === 0 || error.code === 'NETWORK_ERROR' || error.status >= 500) {
+    if (
+      error.code === 'TIMEOUT' ||
+      error.status === 0 ||
+      error.code === 'NETWORK_ERROR' ||
+      error.status >= 500
+    ) {
       return {
-        title: 'Service unavailable',
+        title: error.code === 'TIMEOUT' ? 'Still updating' : 'Service is busy',
         message:
-          "We're having trouble updating your queue. Don't worry — you can try again in a moment.",
+          error.code === 'TIMEOUT'
+            ? "We're still fetching your place in line. Tap retry — you have not lost your spot."
+            : "We're having trouble updating your queue. Don't worry — you can try again in a moment.",
         retry: true,
       };
     }
@@ -90,11 +105,13 @@ export function friendlyJoinError(err: unknown): string {
     if (err.code === 'QUEUE_CAPACITY_EXCEEDED') {
       return 'The queue is full at the moment. Please try again shortly.';
     }
-    if (err.code === 'NETWORK_ERROR') {
-      return "You're offline. We'll reconnect automatically.";
+    if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
+      return err.code === 'TIMEOUT'
+        ? 'Joining is taking longer than usual — please try again. You have not been charged a spot yet.'
+        : "You're offline. Check your connection and try again.";
     }
     if (err.status >= 500) {
-      return "We couldn't join the queue. Please try again in a moment.";
+      return "We couldn't join the queue just now. Please try again in a moment.";
     }
     return 'Please check your details and try again.';
   }
@@ -103,8 +120,10 @@ export function friendlyJoinError(err: unknown): string {
 
 export function friendlyTrackingError(err: unknown): string {
   if (err instanceof ApiClientError) {
-    if (err.code === 'NETWORK_ERROR') {
-      return "We're having trouble updating your queue. Don't worry — we'll keep trying.";
+    if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
+      return err.code === 'TIMEOUT'
+        ? "Updating is slow right now. Tap retry — you haven't lost your place."
+        : "We're having trouble updating your queue. Don't worry — we'll keep trying.";
     }
     if (err.status >= 500) {
       return "We're having trouble updating your queue. Don't worry — we'll keep trying.";

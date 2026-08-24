@@ -44,7 +44,7 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
           branchId: branchId,
           businessId: user?.businessId,
         )
-        .timeout(const Duration(seconds: 10));
+        .timeout(const Duration(seconds: 28));
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;

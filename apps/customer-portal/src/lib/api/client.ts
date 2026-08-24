@@ -1,7 +1,8 @@
 import type { ApiError, ApiSuccess } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/api/v1';
-const DEFAULT_TIMEOUT_MS = 10_000;
+/** Production DB RTT is often 1–2s/query; 10s caused false timeouts on join/track. */
+const DEFAULT_TIMEOUT_MS = 28_000;
 
 export class ApiClientError extends Error {
   constructor(

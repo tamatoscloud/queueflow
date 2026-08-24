@@ -11,9 +11,23 @@ Future<void> bootstrap(Flavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: flavor.envFileName);
-  final appConfig = PlatformUrlResolver.apply(
+  var appConfig = PlatformUrlResolver.apply(
     AppConfig.fromEnvMap(dotenv.env, flavor),
   );
+  // Production DB RTT is often 1–2s per query; keep a floor so demos don't
+  // false-timeout while Railway↔Supabase is warm but slow.
+  if (flavor.isProduction && appConfig.apiTimeoutSeconds < 25) {
+    appConfig = AppConfig(
+      flavor: appConfig.flavor,
+      apiBaseUrl: appConfig.apiBaseUrl,
+      wsBaseUrl: appConfig.wsBaseUrl,
+      appName: appConfig.appName,
+      enableLogging: appConfig.enableLogging,
+      apiTimeoutSeconds: 30,
+      sentryDsn: appConfig.sentryDsn,
+      firebaseProjectId: appConfig.firebaseProjectId,
+    );
+  }
 
   // Start Hive init without blocking first paint — session restore awaits it.
   final storageService = HiveStorageService(boxName: 'staff_app_storage');

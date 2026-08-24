@@ -31,12 +31,13 @@ String apiExceptionMessage(Object error) {
     return error.when(
       noConnection: () =>
           'Cannot reach the server. Check that the backend is running and the API URL is correct.',
-      timeout: () => 'Request timed out. The server may be slow or unreachable.',
+      timeout: () =>
+          'Still connecting — the server is slow right now. Please wait a moment and try again.',
       unauthorized: () => 'Invalid email or password.',
       forbidden: () => 'You do not have permission to perform this action.',
       notFound: () => 'The requested resource was not found.',
       server: (statusCode, message) => _sanitizeServerMessage(statusCode, message),
-      unknown: (_) => 'An unexpected error occurred. Please try again.',
+      unknown: (_) => 'Something went wrong. Please try again.',
     );
   }
   return error.toString();
@@ -47,9 +48,9 @@ String _sanitizeServerMessage(int? statusCode, String? message) {
     return message;
   }
   return switch (statusCode) {
-    500 => 'Server error. Please try again or contact support.',
+    500 => 'Server is busy. Please try again in a moment.',
     502 || 503 => 'Service temporarily unavailable. Please try again shortly.',
-    _ => 'Server error (${statusCode ?? 'unknown'}). Please try again.',
+    _ => 'Server error. Please try again.',
   };
 }
 
