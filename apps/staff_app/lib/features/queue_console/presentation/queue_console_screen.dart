@@ -207,17 +207,20 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
             );
           }
 
+          // Sticky bar is always shown — keep list clear of it and only let
+          // the sticky *button* capture taps (not the fade overlay).
+          const stickyReserve = 160.0;
           return Stack(
             children: [
               RefreshIndicator(
                 color: AppColors.calmViolet,
                 onRefresh: _refresh,
                 child: ListView(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     AppSpacing.md,
                     AppSpacing.md,
                     AppSpacing.md,
-                    totalWaiting > 0 ? 148 : AppSpacing.xl,
+                    stickyReserve,
                   ),
                   children: [
                     CalmQueueConsoleHeader(
@@ -552,8 +555,8 @@ Future<void> entryAction(
   String action,
   Future<void> Function() refresh,
 ) async {
+  final context = ref.context;
   if (action == 'skip') {
-    final context = ref.context;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -568,27 +571,35 @@ Future<void> entryAction(
     if (confirmed != true) return;
   }
 
-  final api = ref.read(businessApiClientProvider);
-  switch (action) {
-    case 'hold':
-      await api.holdEntry(entryId);
-    case 'resume':
-      await api.resumeHeld(entryId);
-    case 'skip':
-      await api.skipEntry(entryId);
-    case 'recall':
-      await api.recallEntry(entryId);
-    case 'complete':
-      await api.completeEntry(entryId);
-    case 'cancel':
-      await api.cancelEntry(entryId);
-    case 'priority':
-      await api.setPriority(entryId, 10);
-    case 'transfer':
-      await transferEntry(ref, queueId, entryId, refresh);
-      return;
+  try {
+    final api = ref.read(businessApiClientProvider);
+    switch (action) {
+      case 'hold':
+        await api.holdEntry(entryId);
+      case 'resume':
+        await api.resumeHeld(entryId);
+      case 'skip':
+        // Staff "No show" must remove the guest — not skip-to-end of the line.
+        await api.noShowEntry(entryId);
+      case 'recall':
+        await api.recallEntry(entryId);
+      case 'complete':
+        await api.completeEntry(entryId);
+      case 'cancel':
+        await api.cancelEntry(entryId);
+      case 'priority':
+        await api.setPriority(entryId, 10);
+      case 'transfer':
+        await transferEntry(ref, queueId, entryId, refresh);
+        return;
+    }
+    await refresh();
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(apiExceptionMessage(e))),
+    );
   }
-  await refresh();
 }
 
 Future<void> transferEntry(

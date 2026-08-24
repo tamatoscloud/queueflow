@@ -387,14 +387,20 @@ export class QueueEngineService {
     });
   }
 
-  async recallCustomer(entryId: string): Promise<QueueEntry> {
+  async recallCustomer(
+    entryId: string,
+    opts?: { force?: boolean },
+  ): Promise<QueueEntry> {
     const entry = await this.requireEntry(entryId);
     const queue = await this.requireQueue(entry.queueId);
     const now = this.deps.clock.now();
     if (entry.status !== QueueEntryStatus.CALLED) {
       throw new ValidationError('Only a CALLED customer can be recalled');
     }
-    TimeoutPolicy.assertRecallAllowed(queue, entry, now);
+    // Staff "Call again" is intentional — only auto-recall jobs should wait.
+    if (!opts?.force) {
+      TimeoutPolicy.assertRecallAllowed(queue, entry, now);
+    }
     entry.recall(now);
     await this.deps.entries.save(entry);
     await this.deps.eventBus.publish(

@@ -126,7 +126,10 @@ export class QueueOperationsService {
 
   async recall(entryId: string) {
     await this.tenantScope.requireQueueEntry(entryId);
-    return this.engine.recallCustomer(entryId).then((e) => e.toProps());
+    // Manual staff "Call again" must work immediately (cooldown is for automation).
+    return this.engine
+      .recallCustomer(entryId, { force: true })
+      .then((e) => e.toProps());
   }
 
   async complete(entryId: string) {

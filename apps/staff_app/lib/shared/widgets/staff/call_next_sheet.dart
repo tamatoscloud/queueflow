@@ -277,7 +277,7 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
                 CalmPrimaryButton(
                   label: 'Call again',
                   icon: Icons.replay,
-                  onPressed: _runCallNext,
+                  onPressed: () => _entryAction('recall'),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Row(

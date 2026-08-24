@@ -325,39 +325,58 @@ class CalmQueueStickyAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.calmIvory.withValues(alpha: 0),
-            AppColors.calmIvory,
-          ],
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$waitingCount $waitingUnit',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.calmWarmGray,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        // Decorative fade must not steal taps from SEAT / Call again above.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.calmIvory.withValues(alpha: 0),
+                    AppColors.calmIvory,
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            CalmPrimaryButton(
-              label: actionLabel,
-              icon: Icons.campaign_outlined,
-              onPressed: onPressed,
-            ),
-          ],
+          ),
         ),
-      ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  waitingUnit.isEmpty
+                      ? (waitingCount == 0 ? 'Queue clear' : '$waitingCount')
+                      : '$waitingCount $waitingUnit',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppColors.calmWarmGray,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                CalmPrimaryButton(
+                  label: actionLabel,
+                  icon: Icons.campaign_outlined,
+                  onPressed: onPressed,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

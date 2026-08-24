@@ -89,8 +89,9 @@ class BusinessApiClient {
   Future<void> cancelEntry(String entryId) =>
       _parser.postVoid(() => _dio.post('/queue-entries/$entryId/cancel'));
 
-  Future<void> noShowEntry(String entryId) =>
-      _parser.postVoid(() => _dio.post('/queue-entries/$entryId/no-show'));
+  Future<void> noShowEntry(String entryId) => _parser.postVoid(
+        () => _dio.post('/queue-entries/$entryId/no-show', data: {'force': true}),
+      );
 
   Future<QueueEntryModel> walkIn(String queueId, Map<String, dynamic> body) => _parser.getData(
         () => _dio.post('/queues/$queueId/walk-in', data: body),
