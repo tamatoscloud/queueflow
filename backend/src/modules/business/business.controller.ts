@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Put,
   Post,
   Query,
 } from '@nestjs/common';
@@ -19,6 +20,7 @@ import {
   CreateBusinessDto,
   ListBusinessQueryDto,
   UpdateBusinessDto,
+  UpsertGuestMenuDto,
 } from './dto/business.dto';
 
 @ApiTags('businesses')
@@ -70,5 +72,28 @@ export class BusinessController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.businessService.update(id, dto, user);
+  }
+
+  @Get(':id/menu')
+  @RequireAnyPermission(Permission.BUSINESS_MANAGE, Permission.PLATFORM_MANAGE_TENANTS)
+  @ApiOperation({ summary: 'Get guest-facing restaurant menu' })
+  @ApiStandardOkResponse('Guest menu')
+  getMenu(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.businessService.getGuestMenu(id, user);
+  }
+
+  @Put(':id/menu')
+  @RequirePermissions(Permission.BUSINESS_MANAGE)
+  @ApiOperation({ summary: 'Replace guest-facing restaurant menu' })
+  @ApiStandardOkResponse('Saved guest menu')
+  putMenu(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertGuestMenuDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.businessService.upsertGuestMenu(id, dto, user);
   }
 }

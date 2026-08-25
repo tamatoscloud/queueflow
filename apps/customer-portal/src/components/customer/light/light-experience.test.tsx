@@ -6,7 +6,7 @@ import { getServiceModeCopy } from '@/lib/restaurant/service-mode-config';
 import { makeTracking } from '@/testing/tracking-fixture';
 
 describe('LightWaitingExperience', () => {
-  it('renders queue waiting state with wait estimate and ahead count', () => {
+  it('renders queue waiting state with timer and venue details', () => {
     render(
       <LightWaitingExperience
         tracking={makeTracking({ estimatedWaitMinutes: 18, customersAhead: 3, position: 4 })}
@@ -14,28 +14,31 @@ describe('LightWaitingExperience', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /You're in the queue/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /You are in the Queue/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Black Stone Café' })).toBeInTheDocument();
-    expect(screen.getAllByText('3 parties ahead').length).toBeGreaterThan(0);
-    expect(screen.getByText('18:00')).toBeInTheDocument();
-    expect(screen.getByText('remaining')).toBeInTheDocument();
+    expect(screen.getByText('Browse Menu')).toBeInTheDocument();
+    expect(screen.getByText('Browser Notifications')).toBeInTheDocument();
+    expect(screen.getByText(/mins/i)).toBeInTheDocument();
   });
 
-  it('does not show restaurant demo menu copy for any business name', () => {
+  it('shows business name and position cards', () => {
     render(
       <LightWaitingExperience
         tracking={makeTracking({
           business: { id: 'biz-1', name: 'Bella Vista', logoUrl: null },
+          position: 7,
+          customersAhead: 5,
         })}
         connection="connected"
       />,
     );
 
-    expect(screen.queryByText('Browse menu')).not.toBeInTheDocument();
-    expect(screen.getByText('W-123')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Bella Vista' })).toBeInTheDocument();
+    expect(screen.getByText('#7')).toBeInTheDocument();
+    expect(screen.getByText('WhatsApp Updates')).toBeInTheDocument();
   });
 
-  it('shows almost your turn when few customers ahead', () => {
+  it('still shows the waiting hero when few customers ahead', () => {
     render(
       <LightWaitingExperience
         tracking={makeTracking({ customersAhead: 2, estimatedWaitMinutes: 8 })}
@@ -43,8 +46,8 @@ describe('LightWaitingExperience', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /Almost your turn/i })).toBeInTheDocument();
-    expect(screen.getByText('Please stay nearby.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /You are in the Queue/i })).toBeInTheDocument();
+    expect(screen.getByText(/notify you when your turn approaches/i)).toBeInTheDocument();
   });
 });
 

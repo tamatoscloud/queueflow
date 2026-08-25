@@ -1,18 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, MapPin, Phone } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MessageCircle, Pencil, RefreshCw } from 'lucide-react';
 import type { EntryTracking } from '@/lib/api/types';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
 import { loadQueueSession } from '@/lib/storage/session';
-import {
-  formatAhead,
-  getServiceModeCopy,
-} from '@/lib/restaurant/service-mode-config';
-import { formatConnectionLabel } from '@/lib/waiting/wait-helpers';
 import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
 import { useWaitCountdown } from '@/hooks/use-wait-countdown';
-import { CalmCard, CalmLivePill, CalmSectionLabel } from '@/components/customer/calm/primitives';
+import { WaitTimerCircle } from '@/components/customer/light/wait-timer-circle';
 import { cn } from '@/lib/utils';
 
 type LightWaitingExperienceProps = {
@@ -21,42 +17,41 @@ type LightWaitingExperienceProps = {
   className?: string;
 };
 
-function waitHeadline(
-  customersAhead: number,
-  copy: ReturnType<typeof getServiceModeCopy>,
-): string {
-  if (customersAhead <= 2) return copy.almostTitle;
-  return copy.heroSubtitle;
+function pad2(n: number): string {
+  return String(Math.max(0, Math.floor(n))).padStart(2, '0');
 }
 
-function passContextLine(tracking: EntryTracking): string | null {
-  const meta = tracking.entry.metadata;
-  if (tracking.queue.serviceMode === 'TAKEAWAY' && meta?.orderNumber) {
-    return `Order #${meta.orderNumber}`;
+function maskPhone(phone?: string | null): string {
+  if (!phone) return '+92 *** *** ****';
+  const digits = phone.replace(/\D/g, '');
+  const last3 = digits.slice(-3);
+  if (digits.length >= 10) {
+    return `+${digits.slice(0, 2)} *** *** *${last3}`;
   }
-  if (tracking.queue.serviceMode === 'DRIVE_IN') {
-    const vehicle = [meta?.vehicleColor, meta?.vehicleMake].filter(Boolean).join(' ');
-    if (vehicle) return vehicle;
-    if (meta?.vehiclePlate) return meta.vehiclePlate;
-  }
-  return null;
+  return `*** *** *${last3 || '***'}`;
 }
 
-function StatCell({
+function InfoTile({
   label,
   value,
-  hint,
+  className,
 }: {
   label: string;
   value: string;
-  hint?: string;
+  className?: string;
 }) {
   return (
-    <CalmCard className="text-center">
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">{label}</p>
-      <p className="mt-2 font-display text-3xl font-bold tabular-nums text-foreground">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
-    </CalmCard>
+    <div
+      className={cn(
+        'rounded-2xl bg-[#f3f0ff] px-3.5 py-3',
+        className,
+      )}
+    >
+      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b8b96]">{label}</p>
+      <p className="mt-1 text-[17px] font-bold uppercase leading-tight tracking-wide text-black">
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -65,19 +60,25 @@ export function LightWaitingExperience({
   connection,
   className,
 }: LightWaitingExperienceProps) {
+  const router = useRouter();
   const [browserNotify, setBrowserNotify] = useState(false);
   const session = loadQueueSession();
-  const copy = useMemo(
-    () => getServiceModeCopy(tracking.queue.serviceMode),
-    [tracking.queue.serviceMode],
-  );
   const { customersAhead, estimatedWaitMinutes, position } = tracking;
   const clampedEstimate = clampEstimatedWaitMinutes(estimatedWaitMinutes);
   const countdown = useWaitCountdown(tracking.entry.id, clampedEstimate, true);
-  const isAlmostUp = customersAhead <= 2;
-  const headline = waitHeadline(customersAhead, copy);
-  const connectionLabel = formatConnectionLabel(connection);
-  const contextLine = passContextLine(tracking);
+
+  const mins = Math.floor(countdown.remainingSeconds / 60);
+  const secs = countdown.remainingSeconds % 60;
+  const totalSeconds = Math.max(1, Math.round(clampedEstimate * 60));
+  const progress = countdown.finished
+    ? 0.08
+    : Math.min(1, Math.max(0.08, countdown.remainingSeconds / totalSeconds));
+
+  const guestName = (session?.fullName ?? 'Guest').trim() || 'Guest';
+  const party = pad2(tracking.entry.partySize);
+  const queueTotal = Math.max(position, customersAhead + 1);
+  const branchLine = [tracking.branch.name].filter(Boolean).join(', ');
+  const phoneMasked = maskPhone(session?.phone);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -90,118 +91,174 @@ export function LightWaitingExperience({
     setBrowserNotify(permission === 'granted');
   };
 
+  const toggleNotify = () => {
+    if (browserNotify) {
+      // Browsers can't revoke permission from JS — guide the user.
+      setBrowserNotify(false);
+      return;
+    }
+    void requestBrowserNotify();
+  };
+
+  const pollHint = useMemo(() => {
+    if (connection === 'connected') return 'Auto-updating live';
+    if (connection === 'reconnecting' || connection === 'connecting') {
+      return 'Reconnecting…';
+    }
+    return 'Auto-updating every 30 seconds';
+  }, [connection]);
+
   return (
-    <div className={cn('flex flex-1 flex-col gap-6 pb-4', className)}>
-      <header className="text-center">
-        <div className="flex items-center justify-center gap-2">
-          <h2 className="text-lg font-bold text-foreground">{tracking.business.name}</h2>
-          <CalmLivePill label={connectionLabel} />
+    <div className={cn('flex flex-1 flex-col', className)}>
+      {/* Hero */}
+      <section className="border-b border-[#ececf0] pb-6 text-center">
+        <h1 className="font-display text-[32px] font-bold leading-tight tracking-tight text-black">
+          You are in the Queue
+          <span className="text-[#9b8cff]">!</span>
+        </h1>
+        <p className="mt-2 text-[13px] leading-snug text-[#6b7280]">
+          We&apos;ll notify you when your turn approaches.
+        </p>
+
+        <div className="relative mx-auto mt-6 w-[280px]">
+          <WaitTimerCircle progress={progress} className="relative" />
         </div>
-        <h1 className="mt-3 text-3xl font-bold leading-tight text-foreground">{headline}</h1>
-        {isAlmostUp ? (
-          <p className="mt-2 text-sm text-muted">Please stay nearby.</p>
-        ) : (
-          <p className="mt-2 text-sm text-muted">{copy.joinNotifyMessage}</p>
-        )}
-      </header>
 
-      <div
-        className="rounded-3xl border border-primary/20 bg-primary/5 px-4 py-8 text-center"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">Your number</p>
-        <p className="mt-2 font-display text-6xl font-bold tabular-nums tracking-tight text-primary sm:text-7xl">
-          {tracking.entry.displayCode}
-        </p>
-        {contextLine ? <p className="mt-3 text-sm text-muted">{contextLine}</p> : null}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <StatCell label="Position" value={String(position)} />
-        <StatCell
-          label="People ahead"
-          value={String(customersAhead)}
-          hint={formatAhead(customersAhead, copy)}
-        />
-      </div>
-
-      <CalmCard className="text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-          Estimated wait
-        </p>
         <p
-          className="mt-2 font-display text-5xl font-bold tabular-nums tracking-tight text-foreground"
+          className="mt-5 font-display text-[40px] font-bold leading-none tracking-tight text-black"
           aria-live="polite"
           aria-atomic="true"
         >
-          {countdown.finished ? 'Soon' : countdown.clock}
-        </p>
-        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-          {countdown.finished ? 'Any moment now' : 'remaining'}
-        </p>
-        <p className="mt-3 text-sm font-medium text-foreground">
-          Keep this page open. We&apos;ll let you know when it&apos;s your turn.
+          {countdown.finished ? (
+            <span className="text-[28px]">Any moment</span>
+          ) : (
+            <>
+              <span className="tabular-nums">{mins}</span>
+              <span className="ml-1.5 align-baseline text-[15px] font-medium text-[#6b7280]">
+                mins
+              </span>
+              <span className="ml-2 tabular-nums">{pad2(secs)}</span>
+              <span className="ml-1.5 align-baseline text-[15px] font-medium text-[#6b7280]">
+                seconds
+              </span>
+            </>
+          )}
         </p>
         <span className="sr-only">
           {countdown.finished
             ? 'Wait almost over'
             : `${countdown.remainingSeconds} seconds remaining`}
         </span>
-      </CalmCard>
-
-      <section aria-labelledby="while-you-wait-heading">
-        <CalmSectionLabel>{copy.whileYouWaitTitle}</CalmSectionLabel>
-        <div className="mt-3 grid gap-3">
-          <CalmCard className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-            <div>
-              <p className="text-sm font-semibold text-foreground">{tracking.branch.name}</p>
-              <p className="text-xs text-muted">Stay nearby — this screen updates live.</p>
-            </div>
-          </CalmCard>
-        </div>
       </section>
 
-      <section aria-labelledby="notifications-heading">
-        <CalmSectionLabel>Stay in the loop</CalmSectionLabel>
-        <div className="mt-3 space-y-3">
-          <CalmCard className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white">
-              <Bell className="h-5 w-5" aria-hidden />
+      {/* Venue + stats */}
+      <section className="border-b border-[#ececf0] py-6">
+        <h2 className="font-display text-[26px] font-bold leading-tight text-black">
+          {tracking.business.name}
+        </h2>
+        {branchLine ? (
+          <p className="mt-1 text-[13px] text-[#6b7280]">{branchLine}</p>
+        ) : null}
+
+        <div className="mt-4 grid grid-cols-[1.4fr_0.85fr] gap-2.5">
+          <InfoTile label="Name" value={guestName} />
+          <InfoTile label="Party Size" value={party} />
+        </div>
+        <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+          <InfoTile label="Queue" value={String(queueTotal)} />
+          <InfoTile label="Position" value={`#${position}`} />
+          <InfoTile label="Party Size" value={party} />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            const returnPath = `/track/${tracking.entry.id}`;
+            const qs = new URLSearchParams({
+              return: returnPath,
+              name: tracking.business.name,
+            });
+            router.push(`/menu/${tracking.business.id}?${qs.toString()}`);
+          }}
+          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#9b8cff] text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(155,140,255,0.35)] transition-opacity hover:opacity-95 active:scale-[0.98]"
+        >
+          Browse Menu
+        </button>
+      </section>
+
+      {/* Notifications */}
+      <section className="space-y-3 py-6">
+        <div className="rounded-2xl bg-[#f3f0ff] p-4">
+          <div className="flex gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#9b8cff] text-white">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M10 19a2 2 0 0 0 4 0"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-foreground">Browser notifications</p>
-              <p className="mt-0.5 text-xs text-muted">Get notified when you&apos;re almost up.</p>
-              {typeof window !== 'undefined' && 'Notification' in window ? (
-                <button
-                  type="button"
-                  onClick={() => void requestBrowserNotify()}
+              <p className="text-[15px] font-bold text-black">Browser Notifications</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
+                Get notified when you&apos;re almost up — even if this tab is in the background.
+              </p>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={browserNotify}
+                onClick={toggleNotify}
+                className={cn(
+                  'relative mt-3 h-7 w-12 rounded-full transition-colors',
+                  browserNotify ? 'bg-[#9b8cff]' : 'bg-[#d4d0e8]',
+                )}
+              >
+                <span
                   className={cn(
-                    'mt-2 rounded-full px-3 py-1 text-xs font-semibold',
-                    browserNotify ? 'bg-primary text-white' : 'bg-primary/10 text-muted',
+                    'absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform',
+                    browserNotify && 'translate-x-5',
                   )}
-                >
-                  {browserNotify ? 'Enabled' : 'Enable'}
-                </button>
-              ) : (
-                <p className="mt-2 text-xs text-muted">Notifications aren&apos;t available right now.</p>
-              )}
+                />
+              </button>
             </div>
-          </CalmCard>
+          </div>
         </div>
-      </section>
 
-      <CalmCard className="flex items-center gap-3">
-        <Phone className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <div>
-          <p className="text-sm font-semibold text-foreground">Need help?</p>
-          <p className="text-xs text-muted">
-            Show your number {tracking.entry.displayCode}
-            {session?.phone ? '' : ''} at reception.
-          </p>
+        <div className="rounded-2xl bg-[#f3f0ff] p-4">
+          <div className="flex gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#9b8cff] text-white">
+              <MessageCircle className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-black">WhatsApp Updates</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
+                Receive a message at {phoneMasked}.
+              </p>
+              <button
+                type="button"
+                className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#9b8cff]"
+              >
+                <Pencil className="h-3 w-3" aria-hidden />
+                Edit Number
+              </button>
+            </div>
+          </div>
         </div>
-      </CalmCard>
+
+        <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-[#9ca3af]">
+          <RefreshCw className="h-3 w-3" aria-hidden />
+          {pollHint}
+        </p>
+      </section>
     </div>
   );
 }

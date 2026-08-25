@@ -5,6 +5,7 @@ import type {
   JoinQueueResult,
   QueueLanding,
   SubmitFeedbackPayload,
+  GuestMenuResponse,
 } from './types';
 
 export const customerApi = {
@@ -19,6 +20,9 @@ export const customerApi = {
 
   getEntryTracking: (entryId: string) =>
     apiFetch<EntryTracking>(`/customer-portal/entries/${entryId}/tracking`),
+
+  getBusinessMenu: (businessId: string) =>
+    apiFetch<GuestMenuResponse>(`/customer-portal/businesses/${businessId}/menu`),
 
   submitFeedback: (payload: SubmitFeedbackPayload) =>
     apiFetch<unknown>('/customer-portal/feedback', {

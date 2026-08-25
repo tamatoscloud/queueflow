@@ -12,6 +12,7 @@ import '../../../shared/widgets/offline_banner.dart';
 import '../../branches/presentation/branches_screen.dart';
 import '../../customers/presentation/customers_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../menu/presentation/menu_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../queues/presentation/queues_screen.dart';
 import '../../reports/presentation/reports_screen.dart';
@@ -30,6 +31,7 @@ class AppShell extends ConsumerStatefulWidget {
     (icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Home', route: AppRoutes.dashboard),
     (icon: Icons.queue_outlined, selectedIcon: Icons.queue, label: 'Queues', route: AppRoutes.queues),
     (icon: Icons.qr_code_2_outlined, selectedIcon: Icons.qr_code_2, label: 'QR', route: AppRoutes.restaurantQr),
+    (icon: Icons.restaurant_menu_outlined, selectedIcon: Icons.restaurant_menu, label: 'Menu', route: AppRoutes.menu),
     (icon: Icons.badge_outlined, selectedIcon: Icons.badge, label: 'Staff', route: AppRoutes.staff),
     (icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: 'Reports', route: AppRoutes.reports),
     (icon: Icons.store_outlined, selectedIcon: Icons.store, label: 'Branches', route: AppRoutes.branches),
@@ -316,6 +318,7 @@ Widget shellChildForRoute(String path) {
     return const TableFloorScreen();
   }
   if (path.startsWith(AppRoutes.restaurantQr)) return const QrCenterScreen();
+  if (path.startsWith(AppRoutes.menu)) return const MenuScreen();
   if (path.startsWith(AppRoutes.queues)) return const QueuesScreen();
   if (path.startsWith(AppRoutes.branches)) return const BranchesScreen();
   if (path.startsWith(AppRoutes.customers)) return const CustomersScreen();

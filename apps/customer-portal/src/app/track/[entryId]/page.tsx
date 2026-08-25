@@ -116,7 +116,7 @@ export default function TrackQueuePage() {
   }
 
   return (
-    <BookingShell venueName={venueName} showJazzPill>
+    <BookingShell variant="waiting" showJazzPill>
       <GuestTurnToast />
       {showWelcome ? (
         <CalmWelcomeBanner copy={copy} onDismiss={() => setShowWelcome(false)} />

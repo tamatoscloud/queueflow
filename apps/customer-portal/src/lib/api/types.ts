@@ -123,3 +123,25 @@ export interface SubmitFeedbackPayload {
   rating: number;
   comment?: string;
 }
+
+export interface GuestMenuItem {
+  id: string;
+  name: string;
+  description?: string;
+  price: string;
+  tags?: string[];
+  available?: boolean;
+}
+
+export interface GuestMenuCategory {
+  id: string;
+  name: string;
+  items: GuestMenuItem[];
+}
+
+export interface GuestMenuResponse {
+  businessId: string;
+  businessName: string;
+  menu: { categories: GuestMenuCategory[] };
+  isDefault: boolean;
+}

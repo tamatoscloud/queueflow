@@ -11,6 +11,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/branches/presentation/branches_screen.dart';
 import '../../features/customers/presentation/customers_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/queue_console/presentation/queue_console_screen.dart';
 import '../../features/queues/presentation/queues_screen.dart';
@@ -75,6 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: AppRoutes.settings, builder: (_, __) => const SettingsScreen()),
           GoRoute(path: AppRoutes.staff, builder: (_, __) => const StaffScreen()),
           GoRoute(path: AppRoutes.restaurantQr, builder: (_, __) => const QrCenterScreen()),
+          GoRoute(path: AppRoutes.menu, builder: (_, __) => const MenuScreen()),
           GoRoute(path: AppRoutes.restaurantSimulator, builder: (_, __) => const DemoSimulatorScreen()),
           GoRoute(path: AppRoutes.restaurantTables, builder: (_, __) => const TableFloorScreen()),
         ],

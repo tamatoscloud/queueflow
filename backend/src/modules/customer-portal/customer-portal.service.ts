@@ -10,6 +10,7 @@ import { QueueEngineService } from '../../queue-engine';
 import { clampEstimatedWaitMinutes } from '../../queue-engine/domain/services/wait-estimate-bounds';
 import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import type { SubmitFeedbackDto } from './dto/customer-portal.dto';
+import { normalizeGuestMenu } from '../business/guest-menu';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
 
 const LANDING_CACHE_TTL_MS = 12_000;
@@ -193,5 +194,26 @@ export class CustomerPortalService {
         createdBy: entry.customerId,
       },
     });
+  }
+
+  async getBusinessMenu(businessId: string) {
+    const business = await this.prisma.business.findFirst({
+      where: { id: businessId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        settings: { select: { guestMenu: true } },
+      },
+    });
+    if (!business) {
+      throw new NotFoundException('Business not found');
+    }
+    const menu = normalizeGuestMenu(business.settings?.guestMenu ?? null);
+    return {
+      businessId: business.id,
+      businessName: business.name,
+      menu,
+      isDefault: business.settings?.guestMenu == null,
+    };
   }
 }

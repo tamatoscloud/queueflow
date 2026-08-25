@@ -419,6 +419,9 @@ model BusinessSettings {
   featureFlags               Json                   @default("{}") @map("feature_flags")
   /// Enabled service modes for this tenant (Dine-In, Takeaway, Drive-In).
   enabledModes               ServiceMode[]          @default([DINE_IN]) @map("enabled_modes")
+  /// Guest-facing restaurant menu shown on the customer waiting screen.
+  /// Shape: { categories: [{ id, name, items: [{ id, name, description?, price, tags?, available? }] }] }
+  guestMenu                  Json?                  @map("guest_menu")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

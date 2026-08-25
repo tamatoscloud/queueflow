@@ -49,6 +49,14 @@ export class BusinessRepository {
     });
   }
 
+  async upsertGuestMenu(businessId: string, guestMenu: Prisma.InputJsonValue) {
+    await this.prisma.businessSettings.upsert({
+      where: { businessId },
+      create: { businessId, guestMenu },
+      update: { guestMenu },
+    });
+  }
+
   async findMany(
     query: ListBusinessQueryDto & PaginationQueryDto,
   ): Promise<{ rows: Prisma.BusinessGetPayload<object>[]; totalItems: number }> {

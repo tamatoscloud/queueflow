@@ -22,6 +22,12 @@ export class CustomerPortalController {
     return this.portal.getEntryTracking(entryId);
   }
 
+  @Get('businesses/:businessId/menu')
+  @ApiOperation({ summary: 'Guest-facing restaurant menu (public)' })
+  menu(@Param('businessId', ParseUUIDPipe) businessId: string) {
+    return this.portal.getBusinessMenu(businessId);
+  }
+
   @Post('feedback')
   @ApiOperation({ summary: 'Submit post-service feedback (public)' })
   feedback(@Body() dto: SubmitFeedbackDto) {

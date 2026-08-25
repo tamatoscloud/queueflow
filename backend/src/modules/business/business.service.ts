@@ -10,10 +10,12 @@ import type {
   CreateBusinessDto,
   ListBusinessQueryDto,
   UpdateBusinessDto,
+  UpsertGuestMenuDto,
 } from './dto/business.dto';
 import { BusinessRepository } from './business.repository';
 import { toBusinessResponse } from './business.mapper';
 import { assertValidBusinessSlug } from './validators/business.validators';
+import { normalizeGuestMenu } from './guest-menu';
 
 @Injectable()
 export class BusinessService {
@@ -62,6 +64,38 @@ export class BusinessService {
     return {
       data: rows.map((r) => toBusinessResponse({ ...r, settings: null })),
       meta: paginatedMeta(page, pageSize, totalItems),
+    };
+  }
+
+  async getGuestMenu(
+    id: string,
+    actor: { businessId: string | null; isPlatformAdmin: boolean },
+  ) {
+    const row = await this.require(id);
+    this.assertActorCanAccess(actor, row.id);
+    const menu = normalizeGuestMenu(row.settings?.guestMenu ?? null);
+    return {
+      businessId: row.id,
+      businessName: row.name,
+      menu,
+      isDefault: row.settings?.guestMenu == null,
+    };
+  }
+
+  async upsertGuestMenu(
+    id: string,
+    dto: UpsertGuestMenuDto,
+    actor: { businessId: string | null; isPlatformAdmin: boolean },
+  ) {
+    const row = await this.require(id);
+    this.assertActorCanAccess(actor, row.id);
+    const menu = normalizeGuestMenu(dto);
+    await this.repository.upsertGuestMenu(id, menu);
+    return {
+      businessId: row.id,
+      businessName: row.name,
+      menu,
+      isDefault: false,
     };
   }
 

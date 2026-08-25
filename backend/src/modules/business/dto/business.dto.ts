@@ -1,12 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 export enum BusinessStatusDto {
@@ -88,4 +91,63 @@ export class ListBusinessQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(BusinessStatusDto)
   status?: BusinessStatusDto;
+}
+
+export class GuestMenuItemDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  description?: string;
+
+  @ApiProperty({ example: '18' })
+  @IsString()
+  @MaxLength(24)
+  price!: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  tags?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  available?: boolean;
+}
+
+export class GuestMenuCategoryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @ApiProperty({ type: [GuestMenuItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuestMenuItemDto)
+  items!: GuestMenuItemDto[];
+}
+
+export class UpsertGuestMenuDto {
+  @ApiProperty({ type: [GuestMenuCategoryDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuestMenuCategoryDto)
+  categories!: GuestMenuCategoryDto[];
 }

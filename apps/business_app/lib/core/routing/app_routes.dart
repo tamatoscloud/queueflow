@@ -23,4 +23,5 @@ abstract final class AppRoutes {
   static const restaurantQr = '/restaurant/qr';
   static const restaurantSimulator = '/restaurant/simulator';
   static const restaurantTables = '/restaurant/tables';
+  static const menu = '/menu';
 }

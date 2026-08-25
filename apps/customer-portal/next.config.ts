@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 import path from 'path';
 
+const apiProxyTarget = process.env.API_PROXY_TARGET?.replace(/\/$/, '');
+
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
   images: {
@@ -8,6 +10,15 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: 'localhost' },
     ],
+  },
+  async rewrites() {
+    if (!apiProxyTarget) return [];
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiProxyTarget}/:path*`,
+      },
+    ];
   },
   async headers() {
     return [

@@ -182,6 +182,12 @@ class BusinessApiClient {
   Future<Map<String, dynamic>> getBusiness(String id) =>
       _parser.getData(() => _dio.get('/businesses/$id'), (json) => json);
 
+  Future<Map<String, dynamic>> getGuestMenu(String businessId) =>
+      _parser.getData(() => _dio.get('/businesses/$businessId/menu'), (json) => json);
+
+  Future<Map<String, dynamic>> putGuestMenu(String businessId, Map<String, dynamic> body) =>
+      _parser.getData(() => _dio.put('/businesses/$businessId/menu', data: body), (json) => json);
+
   // Restaurant platform
   Future<RestaurantConfig> getRestaurantConfig() => _parser.getData(
         () => _dio.get('/restaurant/config'),

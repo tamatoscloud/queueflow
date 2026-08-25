@@ -74,6 +74,12 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Dine-in, takeaway, and drive-in queues',
                 onTap: () => context.push(AppRoutes.queues),
               ),
+              CalmSettingsTile(
+                icon: Icons.restaurant_menu_outlined,
+                title: 'Guest menu',
+                subtitle: 'Dishes guests browse while waiting',
+                onTap: () => context.push(AppRoutes.menu),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
