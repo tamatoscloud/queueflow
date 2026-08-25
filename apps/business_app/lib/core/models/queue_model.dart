@@ -23,7 +23,7 @@ class QueueModel {
   final String status;
   final String prefix;
   final int? maxCapacity;
-  final int averageServiceTimeMinutes;
+  final double averageServiceTimeMinutes;
   final bool priorityEnabled;
   final bool isAcceptingEntries;
   final int waitingCount;
@@ -35,19 +35,20 @@ class QueueModel {
 
   factory QueueModel.fromJson(Map<String, dynamic> json) => QueueModel(
         id: (json['id'] ?? json['queueId']) as String,
-        businessId: json['businessId'] as String,
-        branchId: json['branchId'] as String,
-        name: json['name'] as String,
+        businessId: json['businessId'] as String? ?? '',
+        branchId: json['branchId'] as String? ?? '',
+        name: json['name'] as String? ?? 'Queue',
         description: json['description'] as String?,
         status: json['status'] as String? ?? 'ACTIVE',
         prefix: json['prefix'] as String? ?? 'A',
-        maxCapacity: json['maxCapacity'] as int?,
-        averageServiceTimeMinutes: json['averageServiceTimeMinutes'] as int? ?? 10,
+        maxCapacity: _asInt(json['maxCapacity']),
+        averageServiceTimeMinutes:
+            _asDouble(json['averageServiceTimeMinutes']) ?? 10,
         priorityEnabled: json['priorityEnabled'] as bool? ?? false,
-    isAcceptingEntries: json['isAcceptingEntries'] as bool? ?? true,
-    waitingCount: json['waitingCount'] as int? ?? 0,
-    serviceMode: json['serviceMode'] as String? ?? 'DINE_IN',
-  );
+        isAcceptingEntries: json['isAcceptingEntries'] as bool? ?? true,
+        waitingCount: _asInt(json['waitingCount']) ?? 0,
+        serviceMode: json['serviceMode'] as String? ?? 'DINE_IN',
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -64,4 +65,20 @@ class QueueModel {
         'waitingCount': waitingCount,
         'serviceMode': serviceMode,
       };
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.round();
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
+double? _asDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
 }

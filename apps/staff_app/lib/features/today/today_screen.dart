@@ -149,7 +149,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   double _displayWaitMinutes({
     required QueueEntryModel? entry,
     required int metricsMinutes,
-    required int fallbackMinutes,
+    required num fallbackMinutes,
   }) {
     const maxReasonable = 180.0;
     final fromEntry = entry?.estimatedWaitMinutes ?? 0;
@@ -157,7 +157,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     if (metricsMinutes > 0 && metricsMinutes <= maxReasonable) {
       return metricsMinutes.toDouble();
     }
-    return fallbackMinutes > 0 ? fallbackMinutes.toDouble() : 0;
+    final fallback = fallbackMinutes.toDouble();
+    return fallback > 0 ? fallback : 0;
   }
 
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
