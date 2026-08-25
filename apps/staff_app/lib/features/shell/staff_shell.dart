@@ -31,7 +31,6 @@ class StaffShell extends ConsumerWidget {
     final selected = _indexFor(location);
     final branchesAsync = ref.watch(branchesProvider);
     final selectedBranchId = ref.watch(selectedBranchIdProvider);
-    final contentMax = StaffContentWidth.maxWidth(context);
 
     return Scaffold(
       backgroundColor: AppColors.calmIvory,
@@ -83,44 +82,31 @@ class StaffShell extends ConsumerWidget {
           ),
         ],
       ),
-      body: ColoredBox(
-        color: AppColors.calmIvory,
-        child: OfflineBanner(
-          child: StaffContentWidth.constrain(context, child: child),
-        ),
-      ),
-      bottomNavigationBar: Material(
-        color: Colors.white,
-        elevation: 8,
-        shadowColor: AppColors.calmCharcoal.withValues(alpha: 0.08),
-        child: SafeArea(
-          top: false,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: contentMax == double.infinity
-                    ? MediaQuery.sizeOf(context).width
-                    : contentMax,
-              ),
-              child: NavigationBar(
-                backgroundColor: Colors.white,
-                surfaceTintColor: Colors.transparent,
-                indicatorColor: product.accent.withValues(alpha: 0.14),
-                selectedIndex: selected,
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                onDestinationSelected: (i) => context.go(_destinations[i].route),
-                destinations: [
-                  for (final d in _destinations)
-                    NavigationDestination(
-                      icon: Icon(d.icon, color: AppColors.neutral500),
-                      selectedIcon: Icon(d.icon, color: product.accent),
-                      label: d.label,
-                    ),
-                ],
-              ),
-            ),
+      // SizedBox.expand keeps OfflineBanner's Expanded child bounded on web;
+      // without it the scaffold can collapse to only the bottom nav.
+      body: OfflineBanner(
+        child: SizedBox.expand(
+          child: ColoredBox(
+            color: AppColors.calmIvory,
+            child: StaffContentWidth.constrain(context, child: child),
           ),
         ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: product.accent.withValues(alpha: 0.14),
+        selectedIndex: selected,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: (i) => context.go(_destinations[i].route),
+        destinations: [
+          for (final d in _destinations)
+            NavigationDestination(
+              icon: Icon(d.icon, color: AppColors.neutral500),
+              selectedIcon: Icon(d.icon, color: product.accent),
+              label: d.label,
+            ),
+        ],
       ),
     );
   }

@@ -380,11 +380,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   top: false,
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: contentMax == double.infinity
-                            ? MediaQuery.sizeOf(context).width
-                            : contentMax,
-                      ),
+                      constraints: BoxConstraints(maxWidth: contentMax),
                       child: Container(
                         margin: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
