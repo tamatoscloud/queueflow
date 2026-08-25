@@ -36,20 +36,25 @@ export class QueueSnapshotEnrichmentService {
       };
     }
 
-    const queue = await this.prisma.queue.findFirst({
-      where: { id: snapshot.queueId, deletedAt: null },
-      select: { serviceMode: true },
-    });
-    const serviceMode = queue?.serviceMode ?? 'DINE_IN';
-
     const entryIds = snapshot.entries.map((e) => e.id);
-    const rows =
+
+    // Single round-trip: queue mode + entry notes/metadata in parallel.
+    const [queue, rows] = await Promise.all([
+      this.prisma.queue.findFirst({
+        where: { id: snapshot.queueId, deletedAt: null },
+        select: { serviceMode: true },
+      }),
       entryIds.length === 0
-        ? []
-        : await this.prisma.queueEntry.findMany({
+        ? Promise.resolve(
+            [] as Array<{ id: string; notes: string | null; metadata: unknown }>,
+          )
+        : this.prisma.queueEntry.findMany({
             where: { id: { in: entryIds }, deletedAt: null },
             select: { id: true, notes: true, metadata: true },
-          });
+          }),
+    ]);
+
+    const serviceMode = queue?.serviceMode ?? 'DINE_IN';
     const byId = new Map(rows.map((r) => [r.id, r]));
 
     const entries: EnrichedLiveQueueEntrySnapshot[] = snapshot.entries.map((e) => {

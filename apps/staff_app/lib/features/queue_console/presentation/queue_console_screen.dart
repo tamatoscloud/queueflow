@@ -19,7 +19,10 @@ import '../../../shared/widgets/staff/staff_empty_states.dart';
 
 final queueSnapshotProvider =
     FutureProvider.autoDispose.family<QueueSnapshotModel, String>((ref, queueId) async {
-  return ref.watch(businessApiClientProvider).getQueueSnapshot(queueId);
+  return ref
+      .watch(businessApiClientProvider)
+      .getQueueSnapshot(queueId)
+      .timeout(const Duration(seconds: 25));
 });
 
 final queueConsoleRealtimeBindingProvider =
@@ -29,15 +32,25 @@ final queueConsoleRealtimeBindingProvider =
   if (businessId == null) return;
 
   final client = ref.watch(realtimeClientProvider);
+  var disposed = false;
+  ref.onDispose(() => disposed = true);
   bindRealtimeRefresh(
     ref: ref,
     client: client,
-    onRefresh: () => ref.invalidate(queueSnapshotProvider(queueId)),
+    onRefresh: () {
+      if (disposed) return;
+      // Don't restart an in-flight snapshot — that made console feel hung.
+      final current = ref.read(queueSnapshotProvider(queueId));
+      if (current.isLoading) return;
+      ref.invalidate(queueSnapshotProvider(queueId));
+    },
     onSubscribe: () async {
       await client.connect();
       return client.subscribeQueueDetail(queueId);
     },
-    pollInterval: const Duration(seconds: 10),
+    pollInterval: const Duration(seconds: 12),
+    coalesce: const Duration(milliseconds: 900),
+    refreshOnBind: false,
   );
 });
 
@@ -116,6 +129,8 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
         backgroundColor: AppColors.calmIvory,
         surfaceTintColor: Colors.transparent,
         title: async.when(
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
           data: (s) => Text(
             s.queue.name,
             style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.calmCharcoal),
@@ -144,6 +159,8 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
         ],
       ),
       body: async.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
         loading: () => const CalmQueueSkeleton(),
         error: (e, _) => StaffLoadErrorState(
           message: apiExceptionMessage(e),
@@ -536,16 +553,25 @@ Future<void> queueAction(
   String action,
   Future<void> Function() refresh,
 ) async {
-  final api = ref.read(businessApiClientProvider);
-  switch (action) {
-    case 'call':
-      await api.callNext(queueId);
-    case 'pause':
-      await api.pauseQueue(queueId);
-    case 'resume':
-      await api.resumeQueue(queueId);
+  final context = ref.context;
+  try {
+    final api = ref.read(businessApiClientProvider);
+    switch (action) {
+      case 'call':
+        await api.callNext(queueId);
+      case 'pause':
+        await api.pauseQueue(queueId);
+      case 'resume':
+        await api.resumeQueue(queueId);
+    }
+    await refresh();
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiExceptionMessage(e))),
+      );
+    }
   }
-  await refresh();
 }
 
 /// Returns `true` when the action ran successfully.
@@ -657,41 +683,67 @@ Future<void> showWalkIn(
 ) async {
   final name = TextEditingController();
   final phone = TextEditingController();
+  var submitting = false;
   await showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Add customer'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: name,
-            decoration: const InputDecoration(labelText: 'Name'),
-            textInputAction: TextInputAction.next,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setLocal) => AlertDialog(
+        title: const Text('Add customer'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Name'),
+              textInputAction: TextInputAction.next,
+              enabled: !submitting,
+            ),
+            TextField(
+              controller: phone,
+              decoration: const InputDecoration(labelText: 'Phone'),
+              keyboardType: TextInputType.phone,
+              enabled: !submitting,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: submitting ? null : () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
           ),
-          TextField(
-            controller: phone,
-            decoration: const InputDecoration(labelText: 'Phone'),
-            keyboardType: TextInputType.phone,
+          FilledButton(
+            onPressed: submitting
+                ? null
+                : () async {
+                    setLocal(() => submitting = true);
+                    try {
+                      await ref.read(businessApiClientProvider).walkIn(queueId, {
+                        'fullName': name.text.trim(),
+                        'phone': phone.text.trim(),
+                        'partySize': 1,
+                        'notificationPreference': 'SMS',
+                      });
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      await refresh();
+                    } catch (e) {
+                      setLocal(() => submitting = false);
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(content: Text(apiExceptionMessage(e))),
+                        );
+                      }
+                    }
+                  },
+            child: submitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Add'),
           ),
         ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        FilledButton(
-          onPressed: () async {
-            await ref.read(businessApiClientProvider).walkIn(queueId, {
-              'fullName': name.text,
-              'phone': phone.text,
-              'partySize': 1,
-              'notificationPreference': 'SMS',
-            });
-            if (ctx.mounted) Navigator.pop(ctx);
-            await refresh();
-          },
-          child: const Text('Add'),
-        ),
-      ],
     ),
   );
 }

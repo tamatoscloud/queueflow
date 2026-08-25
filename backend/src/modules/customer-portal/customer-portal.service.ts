@@ -12,7 +12,8 @@ import {
   SERVICE_SLOT_MINUTES,
 } from '../../queue-engine/domain/services/wait-estimate-bounds';
 import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
-import type { SubmitFeedbackDto } from './dto/customer-portal.dto';
+import type { SubmitFeedbackDto, UpdateEntryContactDto } from './dto/customer-portal.dto';
+import { PhoneNumber } from '../../queue-engine/domain/value-objects';
 import { normalizeGuestMenu } from '../business/guest-menu';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
 
@@ -173,6 +174,87 @@ export class CustomerPortalService {
       averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
       snapshotGeneratedAt: snapshot.generatedAt,
       trackingToken: this.realtimeCredentials.issueEntryTrackingToken(entry.id),
+    };
+  }
+
+  async updateEntryContact(entryId: string, dto: UpdateEntryContactDto) {
+    const entry = await this.prisma.queueEntry.findFirst({
+      where: { id: entryId, deletedAt: null },
+      include: {
+        customer: { select: { id: true, businessId: true, phone: true } },
+      },
+    });
+    if (!entry) {
+      throw new NotFoundException('Queue entry not found');
+    }
+
+    const editable = ['WAITING', 'CALLED', 'HOLDING', 'SKIPPED'].includes(
+      entry.status,
+    );
+    if (!editable) {
+      throw new BadRequestException(
+        'Phone can only be updated while you are still in the queue',
+      );
+    }
+
+    if (dto.trackingToken) {
+      const ok = this.realtimeCredentials.verifyEntryTrackingToken(
+        dto.trackingToken,
+        entryId,
+      );
+      if (!ok) {
+        throw new BadRequestException('Invalid tracking token');
+      }
+    }
+
+    let phone: string;
+    try {
+      phone = PhoneNumber.create(dto.phone).value;
+    } catch {
+      throw new BadRequestException('Invalid phone number');
+    }
+
+    const conflict = await this.prisma.customer.findFirst({
+      where: {
+        businessId: entry.customer.businessId,
+        phone,
+        deletedAt: null,
+        NOT: { id: entry.customerId },
+      },
+      select: { id: true },
+    });
+    if (conflict) {
+      throw new BadRequestException(
+        'That phone number is already used by another guest at this venue',
+      );
+    }
+
+    await this.prisma.customer.update({
+      where: { id: entry.customerId },
+      data: {
+        phone,
+        // Prefer WhatsApp when the guest edits the number from WhatsApp Updates.
+        // Entry-level preference drives outbound templates.
+      },
+    });
+
+    await this.prisma.queueEntry.update({
+      where: { id: entry.id },
+      data: { notificationPreference: 'WHATSAPP' },
+    });
+
+    const digits = phone.replace(/\D/g, '');
+    const last3 = digits.slice(-3);
+    const masked =
+      digits.length >= 10
+        ? `+${digits.slice(0, 2)} *** *** *${last3}`
+        : `*** *** *${last3 || '***'}`;
+
+    return {
+      entryId: entry.id,
+      phone,
+      phoneMasked: masked,
+      notificationPreference: 'WHATSAPP' as const,
     };
   }
 

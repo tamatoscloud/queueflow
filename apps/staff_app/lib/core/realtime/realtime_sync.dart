@@ -14,12 +14,24 @@ void bindRealtimeRefresh({
   required void Function() onRefresh,
   required Future<bool> Function() onSubscribe,
   Duration pollInterval = const Duration(seconds: 10),
+  Duration coalesce = const Duration(milliseconds: 800),
+  bool refreshOnBind = false,
 }) {
   Timer? pollTimer;
+  Timer? coalesceTimer;
+  var disposed = false;
+
+  void scheduleRefresh() {
+    if (disposed) return;
+    coalesceTimer?.cancel();
+    coalesceTimer = Timer(coalesce, () {
+      if (!disposed) onRefresh();
+    });
+  }
 
   void startPolling() {
     if (pollTimer != null) return;
-    pollTimer = Timer.periodic(pollInterval, (_) => onRefresh());
+    pollTimer = Timer.periodic(pollInterval, (_) => scheduleRefresh());
   }
 
   void stopPolling() {
@@ -31,14 +43,16 @@ void bindRealtimeRefresh({
 
   client.registerOnConnected(subscribe);
 
-  // Poll immediately — do not wait for Socket.IO connect (up to 15s).
+  // Start polling without forcing an immediate invalidate — callers often
+  // already have a fresh fetch in flight (Today / console open).
   Future.microtask(() {
+    if (disposed) return;
     startPolling();
-    onRefresh();
+    if (refreshOnBind) scheduleRefresh();
   });
   unawaited(client.connect());
 
-  final eventSub = client.events.listen((_) => onRefresh());
+  final eventSub = client.events.listen((_) => scheduleRefresh());
   final authSub = client.subscriptionAuthorized.listen((authorized) {
     if (authorized) {
       stopPolling();
@@ -58,10 +72,12 @@ void bindRealtimeRefresh({
   });
 
   ref.onDispose(() {
+    disposed = true;
     client.unregisterOnConnected(subscribe);
     eventSub.cancel();
     authSub.cancel();
     statusSub.cancel();
     stopPolling();
+    coalesceTimer?.cancel();
   });
 }

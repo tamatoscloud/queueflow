@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { MessageCircle, Pencil, RefreshCw } from 'lucide-react';
 import type { EntryTracking } from '@/lib/api/types';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
-import { loadQueueSession } from '@/lib/storage/session';
+import { customerApi } from '@/lib/api/customer-api';
+import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
 import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
 import { useWaitCountdown } from '@/hooks/use-wait-countdown';
 import { WaitTimerCircle } from '@/components/customer/light/wait-timer-circle';
@@ -31,6 +32,17 @@ function maskPhone(phone?: string | null): string {
   return `*** *** *${last3 || '***'}`;
 }
 
+function normalizePhoneInput(raw: string): string {
+  const trimmed = raw.trim().replace(/[\s\-()]/g, '');
+  if (trimmed.startsWith('+')) return trimmed;
+  if (trimmed.startsWith('00')) return `+${trimmed.slice(2)}`;
+  if (trimmed.startsWith('0') && trimmed.length >= 10) {
+    return `+92${trimmed.slice(1)}`;
+  }
+  if (/^[0-9]{10,15}$/.test(trimmed)) return `+${trimmed}`;
+  return trimmed;
+}
+
 function InfoTile({
   label,
   value,
@@ -41,13 +53,10 @@ function InfoTile({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        'rounded-2xl bg-[#f3f0ff] px-3.5 py-3',
-        className,
-      )}
-    >
-      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b8b96]">{label}</p>
+    <div className={cn('rounded-2xl bg-[#f3f0ff] px-3.5 py-3', className)}>
+      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b8b96]">
+        {label}
+      </p>
       <p className="mt-1 text-[17px] font-bold uppercase leading-tight tracking-wide text-black">
         {value}
       </p>
@@ -62,6 +71,16 @@ export function LightWaitingExperience({
 }: LightWaitingExperienceProps) {
   const router = useRouter();
   const [browserNotify, setBrowserNotify] = useState(false);
+  const [notifyError, setNotifyError] = useState<string | null>(null);
+  const [notifyBusy, setNotifyBusy] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneMasked, setPhoneMasked] = useState(() =>
+    maskPhone(loadQueueSession()?.phone),
+  );
+
   const session = loadQueueSession();
   const { customersAhead, estimatedWaitMinutes, position } = tracking;
   const clampedEstimate = clampEstimatedWaitMinutes(estimatedWaitMinutes);
@@ -78,7 +97,6 @@ export function LightWaitingExperience({
   const party = pad2(tracking.entry.partySize);
   const queueTotal = Math.max(position, customersAhead + 1);
   const branchLine = [tracking.branch.name].filter(Boolean).join(', ');
-  const phoneMasked = maskPhone(session?.phone);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -86,18 +104,87 @@ export function LightWaitingExperience({
   }, []);
 
   const requestBrowserNotify = async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    const permission = await Notification.requestPermission();
-    setBrowserNotify(permission === 'granted');
+    if (typeof window === 'undefined') return;
+    if (!('Notification' in window)) {
+      setNotifyError('Notifications are not supported in this browser.');
+      return;
+    }
+    if (!window.isSecureContext) {
+      setNotifyError('Notifications need HTTPS.');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setNotifyError(
+        'Notifications are blocked. Allow them in your browser site settings, then try again.',
+      );
+      setBrowserNotify(false);
+      return;
+    }
+    setNotifyBusy(true);
+    setNotifyError(null);
+    try {
+      const permission = await Notification.requestPermission();
+      const granted = permission === 'granted';
+      setBrowserNotify(granted);
+      if (granted) {
+        try {
+          new Notification("You're set", {
+            body: "We'll alert you here when staff calls your number.",
+            tag: `queueflow-ready-${tracking.entry.id}`,
+          });
+        } catch {
+          // Some browsers require a gesture beyond permission — toggle still works.
+        }
+      } else if (permission === 'denied') {
+        setNotifyError(
+          'Notifications are blocked. Allow them in your browser site settings.',
+        );
+      }
+    } finally {
+      setNotifyBusy(false);
+    }
   };
 
   const toggleNotify = () => {
     if (browserNotify) {
-      // Browsers can't revoke permission from JS — guide the user.
-      setBrowserNotify(false);
+      setNotifyError(
+        'To turn off alerts, use your browser site settings (permission can’t be revoked from this page).',
+      );
       return;
     }
     void requestBrowserNotify();
+  };
+
+  const openEditPhone = () => {
+    setPhoneError(null);
+    setPhoneInput(session?.phone ?? '');
+    setEditOpen(true);
+  };
+
+  const savePhone = async () => {
+    const phone = normalizePhoneInput(phoneInput);
+    if (!/^\+?[0-9]{7,15}$/.test(phone)) {
+      setPhoneError('Enter a valid phone with country code, e.g. +923001234567');
+      return;
+    }
+    setPhoneBusy(true);
+    setPhoneError(null);
+    try {
+      const result = await customerApi.updateEntryContact(tracking.entry.id, {
+        phone,
+        trackingToken: session?.trackingToken,
+      });
+      const existing = loadQueueSession();
+      if (existing?.entryId === tracking.entry.id) {
+        saveQueueSession({ ...existing, phone: result.phone });
+      }
+      setPhoneMasked(result.phoneMasked);
+      setEditOpen(false);
+    } catch (e) {
+      setPhoneError(e instanceof Error ? e.message : 'Could not update number');
+    } finally {
+      setPhoneBusy(false);
+    }
   };
 
   const pollHint = useMemo(() => {
@@ -110,7 +197,6 @@ export function LightWaitingExperience({
 
   return (
     <div className={cn('flex flex-1 flex-col', className)}>
-      {/* Hero */}
       <section className="border-b border-[#ececf0] pb-6 text-center">
         <h1 className="font-display text-[32px] font-bold leading-tight tracking-tight text-black">
           You are in the Queue
@@ -144,14 +230,8 @@ export function LightWaitingExperience({
             </>
           )}
         </p>
-        <span className="sr-only">
-          {countdown.finished
-            ? 'Wait almost over'
-            : `${countdown.remainingSeconds} seconds remaining`}
-        </span>
       </section>
 
-      {/* Venue + stats */}
       <section className="border-b border-[#ececf0] py-6">
         <h2 className="font-display text-[26px] font-bold leading-tight text-black">
           {tracking.business.name}
@@ -186,7 +266,6 @@ export function LightWaitingExperience({
         </button>
       </section>
 
-      {/* Notifications */}
       <section className="space-y-3 py-6">
         <div className="rounded-2xl bg-[#f3f0ff] p-4">
           <div className="flex gap-3">
@@ -210,15 +289,17 @@ export function LightWaitingExperience({
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-bold text-black">Browser Notifications</p>
               <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
-                Get notified when you&apos;re almost up — even if this tab is in the background.
+                Alert you on this device when staff calls your number (keep this tab open).
               </p>
               <button
                 type="button"
                 role="switch"
                 aria-checked={browserNotify}
+                aria-busy={notifyBusy}
+                disabled={notifyBusy}
                 onClick={toggleNotify}
                 className={cn(
-                  'relative mt-3 h-7 w-12 rounded-full transition-colors',
+                  'relative mt-3 h-7 w-12 rounded-full transition-colors disabled:opacity-60',
                   browserNotify ? 'bg-[#9b8cff]' : 'bg-[#d4d0e8]',
                 )}
               >
@@ -229,6 +310,9 @@ export function LightWaitingExperience({
                   )}
                 />
               </button>
+              {notifyError ? (
+                <p className="mt-2 text-[11px] leading-snug text-[#b45309]">{notifyError}</p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -245,6 +329,7 @@ export function LightWaitingExperience({
               </p>
               <button
                 type="button"
+                onClick={openEditPhone}
                 className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#9b8cff]"
               >
                 <Pencil className="h-3 w-3" aria-hidden />
@@ -259,6 +344,53 @@ export function LightWaitingExperience({
           {pollHint}
         </p>
       </section>
+
+      {editOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-phone-title"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <h3 id="edit-phone-title" className="text-lg font-bold text-black">
+              Update WhatsApp number
+            </h3>
+            <p className="mt-1 text-sm text-[#6b7280]">
+              Use country code. Example: +923001234567
+            </p>
+            <input
+              type="tel"
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value)}
+              autoFocus
+              className="mt-4 w-full rounded-xl border border-[#e5e7eb] px-3 py-3 text-base outline-none ring-[#9b8cff] focus:ring-2"
+              placeholder="+923001234567"
+            />
+            {phoneError ? (
+              <p className="mt-2 text-sm text-red-600">{phoneError}</p>
+            ) : null}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={phoneBusy}
+                onClick={() => setEditOpen(false)}
+                className="flex-1 rounded-full border border-[#e5e7eb] py-3 text-sm font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={phoneBusy}
+                onClick={() => void savePhone()}
+                className="flex-1 rounded-full bg-[#9b8cff] py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {phoneBusy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

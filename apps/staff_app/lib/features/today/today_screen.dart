@@ -30,6 +30,8 @@ import '../../shared/widgets/staff/staff_content_width.dart';
 import '../../shared/widgets/staff/staff_empty_states.dart';
 import '../../shared/widgets/staff/staff_greeting.dart';
 
+final todayQueueSnapshotProvider = queueSnapshotProvider;
+
 final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
   final auth = ref.watch(authControllerProvider);
   if (!auth.isAuthenticated) return <QueueModel>[];
@@ -45,20 +47,12 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
           branchId: branchId,
           businessId: user?.businessId,
         )
-        .timeout(const Duration(seconds: 18));
+        .timeout(const Duration(seconds: 25));
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;
   }
 });
-
-final todayQueueSnapshotProvider = FutureProvider.autoDispose
-    .family<QueueSnapshotModel, String>((ref, queueId) async {
-      return ref
-          .read(businessApiClientProvider)
-          .getQueueSnapshot(queueId)
-          .timeout(const Duration(seconds: 18));
-    });
 
 final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
   ref,
@@ -69,22 +63,20 @@ final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
   if (businessId == null) return;
   final client = ref.watch(realtimeClientProvider);
   var disposed = false;
-  var refreshScheduled = false;
   ref.onDispose(() => disposed = true);
   void scheduleRefresh() {
-    // Coalesce bursty socket/poll invalidations so Live Queue doesn't
-    // restart loading mid-request.
-    if (refreshScheduled || disposed) return;
-    refreshScheduled = true;
-    Future<void>.delayed(const Duration(milliseconds: 500), () {
-      refreshScheduled = false;
-      if (disposed) return;
-      ref.invalidate(todayQueuesProvider);
-      final qid = preferredQueueId;
-      if (qid != null && qid.isNotEmpty) {
+    if (disposed) return;
+    // Skip if queues are already loading — invalidating mid-flight restarts slow fetches.
+    final queues = ref.read(todayQueuesProvider);
+    if (queues.isLoading) return;
+    ref.invalidate(todayQueuesProvider);
+    final qid = preferredQueueId;
+    if (qid != null && qid.isNotEmpty) {
+      final snap = ref.read(todayQueueSnapshotProvider(qid));
+      if (!snap.isLoading) {
         ref.invalidate(todayQueueSnapshotProvider(qid));
       }
-    });
+    }
   }
 
   bindRealtimeRefresh(
@@ -92,6 +84,8 @@ final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
     client: client,
     onRefresh: scheduleRefresh,
     pollInterval: const Duration(seconds: 12),
+    coalesce: const Duration(milliseconds: 900),
+    refreshOnBind: false,
     onSubscribe: () async {
       await client.connect();
       return client.subscribeBusinessQueues(businessId);
@@ -168,10 +162,25 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
     setState(() => _selectedQueueId = queue.id);
-    final snapshot = await ref.read(
-      todayQueueSnapshotProvider(queue.id).future,
-    );
-    final next = _nextWaiting(snapshot);
+    // Prefer cached snapshot — don't block the sheet on a cold network fetch.
+    QueueEntryModel? next;
+    final cached = ref.read(todayQueueSnapshotProvider(queue.id));
+    if (cached.hasValue) {
+      next = _nextWaiting(cached.requireValue);
+    } else {
+      try {
+        final snapshot = await ref
+            .read(todayQueueSnapshotProvider(queue.id).future)
+            .timeout(const Duration(seconds: 8));
+        next = _nextWaiting(snapshot);
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiExceptionMessage(e))),
+        );
+        return;
+      }
+    }
     if (!context.mounted) return;
     await showCallNextSheet(
       context: context,
@@ -381,46 +390,55 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: contentMax),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                        ),
-                        padding: const EdgeInsets.only(
-                          top: AppSpacing.sm,
-                          bottom: AppSpacing.sm,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.calmIvory.withValues(alpha: 0),
-                              AppColors.calmIvory,
-                            ],
-                          ),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.calmBorder),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.calmCharcoal.withValues(
-                                  alpha: 0.08,
+                      child: Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          // Fade must not steal taps from tiles above.
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppColors.calmIvory.withValues(alpha: 0),
+                                      AppColors.calmIvory,
+                                    ],
+                                  ),
                                 ),
-                                blurRadius: 16,
-                                offset: const Offset(0, -2),
                               ),
-                            ],
+                            ),
                           ),
-                          child: CalmPrimaryButton(
-                            label: _friendlyCallLabel(modeInfo),
-                            icon: Icons.campaign_rounded,
-                            onPressed: () => _callNext(context, primary),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.calmBorder),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.calmCharcoal.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, -2),
+                                  ),
+                                ],
+                              ),
+                              child: CalmPrimaryButton(
+                                label: _friendlyCallLabel(modeInfo),
+                                icon: Icons.campaign_rounded,
+                                onPressed: () => _callNext(context, primary),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),

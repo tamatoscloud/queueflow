@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { CustomerPortalService } from './customer-portal.service';
-import { SubmitFeedbackDto } from './dto/customer-portal.dto';
+import {
+  SubmitFeedbackDto,
+  UpdateEntryContactDto,
+} from './dto/customer-portal.dto';
 
 @ApiTags('customer-portal')
 @Public()
@@ -20,6 +23,15 @@ export class CustomerPortalController {
   @ApiOperation({ summary: 'Live entry tracking context (public)' })
   tracking(@Param('entryId', ParseUUIDPipe) entryId: string) {
     return this.portal.getEntryTracking(entryId);
+  }
+
+  @Patch('entries/:entryId/contact')
+  @ApiOperation({ summary: 'Update guest phone for WhatsApp/SMS while in queue' })
+  updateContact(
+    @Param('entryId', ParseUUIDPipe) entryId: string,
+    @Body() dto: UpdateEntryContactDto,
+  ) {
+    return this.portal.updateEntryContact(entryId, dto);
   }
 
   @Get('businesses/:businessId/menu')

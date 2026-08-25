@@ -758,17 +758,12 @@ export class QueueEngineService {
   }
 
   async getLiveQueueSnapshot(queueId: string): Promise<LiveQueueSnapshot> {
-    const queue = await this.requireQueue(queueId);
-    const entries = await this.deps.entries.findByQueueId(queueId);
-    const metrics = MetricsCalculator.calculate(queue, entries);
-    const active = entries.filter((e) =>
-      [
-        QueueEntryStatus.WAITING,
-        QueueEntryStatus.CALLED,
-        QueueEntryStatus.HOLDING,
-        QueueEntryStatus.SKIPPED,
-      ].includes(e.status),
-    );
+    // Active-only: full-history hydration made staff console multi-second on busy queues.
+    const [queue, active] = await Promise.all([
+      this.requireQueue(queueId),
+      this.deps.entries.findActiveByQueueId(queueId),
+    ]);
+    const metrics = MetricsCalculator.calculate(queue, active);
     const waitingOrdered = OrderingPolicy.sortWaiting(
       active,
       queue.priorityEnabled,

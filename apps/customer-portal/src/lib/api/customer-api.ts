@@ -21,6 +21,20 @@ export const customerApi = {
   getEntryTracking: (entryId: string) =>
     apiFetch<EntryTracking>(`/customer-portal/entries/${entryId}/tracking`),
 
+  updateEntryContact: (
+    entryId: string,
+    payload: { phone: string; trackingToken?: string },
+  ) =>
+    apiFetch<{
+      entryId: string;
+      phone: string;
+      phoneMasked: string;
+      notificationPreference: string;
+    }>(`/customer-portal/entries/${entryId}/contact`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   getBusinessMenu: (businessId: string) =>
     apiFetch<GuestMenuResponse>(`/customer-portal/businesses/${businessId}/menu`),
 
