@@ -9,6 +9,7 @@ import '../../core/session/session_providers.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../shared/widgets/common_widgets.dart';
 import '../../shared/widgets/offline_banner.dart';
+import '../../shared/widgets/staff/staff_content_width.dart';
 
 class StaffShell extends ConsumerWidget {
   const StaffShell({super.key, required this.child});
@@ -30,10 +31,13 @@ class StaffShell extends ConsumerWidget {
     final selected = _indexFor(location);
     final branchesAsync = ref.watch(branchesProvider);
     final selectedBranchId = ref.watch(selectedBranchIdProvider);
+    final contentMax = StaffContentWidth.maxWidth(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.calmIvory,
       appBar: AppBar(
+        backgroundColor: AppColors.calmIvory,
+        surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
             Container(
@@ -47,7 +51,10 @@ class StaffShell extends ConsumerWidget {
             const SizedBox(width: 12),
             Text(
               'Staff',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.calmCharcoal,
+                  ),
             ),
           ],
         ),
@@ -68,7 +75,7 @@ class StaffShell extends ConsumerWidget {
           ),
           const RealtimeStatusChip(),
           IconButton(
-            icon: const Icon(Icons.logout_outlined),
+            icon: const Icon(Icons.logout_outlined, color: AppColors.calmCharcoal),
             onPressed: () async {
               await ref.read(authControllerProvider.notifier).logout();
               if (context.mounted) context.go(StaffRoutes.login);
@@ -76,19 +83,44 @@ class StaffShell extends ConsumerWidget {
           ),
         ],
       ),
-      body: OfflineBanner(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selected,
-        indicatorColor: product.accent.withValues(alpha: 0.14),
-        onDestinationSelected: (i) => context.go(_destinations[i].route),
-        destinations: [
-          for (final d in _destinations)
-            NavigationDestination(
-              icon: Icon(d.icon),
-              selectedIcon: Icon(d.icon, color: product.accent),
-              label: d.label,
+      body: ColoredBox(
+        color: AppColors.calmIvory,
+        child: OfflineBanner(
+          child: StaffContentWidth.constrain(context, child: child),
+        ),
+      ),
+      bottomNavigationBar: Material(
+        color: Colors.white,
+        elevation: 8,
+        shadowColor: AppColors.calmCharcoal.withValues(alpha: 0.08),
+        child: SafeArea(
+          top: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: contentMax == double.infinity
+                    ? MediaQuery.sizeOf(context).width
+                    : contentMax,
+              ),
+              child: NavigationBar(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                indicatorColor: product.accent.withValues(alpha: 0.14),
+                selectedIndex: selected,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                onDestinationSelected: (i) => context.go(_destinations[i].route),
+                destinations: [
+                  for (final d in _destinations)
+                    NavigationDestination(
+                      icon: Icon(d.icon, color: AppColors.neutral500),
+                      selectedIcon: Icon(d.icon, color: product.accent),
+                      label: d.label,
+                    ),
+                ],
+              ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

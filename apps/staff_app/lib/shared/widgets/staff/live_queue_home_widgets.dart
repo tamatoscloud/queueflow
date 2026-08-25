@@ -5,6 +5,13 @@ import '../../../core/models/queue_entry_model.dart';
 import '../../../core/models/queue_model.dart';
 import 'service_mode_helpers.dart';
 
+String _formatWaitMinutes(double minutes) {
+  if (minutes == minutes.roundToDouble()) {
+    return minutes.toInt().toString();
+  }
+  return minutes.toStringAsFixed(1);
+}
+
 /// Soft pill showing how many guests are waiting — plain language for hosts.
 class WaitingCountBanner extends StatelessWidget {
   const WaitingCountBanner({
@@ -79,7 +86,7 @@ class WhosNextHeroCard extends StatelessWidget {
   final QueueEntryModel entry;
   final String serviceMode;
   final String detailLine;
-  final int? estimatedWaitMinutes;
+  final double? estimatedWaitMinutes;
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +208,7 @@ class WhosNextHeroCard extends StatelessWidget {
               if (estimatedWaitMinutes != null && estimatedWaitMinutes! > 0)
                 _InfoChip(
                   icon: Icons.schedule_outlined,
-                  label: 'About $estimatedWaitMinutes min',
+                  label: 'About ${_formatWaitMinutes(estimatedWaitMinutes!)} min',
                 ),
             ],
           ),
@@ -334,7 +341,7 @@ class FriendlyActionTile extends StatelessWidget {
   }
 }
 
-/// Simple “still waiting” row — number + name only.
+/// Waiting guest card for the Live Queue grid — high-contrast text on white.
 class OtherWaitingTile extends StatelessWidget {
   const OtherWaitingTile({
     super.key,
@@ -347,60 +354,79 @@ class OtherWaitingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final code = entry.displayCode.isNotEmpty ? entry.displayCode : '—';
+    final name = entry.customerName?.trim().isNotEmpty == true
+        ? entry.customerName!
+        : 'Guest';
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.md,
-          ),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: AppColors.calmBorder),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.calmCharcoal.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.waitingSoft,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  entry.displayCode.isNotEmpty ? entry.displayCode : '—',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
-                      ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.customerName ?? 'Guest',
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.waitingSoft,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      code,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryDark,
                           ),
                     ),
-                    Text(
-                      'Party of ${entry.partySize}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.calmWarmGray,
-                          ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const Spacer(),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.neutral400,
+                    size: 22,
+                  ),
+                ],
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.neutral400),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.calmCharcoal,
+                      height: 1.2,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Party of ${entry.partySize}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.neutral700,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
             ],
           ),
         ),

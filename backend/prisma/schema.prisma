@@ -899,7 +899,7 @@ model QueueEntry {
   /// the source of truth is still a live COUNT query by the API layer —
   /// see docs/DATABASE_DESIGN.md "Real-time position & ETA".
   lastKnownPosition    Int? @map("last_known_position")
-  estimatedWaitMinutes Int? @map("estimated_wait_minutes")
+  estimatedWaitMinutes Float? @map("estimated_wait_minutes")
   /// Populated at COMPLETED, for reporting/analytics on real vs. estimated
   /// wait time.
   actualWaitMinutes    Int? @map("actual_wait_minutes")

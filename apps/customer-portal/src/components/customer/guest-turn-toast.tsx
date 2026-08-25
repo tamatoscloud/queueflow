@@ -2,13 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import { BellRing, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type TurnDetail = {
   title: string;
   body?: string;
+  kind?: string;
 };
 
-/** In-page toast when staff calls the guest (works without SMS/WhatsApp). */
+function toneForKind(kind?: string): string {
+  switch (kind) {
+    case 'holding':
+      return 'bg-amber-600';
+    case 'no_show':
+    case 'skipped':
+    case 'cancelled':
+      return 'bg-rose-600';
+    case 'completed':
+      return 'bg-sky-700';
+    default:
+      return 'bg-emerald-600';
+  }
+}
+
+/** In-page toast for staff actions (works without SMS/WhatsApp). */
 export function GuestTurnToast() {
   const [detail, setDetail] = useState<TurnDetail | null>(null);
 
@@ -18,6 +35,7 @@ export function GuestTurnToast() {
       setDetail({
         title: custom.detail?.title ?? "It's your turn!",
         body: custom.detail?.body,
+        kind: custom.detail?.kind,
       });
     };
     window.addEventListener('queueflow:guest-turn', onTurn);
@@ -38,7 +56,12 @@ export function GuestTurnToast() {
       role="alert"
       aria-live="assertive"
     >
-      <div className="flex w-full max-w-md items-start gap-3 rounded-2xl bg-emerald-600 px-4 py-3 text-white shadow-xl">
+      <div
+        className={cn(
+          'flex w-full max-w-md items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-xl',
+          toneForKind(detail.kind),
+        )}
+      >
         <BellRing className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="font-bold">{detail.title}</p>

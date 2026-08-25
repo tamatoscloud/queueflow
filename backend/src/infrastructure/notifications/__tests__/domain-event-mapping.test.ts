@@ -13,6 +13,12 @@ describe('domain event notification mapping', () => {
     expect(DOMAIN_TO_NOTIFICATION_TYPE.CustomerCalled).toBe('YOUR_TURN');
   });
 
+  it('maps hold / no-show / skip to CUSTOM so SMS still fires', () => {
+    expect(DOMAIN_TO_NOTIFICATION_TYPE.CustomerHeld).toBe('CUSTOM');
+    expect(DOMAIN_TO_NOTIFICATION_TYPE.CustomerNoShow).toBe('CUSTOM');
+    expect(DOMAIN_TO_NOTIFICATION_TYPE.CustomerSkipped).toBe('CUSTOM');
+  });
+
   it('includes queue lifecycle events in wait notifications', () => {
     expect(WAIT_NOTIFICATION_EVENTS.has('QueuePaused')).toBe(true);
     expect(WAIT_NOTIFICATION_EVENTS.has('QueueResumed')).toBe(true);

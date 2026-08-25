@@ -60,8 +60,11 @@ export {
 } from './domain/services/calculators';
 export {
   clampEstimatedWaitMinutes,
+  estimateWaitMinutesForPosition,
+  estimateWaitMinutesForCustomersAhead,
   MIN_ESTIMATED_WAIT_MINUTES,
   MAX_ESTIMATED_WAIT_MINUTES,
+  SERVICE_SLOT_MINUTES,
 } from './domain/services/wait-estimate-bounds';
 export { TokenFactory } from './domain/factories/token-factory';
 export {

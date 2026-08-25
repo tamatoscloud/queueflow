@@ -66,6 +66,14 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
     if (settings && !settings.notificationsEnabled) return;
 
     const payload = this.buildEntryPayload(ctx);
+    if (event.type === 'CustomerHeld') {
+      payload.message = `You're on hold at ${payload.queueName}. We'll call token ${payload.displayCode} again shortly.`;
+    } else if (event.type === 'CustomerNoShow') {
+      payload.message = `Marked as no-show at ${payload.queueName} (${payload.displayCode}). Please check in with staff if you're still here.`;
+    } else if (event.type === 'CustomerSkipped') {
+      payload.message = `You were skipped at ${payload.queueName} (${payload.displayCode}). Please speak with staff.`;
+    }
+
     let scheduledAt: Date | undefined;
     if (type === NotificationType.FEEDBACK_REQUEST && settings?.feedbackEnabled) {
       scheduledAt = new Date(

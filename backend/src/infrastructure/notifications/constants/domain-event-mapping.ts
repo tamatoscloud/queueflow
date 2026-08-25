@@ -10,6 +10,10 @@ export const DOMAIN_TO_NOTIFICATION_TYPE: Partial<
   CustomerRecalled: 'YOUR_TURN',
   CustomerCancelled: 'QUEUE_CANCELLED',
   CustomerCompleted: 'FEEDBACK_REQUEST',
+  /** Hold / no-show / skip use CUSTOM + message body so guests still get SMS/WA when configured. */
+  CustomerHeld: 'CUSTOM',
+  CustomerNoShow: 'CUSTOM',
+  CustomerSkipped: 'CUSTOM',
 };
 
 /** Events that should trigger position/wait updates for waiting customers. */

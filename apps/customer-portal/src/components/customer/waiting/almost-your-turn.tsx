@@ -3,7 +3,7 @@
 import { Sparkles } from 'lucide-react';
 import { AnimatedCounter } from '@/components/queue/animated-counter';
 import type { ServiceModeCopy } from '@/lib/restaurant/service-mode-config';
-import { cn } from '@/lib/utils';
+import { cn, formatWait } from '@/lib/utils';
 
 export function AlmostYourTurn({
   customersAhead,
@@ -39,7 +39,7 @@ export function AlmostYourTurn({
         <span className="ml-1 text-base font-semibold">{ahead}</span>
       </p>
       <p className="mt-1 text-sm text-muted">
-        ~{estimatedWaitMinutes} min · Please stay nearby
+        ~{formatWait(estimatedWaitMinutes)} · Please stay nearby
       </p>
     </div>
   );

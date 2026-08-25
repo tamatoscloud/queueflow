@@ -2,7 +2,7 @@ import '../../../core/models/queue_entry_model.dart';
 
 int calmWaitMinutes(QueueEntryModel entry) {
   final start = entry.calledAt ?? entry.joinedAt;
-  if (start == null) return entry.estimatedWaitMinutes ?? 0;
+  if (start == null) return entry.estimatedWaitMinutes?.round() ?? 0;
   return DateTime.now().difference(start).inMinutes;
 }
 

@@ -66,4 +66,10 @@ export const DEFAULT_TEMPLATES: Record<
   QUEUE_CLOSED_SMS: {
     en: '{{queueName}} closed.',
   },
+  CUSTOM_WHATSAPP: {
+    en: '{{message}}',
+  },
+  CUSTOM_SMS: {
+    en: '{{message}}',
+  },
 };

@@ -20,7 +20,11 @@ import {
   MetricsCalculator,
   WaitTimeCalculator,
 } from '../domain/services/calculators';
-import { clampEstimatedWaitMinutes } from '../domain/services/wait-estimate-bounds';
+import {
+  estimateWaitMinutesForCustomersAhead,
+  estimateWaitMinutesForPosition,
+  SERVICE_SLOT_MINUTES,
+} from '../domain/services/wait-estimate-bounds';
 import { JoinQueueValidator } from '../domain/validators/join-queue-validator';
 import { SortOrder, PhoneNumber } from '../domain/value-objects';
 import {
@@ -254,10 +258,8 @@ export class QueueEngineService {
       const estimate: WaitEstimate = {
         position,
         customersAhead,
-        estimatedWaitMinutes: clampEstimatedWaitMinutes(
-          customersAhead * queue.averageServiceTimeMinutes,
-        ),
-        averageServiceTimeMinutes: queue.averageServiceTimeMinutes,
+        estimatedWaitMinutes: estimateWaitMinutesForPosition(position),
+        averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
       };
 
       const entry = QueueEntry.create(
@@ -788,9 +790,7 @@ export class QueueEngineService {
             : 0;
         const estimatedWaitMinutes =
           e.status === QueueEntryStatus.WAITING
-            ? clampEstimatedWaitMinutes(
-                customersAhead * queue.averageServiceTimeMinutes,
-              )
+            ? estimateWaitMinutesForCustomersAhead(customersAhead)
             : e.estimatedWaitMinutes;
         return {
           id: e.id,
@@ -818,7 +818,7 @@ export class QueueEngineService {
       status: queue.status,
       isAcceptingEntries: queue.isAcceptingEntries,
       priorityEnabled: queue.priorityEnabled,
-      averageServiceTimeMinutes: queue.averageServiceTimeMinutes,
+      averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
       maxCapacity: queue.maxCapacity,
       metrics,
       entries: snapshotEntries,

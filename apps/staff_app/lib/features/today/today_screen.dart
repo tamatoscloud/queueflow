@@ -26,6 +26,7 @@ import '../../shared/widgets/calm/calm_primary_button.dart';
 import '../../shared/widgets/staff/call_next_sheet.dart';
 import '../../shared/widgets/staff/live_queue_home_widgets.dart';
 import '../../shared/widgets/staff/service_mode_helpers.dart';
+import '../../shared/widgets/staff/staff_content_width.dart';
 import '../../shared/widgets/staff/staff_empty_states.dart';
 import '../../shared/widgets/staff/staff_greeting.dart';
 
@@ -44,7 +45,7 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
           branchId: branchId,
           businessId: user?.businessId,
         )
-        .timeout(const Duration(seconds: 28));
+        .timeout(const Duration(seconds: 18));
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;
@@ -53,10 +54,16 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
 
 final todayQueueSnapshotProvider = FutureProvider.autoDispose
     .family<QueueSnapshotModel, String>((ref, queueId) async {
-      return ref.read(businessApiClientProvider).getQueueSnapshot(queueId);
+      return ref
+          .read(businessApiClientProvider)
+          .getQueueSnapshot(queueId)
+          .timeout(const Duration(seconds: 18));
     });
 
-final todayRealtimeProvider = Provider.autoDispose<void>((ref) {
+final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
+  ref,
+  preferredQueueId,
+) {
   final user = ref.watch(currentUserProvider);
   final businessId = user?.businessId;
   if (businessId == null) return;
@@ -69,10 +76,14 @@ final todayRealtimeProvider = Provider.autoDispose<void>((ref) {
     // restart loading mid-request.
     if (refreshScheduled || disposed) return;
     refreshScheduled = true;
-    Future<void>.delayed(const Duration(milliseconds: 750), () {
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
       refreshScheduled = false;
       if (disposed) return;
       ref.invalidate(todayQueuesProvider);
+      final qid = preferredQueueId;
+      if (qid != null && qid.isNotEmpty) {
+        ref.invalidate(todayQueueSnapshotProvider(qid));
+      }
     });
   }
 
@@ -80,6 +91,7 @@ final todayRealtimeProvider = Provider.autoDispose<void>((ref) {
     ref: ref,
     client: client,
     onRefresh: scheduleRefresh,
+    pollInterval: const Duration(seconds: 12),
     onSubscribe: () async {
       await client.connect();
       return client.subscribeBusinessQueues(businessId);
@@ -140,18 +152,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   /// Prefer the live entry estimate; ignore absurd historical averages (e.g. 829).
-  int _displayWaitMinutes({
+  double _displayWaitMinutes({
     required QueueEntryModel? entry,
     required int metricsMinutes,
     required int fallbackMinutes,
   }) {
-    const maxReasonable = 180;
+    const maxReasonable = 180.0;
     final fromEntry = entry?.estimatedWaitMinutes ?? 0;
     if (fromEntry > 0 && fromEntry <= maxReasonable) return fromEntry;
     if (metricsMinutes > 0 && metricsMinutes <= maxReasonable) {
-      return metricsMinutes;
+      return metricsMinutes.toDouble();
     }
-    return fallbackMinutes > 0 ? fallbackMinutes : 0;
+    return fallbackMinutes > 0 ? fallbackMinutes.toDouble() : 0;
   }
 
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
@@ -209,11 +221,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final queuesAsync = ref.watch(todayQueuesProvider);
     // Defer socket/poll until the first queues response so REST isn't starved.
     if (queuesAsync.hasValue || queuesAsync.hasError) {
-      ref.watch(todayRealtimeProvider);
+      final preferredId =
+          queuesAsync.asData?.value.isNotEmpty == true
+              ? (selectCallNextQueue(
+                    queuesAsync.asData!.value,
+                    preferredQueueId: _selectedQueueId,
+                  )?.id ??
+                  queuesAsync.asData!.value.first.id)
+              : _selectedQueueId;
+      ref.watch(todayRealtimeProvider(preferredId));
     }
     final realtimeStatus = ref.watch(realtimeStatusProvider);
     final venueName = _venueName(ref);
-    final isTablet = Breakpoints.isTablet(context);
+    final contentMax = StaffContentWidth.maxWidth(context);
 
     if (onBreak) {
       return const _BreakModeView();
@@ -353,30 +373,59 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ),
             if (totalWaiting > 0)
               Positioned(
-                left: isTablet ? 32 : 16,
-                right: isTablet ? 32 : 16,
+                left: 0,
+                right: 0,
                 bottom: 0,
                 child: SafeArea(
                   top: false,
-                  child: Container(
-                    padding: const EdgeInsets.only(
-                      top: AppSpacing.sm,
-                      bottom: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.calmIvory.withValues(alpha: 0),
-                          AppColors.calmIvory,
-                        ],
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: contentMax == double.infinity
+                            ? MediaQuery.sizeOf(context).width
+                            : contentMax,
                       ),
-                    ),
-                    child: CalmPrimaryButton(
-                      label: _friendlyCallLabel(modeInfo),
-                      icon: Icons.campaign_rounded,
-                      onPressed: () => _callNext(context, primary),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.sm,
+                          bottom: AppSpacing.sm,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              AppColors.calmIvory.withValues(alpha: 0),
+                              AppColors.calmIvory,
+                            ],
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.calmBorder),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.calmCharcoal.withValues(
+                                  alpha: 0.08,
+                                ),
+                                blurRadius: 16,
+                                offset: const Offset(0, -2),
+                              ),
+                            ],
+                          ),
+                          child: CalmPrimaryButton(
+                            label: _friendlyCallLabel(modeInfo),
+                            icon: Icons.campaign_rounded,
+                            onPressed: () => _callNext(context, primary),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -396,17 +445,25 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     if (totalWaiting <= 0) return const [];
 
     return snapshotAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => [
         const SizedBox(height: AppSpacing.md),
         CalmCard(
           backgroundColor: AppColors.calmLilac.withValues(alpha: 0.35),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             child: Column(
               children: [
-                CircularProgressIndicator(strokeWidth: 2.5),
-                SizedBox(height: AppSpacing.md),
-                Text('Loading the next guest…'),
+                const CircularProgressIndicator(strokeWidth: 2.5),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Loading the next guest…',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.calmCharcoal,
+                      ),
+                ),
               ],
             ),
           ),
@@ -422,6 +479,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 "We couldn't load the guest list",
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
+                      color: AppColors.calmCharcoal,
                     ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -489,15 +547,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            ...rest.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: OtherWaitingTile(
-                  entry: entry,
-                  onTap: () =>
-                      context.push(StaffRoutes.queueConsole(primary.id)),
-                ),
-              ),
+            _WaitingGuestGrid(
+              entries: rest,
+              onTapEntry: (_) =>
+                  context.push(StaffRoutes.queueConsole(primary.id)),
             ),
           ],
         ];
@@ -523,6 +576,57 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       ].where((s) => s.isNotEmpty).join(' · '),
       _ => 'Party of ${entry.partySize} · $waitText',
     };
+  }
+}
+
+class _WaitingGuestGrid extends StatelessWidget {
+  const _WaitingGuestGrid({
+    required this.entries,
+    required this.onTapEntry,
+  });
+
+  final List<QueueEntryModel> entries;
+  final ValueChanged<QueueEntryModel> onTapEntry;
+
+  @override
+  Widget build(BuildContext context) {
+    final columns = StaffContentWidth.guestGridColumns(context);
+    if (columns <= 1) {
+      return Column(
+        children: [
+          for (final entry in entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: OtherWaitingTile(
+                entry: entry,
+                onTap: () => onTapEntry(entry),
+              ),
+            ),
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = AppSpacing.sm;
+        final tileWidth =
+            (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final entry in entries)
+              SizedBox(
+                width: tileWidth,
+                child: OtherWaitingTile(
+                  entry: entry,
+                  onTap: () => onTapEntry(entry),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 

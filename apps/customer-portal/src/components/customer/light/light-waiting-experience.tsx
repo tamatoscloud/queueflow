@@ -105,7 +105,7 @@ export function LightWaitingExperience({
     if (connection === 'reconnecting' || connection === 'connecting') {
       return 'Reconnecting…';
     }
-    return 'Auto-updating every 30 seconds';
+    return 'Auto-updating every few seconds';
   }, [connection]);
 
   return (

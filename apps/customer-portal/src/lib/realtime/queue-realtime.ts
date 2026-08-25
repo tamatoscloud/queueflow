@@ -92,19 +92,43 @@ function subscribeEntrySocket<T>(
     }
   };
 
-  const onSocketEvent = () => {
+  const handlers = new Map<RealtimeEventName, (...args: unknown[]) => void>();
+
+  const onSocketEvent = (eventName: RealtimeEventName, ...args: unknown[]) => {
+    const envelope = args[0] as
+      | {
+          event?: string;
+          payload?: { entryId?: string; displayCode?: string; businessName?: string };
+        }
+      | undefined;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('queueflow:realtime-entry', {
+          detail: {
+            eventName: envelope?.event ?? eventName,
+            entryId: envelope?.payload?.entryId ?? entryId,
+            displayCode: envelope?.payload?.displayCode,
+            businessName: envelope?.payload?.businessName,
+          },
+        }),
+      );
+    }
     void refresh();
   };
 
   const wireEvents = () => {
     for (const eventName of TRACKING_EVENTS) {
-      socket.on(eventName, onSocketEvent);
+      const handler = (...args: unknown[]) => onSocketEvent(eventName, ...args);
+      handlers.set(eventName, handler);
+      socket.on(eventName, handler);
     }
   };
 
   const unwireEvents = () => {
     for (const eventName of TRACKING_EVENTS) {
-      socket.off(eventName, onSocketEvent);
+      const handler = handlers.get(eventName);
+      if (handler) socket.off(eventName, handler);
+      handlers.delete(eventName);
     }
   };
 

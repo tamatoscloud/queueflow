@@ -149,7 +149,8 @@ describe('QueueEngineService', () => {
     expect(b.displayCode).toBe('A-002');
     expect(a.estimate.position).toBe(1);
     expect(b.estimate.position).toBe(2);
-    expect(b.estimate.estimatedWaitMinutes).toBe(10);
+    expect(a.estimate.estimatedWaitMinutes).toBe(2.5);
+    expect(b.estimate.estimatedWaitMinutes).toBe(5);
     expect(ctx.eventBus.published.some((e) => e.type === 'CustomerJoined')).toBe(
       true,
     );
@@ -479,6 +480,7 @@ describe('QueueEngineService', () => {
     const snap = await ctx.engine.getLiveQueueSnapshot(q.id);
     expect(snap.metrics.waitingCount).toBe(2);
     expect(snap.entries).toHaveLength(2);
+    expect(snap.entries[0]!.estimatedWaitMinutes).toBe(2.5);
     expect(snap.entries[1]!.estimatedWaitMinutes).toBe(5);
 
     const metrics = await ctx.engine.calculateQueueMetrics(q.id);
@@ -503,7 +505,8 @@ describe('QueueEngineService', () => {
     });
     const est = await ctx.engine.estimateWaitTime(b.entryId);
     expect(est.customersAhead).toBe(1);
-    expect(est.estimatedWaitMinutes).toBe(8);
+    expect(est.estimatedWaitMinutes).toBe(5);
+    expect(est.averageServiceTimeMinutes).toBe(2.5);
   });
 });
 

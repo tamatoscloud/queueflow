@@ -240,7 +240,11 @@ export function formatAhead(count: number, copy: ServiceModeCopy): string {
 
 export function formatWaitMinutes(minutes: number, copy: ServiceModeCopy): string {
   if (minutes <= 0) return 'Any moment now';
-  return `${copy.waitLabel} ${minutes} min`;
+  const rounded =
+    Math.abs(minutes - Math.round(minutes)) < 0.05
+      ? Math.round(minutes)
+      : Math.round(minutes * 10) / 10;
+  return `${copy.waitLabel} ${rounded} min`;
 }
 
 export function formatWaitingCount(count: number, copy: ServiceModeCopy): string {

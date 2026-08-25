@@ -21,7 +21,7 @@ class QueueEntryModel {
   final String? customerName;
   final String? customerPhone;
   final int? position;
-  final int? estimatedWaitMinutes;
+  final double? estimatedWaitMinutes;
   final int priority;
   final bool isVip;
   final DateTime? calledAt;
@@ -39,7 +39,7 @@ class QueueEntryModel {
         customerName: json['customerName'] as String?,
         customerPhone: json['customerPhone'] as String?,
         position: _asInt(json['position']),
-        estimatedWaitMinutes: _asInt(json['estimatedWaitMinutes']),
+        estimatedWaitMinutes: _asDouble(json['estimatedWaitMinutes']),
         priority: _asInt(json['priority']) ?? 0,
         isVip: json['isVip'] as bool? ?? false,
         calledAt: json['calledAt'] != null ? DateTime.tryParse(json['calledAt'] as String) : null,
@@ -52,5 +52,13 @@ int? _asInt(dynamic value) {
   if (value is int) return value;
   if (value is num) return value.round();
   if (value is String) return int.tryParse(value);
+  return null;
+}
+
+double? _asDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
   return null;
 }

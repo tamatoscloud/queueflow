@@ -7,7 +7,10 @@ import {
 import { FeedbackStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { QueueEngineService } from '../../queue-engine';
-import { clampEstimatedWaitMinutes } from '../../queue-engine/domain/services/wait-estimate-bounds';
+import {
+  estimateWaitMinutesForCustomersAhead,
+  SERVICE_SLOT_MINUTES,
+} from '../../queue-engine/domain/services/wait-estimate-bounds';
 import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import type { SubmitFeedbackDto } from './dto/customer-portal.dto';
 import { normalizeGuestMenu } from '../business/guest-menu';
@@ -61,12 +64,9 @@ export class CustomerPortalService {
       throw new NotFoundException('Queue not found');
     }
 
+    // If you join now you become position waitingCount+1 → (n+1)×2.5 min.
     const estimatedWaitMinutes =
-      waitingCount > 0
-        ? clampEstimatedWaitMinutes(
-            queue.averageServiceTimeMinutes * waitingCount,
-          )
-        : 0;
+      estimateWaitMinutesForCustomersAhead(waitingCount);
 
     const payload = {
       business: {
@@ -90,7 +90,7 @@ export class CustomerPortalService {
       live: {
         waitingCount,
         estimatedWaitMinutes,
-        averageServiceTimeMinutes: queue.averageServiceTimeMinutes,
+        averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
         isOpen: queue.status === 'ACTIVE' && queue.isAcceptingEntries,
         generatedAt: new Date(),
       },
@@ -122,7 +122,26 @@ export class CustomerPortalService {
 
     const snapshot = await this.engine.getLiveQueueSnapshot(entry.queueId);
     const self = snapshot.entries.find((e) => e.id === entryId);
-    const estimate = await this.engine.estimateWaitTime(entryId);
+    const waitingOrdered = snapshot.entries
+      .filter((e) => e.status === 'WAITING')
+      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+    const position =
+      self?.position ??
+      (entry.status === 'WAITING'
+        ? (() => {
+            const idx = waitingOrdered.findIndex((e) => e.id === entryId);
+            return idx >= 0 ? idx + 1 : null;
+          })()
+        : null);
+    const customersAhead =
+      typeof position === 'number' && entry.status === 'WAITING'
+        ? Math.max(0, position - 1)
+        : 0;
+    const estimatedWaitMinutes =
+      entry.status === 'WAITING'
+        ? (self?.estimatedWaitMinutes ??
+          estimateWaitMinutesForCustomersAhead(customersAhead))
+        : (self?.estimatedWaitMinutes ?? entry.estimatedWaitMinutes ?? 0);
 
     return {
       entry: {
@@ -148,10 +167,10 @@ export class CustomerPortalService {
       },
       business: entry.queue.business,
       branch: entry.queue.branch,
-      position: self?.position ?? estimate.position,
-      customersAhead: estimate.customersAhead,
-      estimatedWaitMinutes: estimate.estimatedWaitMinutes,
-      averageServiceTimeMinutes: estimate.averageServiceTimeMinutes,
+      position: position ?? 0,
+      customersAhead,
+      estimatedWaitMinutes,
+      averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
       snapshotGeneratedAt: snapshot.generatedAt,
       trackingToken: this.realtimeCredentials.issueEntryTrackingToken(entry.id),
     };

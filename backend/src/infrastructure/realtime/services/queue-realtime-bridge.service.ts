@@ -70,17 +70,18 @@ export class QueueRealtimeBridgeService implements OnModuleInit, OnModuleDestroy
         .filter((e) => e.status === 'WAITING' || e.status === 'HOLDING' || e.status === 'SKIPPED')
         .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
 
-      const entries = await Promise.all(
-        waitingOrdered.map(async (entry) => {
-          const estimate = await this.engine.estimateWaitTime(entry.id);
-          return {
-            entryId: entry.id,
-            position: estimate.position,
-            estimatedWaitMinutes: estimate.estimatedWaitMinutes,
-            customersAhead: estimate.customersAhead,
-          };
-        }),
-      );
+      // Derive ETA from the snapshot — avoid N× estimateWaitTime DB round-trips.
+      const entries = waitingOrdered.map((entry) => {
+        const position = entry.position ?? 0;
+        const customersAhead =
+          entry.status === 'WAITING' ? Math.max(0, position - 1) : 0;
+        return {
+          entryId: entry.id,
+          position,
+          estimatedWaitMinutes: entry.estimatedWaitMinutes ?? 0,
+          customersAhead,
+        };
+      });
 
       const payload: EstimatedWaitPayload = {
         queueId,

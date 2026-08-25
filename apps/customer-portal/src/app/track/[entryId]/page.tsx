@@ -28,6 +28,7 @@ export default function TrackQueuePage() {
   useGuestTurnNotifier({
     entryId,
     status: data?.entry.status,
+    calledAt: data?.entry.calledAt,
     displayCode: data?.entry.displayCode,
     businessName: data?.business.name,
     readyTitle: readyCopy?.readyTitle,
@@ -76,6 +77,7 @@ export default function TrackQueuePage() {
     clearQueueSession();
     return (
       <BookingShell venueName={venueName} showJazzPill>
+        <GuestTurnToast />
         <QueueEnded
           variant="cancelled"
           queueId={data.queue.id}
@@ -89,11 +91,21 @@ export default function TrackQueuePage() {
     clearQueueSession();
     return (
       <BookingShell venueName={venueName} showJazzPill>
+        <GuestTurnToast />
         <QueueEnded
           variant={data.entry.status === 'NO_SHOW' ? 'no_show' : 'skipped'}
           queueId={data.queue.id}
           serviceMode={data.queue.serviceMode}
         />
+      </BookingShell>
+    );
+  }
+
+  if (data.entry.status === 'HOLDING') {
+    return (
+      <BookingShell variant="waiting" showJazzPill>
+        <GuestTurnToast />
+        <LightWaitingExperience tracking={data} connection={connection} />
       </BookingShell>
     );
   }

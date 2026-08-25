@@ -13,7 +13,7 @@ import {
 import { isQueueUuid } from '@/lib/queue-id';
 
 /** Fallback when socket is slow/offline — keep short so "Call" feels instant. */
-export const TRACKING_POLL_MS = 5_000;
+export const TRACKING_POLL_MS = 4_000;
 
 function persistTokenFromTracking(entryId: string, data: EntryTracking): void {
   if (!data.trackingToken) return;
