@@ -10,7 +10,7 @@ import {
 import type { EstimatedWaitPayload, RealtimeEnvelope } from '../constants/socket-events';
 import { QueueRealtimeEmitterService } from './queue-realtime-emitter.service';
 
-const ESTIMATED_WAIT_DEBOUNCE_MS = 350;
+const ESTIMATED_WAIT_DEBOUNCE_MS = 250;
 
 @Injectable()
 export class QueueRealtimeBridgeService implements OnModuleInit, OnModuleDestroy {

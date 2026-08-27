@@ -54,7 +54,7 @@ import type {
 import type { QueueMetrics, WaitEstimate } from '../domain/value-objects';
 import type { DomainEvent } from '../domain/events/queue-events';
 
-const LIVE_SNAPSHOT_CACHE_TTL_MS = 400;
+const LIVE_SNAPSHOT_CACHE_TTL_MS = 750;
 const liveSnapshotCache = new Map<
   string,
   { expiresAt: number; snapshot: LiveQueueSnapshot }

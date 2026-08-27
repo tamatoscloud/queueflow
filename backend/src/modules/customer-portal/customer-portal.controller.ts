@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Header, Headers, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { CustomerPortalService } from './customer-portal.service';
@@ -24,12 +15,14 @@ export class CustomerPortalController {
   constructor(private readonly portal: CustomerPortalService) {}
 
   @Get('queues/:queueId')
+  @Header('Cache-Control', 'public, max-age=8, stale-while-revalidate=20')
   @ApiOperation({ summary: 'Queue landing page context (public)' })
   landing(@Param('queueId', ParseUUIDPipe) queueId: string) {
     return this.portal.getQueueLanding(queueId);
   }
 
   @Get('entries/:entryId/tracking')
+  @Header('Cache-Control', 'private, max-age=2, stale-while-revalidate=8')
   @ApiOperation({ summary: 'Live entry tracking context (public)' })
   tracking(@Param('entryId', ParseUUIDPipe) entryId: string) {
     return this.portal.getEntryTracking(entryId);

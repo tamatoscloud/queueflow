@@ -20,7 +20,7 @@ export function TableReadyScreen({
   token,
   onProceed,
 }: TableReadyScreenProps) {
-  const [reservedSeconds, setReservedSeconds] = useState(300);
+  const [reservedSeconds, setReservedSeconds] = useState(120);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {

@@ -69,7 +69,7 @@ export function formatConnectionLabel(
   }
 }
 
-export function tableHoldSecondsRemaining(calledAt: string | null, holdMinutes = 5): number {
+export function tableHoldSecondsRemaining(calledAt: string | null, holdMinutes = 2): number {
   if (!calledAt) return holdMinutes * 60;
   const elapsed = (Date.now() - new Date(calledAt).getTime()) / 1000;
   return Math.max(0, Math.floor(holdMinutes * 60 - elapsed));

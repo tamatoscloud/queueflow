@@ -13,7 +13,7 @@ export function useQueueLanding(queueId: string) {
   return useQuery({
     queryKey: queryKeys.queueLanding(queueId),
     queryFn: () => customerApi.getQueueLanding(queueId),
-    staleTime: 10_000,
+    staleTime: 20_000,
     refetchInterval: enabled ? LANDING_POLL_MS : false,
     enabled,
   });

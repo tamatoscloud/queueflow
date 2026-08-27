@@ -14,7 +14,7 @@ import {
 import { isQueueUuid } from '@/lib/queue-id';
 
 /** Fallback when socket is offline — longer when live socket is primary. */
-export const TRACKING_POLL_MS = 15_000;
+export const TRACKING_POLL_MS = 20_000;
 
 function persistTokenFromTracking(entryId: string, data: EntryTracking): void {
   if (!data.trackingToken) return;
@@ -126,7 +126,7 @@ export function useEntryTracking(entryId: string) {
       persistTokenFromTracking(entryId, data);
       return data;
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
     enabled,
   });
 

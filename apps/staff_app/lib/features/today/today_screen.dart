@@ -142,6 +142,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     return waiting.first;
   }
 
+  QueueEntryModel? _currentCalled(QueueSnapshotModel? snapshot) {
+    if (snapshot == null) return null;
+    return snapshot.currentCalled;
+  }
+
   int _waitMinutes(QueueEntryModel entry) {
     final joined = entry.joinedAt;
     if (joined == null) return 0;
@@ -164,18 +169,42 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     return fallback > 0 ? fallback : 0;
   }
 
+  Future<void> _openCalledSheet(
+    BuildContext context,
+    QueueModel queue,
+    QueueEntryModel called,
+  ) async {
+    setState(() => _selectedQueueId = queue.id);
+    if (!context.mounted) return;
+    await showCallNextSheet(
+      context: context,
+      ref: ref,
+      queueId: queue.id,
+      serviceMode: queue.serviceMode,
+      nextEntry: called,
+      calling: false,
+      onRefresh: () async {
+        // Snapshot only — avoid wiping Today with a full queue-list reload.
+        ref.invalidate(todayQueueSnapshotProvider(queue.id));
+      },
+    );
+  }
+
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
     setState(() => _selectedQueueId = queue.id);
     // Prefer cached snapshot — don't block the sheet on a cold network fetch.
     QueueEntryModel? next;
+    QueueEntryModel? alreadyCalled;
     final cached = ref.read(todayQueueSnapshotProvider(queue.id));
     if (cached.hasValue) {
+      alreadyCalled = _currentCalled(cached.requireValue);
       next = _nextWaiting(cached.requireValue);
     } else {
       try {
         final snapshot = await ref
             .read(todayQueueSnapshotProvider(queue.id).future)
             .timeout(const Duration(seconds: 8));
+        alreadyCalled = _currentCalled(snapshot);
         next = _nextWaiting(snapshot);
       } catch (e) {
         if (!context.mounted) return;
@@ -186,6 +215,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       }
     }
     if (!context.mounted) return;
+    // If someone is already called, reopen their actions (seat / call again)
+    // instead of advancing to the next waiter.
+    if (alreadyCalled != null) {
+      await _openCalledSheet(context, queue, alreadyCalled);
+      return;
+    }
     await showCallNextSheet(
       context: context,
       ref: ref,
@@ -194,7 +229,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       nextEntry: next,
       calling: next != null,
       onRefresh: () async {
-        ref.invalidate(todayQueuesProvider);
         ref.invalidate(todayQueueSnapshotProvider(queue.id));
       },
     );
@@ -287,6 +321,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         }
 
         final totalWaiting = queues.fold<int>(0, (s, q) => s + q.waitingCount);
+        final calledOnPrimary = snapshotAsync.maybeWhen(
+          data: (s) => s.currentCalled,
+          orElse: () => null,
+        );
+        final hasActiveBoard = totalWaiting > 0 || calledOnPrimary != null;
         final modeInfo = ServiceModeInfo.forMode(primary.serviceMode);
         final liveLabel = realtimeStatus.when(
           data: _realtimeLabel,
@@ -303,7 +342,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   AppSpacing.md,
                   AppSpacing.md,
                   AppSpacing.md,
-                  totalWaiting > 0 ? 180 : AppSpacing.xl,
+                  hasActiveBoard ? 180 : AppSpacing.xl,
                 ),
                 children: [
                   StaffGreetingHeader(
@@ -321,7 +360,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     primary: primary,
                     totalWaiting: totalWaiting,
                   ),
-                  if (totalWaiting == 0) ...[
+                  if (!hasActiveBoard) ...[
                     const SizedBox(height: AppSpacing.xl),
                     StaffQueueEmptyState(
                       onAddCustomer: () =>
@@ -384,7 +423,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ],
               ),
             ),
-            if (totalWaiting > 0)
+            if (hasActiveBoard)
               Positioned(
                 left: 0,
                 right: 0,
@@ -436,7 +475,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                                 ],
                               ),
                               child: CalmPrimaryButton(
-                                label: _friendlyCallLabel(modeInfo),
+                                label: calledOnPrimary != null
+                                    ? 'Continue with called guest'
+                                    : _friendlyCallLabel(modeInfo),
                                 icon: Icons.campaign_rounded,
                                 onPressed: () => _callNext(context, primary),
                               ),
@@ -460,33 +501,33 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     required QueueModel primary,
     required int totalWaiting,
   }) {
-    if (totalWaiting <= 0) return const [];
-
     return snapshotAsync.when(
       skipLoadingOnReload: true,
       skipLoadingOnRefresh: true,
-      loading: () => [
-        const SizedBox(height: AppSpacing.md),
-        CalmCard(
-          backgroundColor: AppColors.calmLilac.withValues(alpha: 0.35),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            child: Column(
-              children: [
-                const CircularProgressIndicator(strokeWidth: 2.5),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Loading the next guest…',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.calmCharcoal,
+      loading: () => totalWaiting <= 0
+          ? const <Widget>[]
+          : [
+              const SizedBox(height: AppSpacing.md),
+              CalmCard(
+                backgroundColor: AppColors.calmLilac.withValues(alpha: 0.35),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                  child: Column(
+                    children: [
+                      const CircularProgressIndicator(strokeWidth: 2.5),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'Loading the next guest…',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.calmCharcoal,
+                            ),
                       ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ],
+              ),
+            ],
       error: (e, _) => [
         const SizedBox(height: AppSpacing.md),
         CalmCard(
@@ -522,6 +563,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         ),
       ],
       data: (snapshot) {
+        final called = snapshot.currentCalled;
         final waiting = snapshot.entries
             .where((e) => e.status == 'WAITING')
             .toList()
@@ -532,10 +574,26 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           metricsMinutes: snapshot.metrics.averageWaitMinutes,
           fallbackMinutes: primary.averageServiceTimeMinutes,
         );
-        final rest = waiting.skip(1).take(5).toList();
+        final stillWaiting = called != null
+            ? waiting.take(5).toList()
+            : waiting.skip(1).take(5).toList();
 
         return [
-          if (next != null) ...[
+          if (called != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            GestureDetector(
+              onTap: () => _openCalledSheet(context, primary, called),
+              child: WhosNextHeroCard(
+                entry: called,
+                serviceMode: primary.serviceMode,
+                detailLine: _upNextDetail(called, primary.serviceMode),
+                badgeLabel: 'CALLED',
+                footerHint:
+                    'Still waiting to be seated — tap to seat, call again, or hold.',
+              ),
+            ),
+          ],
+          if (called == null && next != null) ...[
             const SizedBox(height: AppSpacing.md),
             WhosNextHeroCard(
               entry: next,
@@ -543,7 +601,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               detailLine: _upNextDetail(next, primary.serviceMode),
               estimatedWaitMinutes: estWait > 0 ? estWait : null,
             ),
-          ] else ...[
+          ] else if (called == null && next == null && totalWaiting > 0) ...[
             const SizedBox(height: AppSpacing.md),
             CalmCard(
               child: Text(
@@ -555,7 +613,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
             ),
           ],
-          if (rest.isNotEmpty) ...[
+          if (stillWaiting.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Still waiting',
@@ -566,7 +624,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             _WaitingGuestGrid(
-              entries: rest,
+              entries: stillWaiting,
               onTapEntry: (_) =>
                   context.push(StaffRoutes.queueConsole(primary.id)),
             ),

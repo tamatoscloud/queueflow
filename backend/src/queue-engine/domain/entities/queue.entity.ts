@@ -81,7 +81,7 @@ export class Queue {
       autoCallNext: input.autoCallNext ?? false,
       priorityEnabled: input.priorityEnabled ?? false,
       recallTimeoutSeconds: input.recallTimeoutSeconds ?? 120,
-      noShowTimeoutSeconds: input.noShowTimeoutSeconds ?? 300,
+      noShowTimeoutSeconds: input.noShowTimeoutSeconds ?? 120,
       notifyBeforeTurns: input.notifyBeforeTurns ?? 3,
       lastTokenNumber: 0,
       lastTokenResetAt: null,

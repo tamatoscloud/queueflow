@@ -171,6 +171,14 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
         _busyAction = null;
         _successMessage = _successCopy(action);
       });
+      // Recall must keep the sheet open — guest is still CALLED until seated.
+      if (action == 'recall') {
+        await Future<void>.delayed(const Duration(milliseconds: 700));
+        if (mounted) {
+          setState(() => _successMessage = null);
+        }
+        return;
+      }
       await Future<void>.delayed(const Duration(milliseconds: 1100));
       if (mounted) Navigator.pop(context);
     } catch (e) {

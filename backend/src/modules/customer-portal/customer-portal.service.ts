@@ -23,7 +23,7 @@ import { PhoneNumber } from '../../queue-engine/domain/value-objects';
 import { normalizeGuestMenu } from '../business/guest-menu';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
 
-const LANDING_CACHE_TTL_MS = 12_000;
+const LANDING_CACHE_TTL_MS = 20_000;
 const landingCache = new Map<string, { expiresAt: number; payload: unknown }>();
 
 @Injectable()

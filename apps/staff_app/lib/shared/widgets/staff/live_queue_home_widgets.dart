@@ -81,12 +81,17 @@ class WhosNextHeroCard extends StatelessWidget {
     required this.serviceMode,
     required this.detailLine,
     this.estimatedWaitMinutes,
+    this.badgeLabel,
+    this.footerHint,
   });
 
   final QueueEntryModel entry;
   final String serviceMode;
   final String detailLine;
   final double? estimatedWaitMinutes;
+  /// Defaults to "WHO'S NEXT". Use e.g. "CALLED" for the active guest.
+  final String? badgeLabel;
+  final String? footerHint;
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +144,7 @@ class WhosNextHeroCard extends StatelessWidget {
                     Icon(mode.icon, size: 16, color: Colors.white),
                     const SizedBox(width: 6),
                     Text(
-                      "WHO'S NEXT",
+                      badgeLabel ?? "WHO'S NEXT",
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
@@ -214,7 +219,7 @@ class WhosNextHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Tap the big button below to call them.',
+            footerHint ?? 'Tap the big button below to call them.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.calmWarmGray,
                   fontWeight: FontWeight.w500,

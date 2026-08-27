@@ -806,7 +806,7 @@ model Queue {
   /// policies may fire. Enforced by the Queue Engine, not the DB.
   recallTimeoutSeconds      Int         @default(120) @map("recall_timeout_seconds")
   /// Seconds after calledAt before an automatic NO_SHOW is allowed.
-  noShowTimeoutSeconds      Int         @default(300) @map("no_show_timeout_seconds")
+  noShowTimeoutSeconds      Int         @default(120) @map("no_show_timeout_seconds")
   /// Notify a customer when this many people remain ahead of them.
   notifyBeforeTurns         Int         @default(3) @map("notify_before_turns")
   /// Which restaurant service mode this queue serves.

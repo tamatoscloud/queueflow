@@ -17,7 +17,7 @@ import type {
   ResetPasswordDto,
 } from './dto/auth.dto';
 
-const SESSION_OK_CACHE_TTL_MS = 30_000;
+const SESSION_OK_CACHE_TTL_MS = 60_000;
 const sessionOkCache = new Map<string, number>();
 
 @Injectable()

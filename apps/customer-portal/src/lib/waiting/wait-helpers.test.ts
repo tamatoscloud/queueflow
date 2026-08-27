@@ -34,9 +34,9 @@ describe('wait-helpers', () => {
 
   it('counts down table hold from calledAt', () => {
     const calledAt = new Date(Date.now() - 60_000).toISOString();
-    const remaining = tableHoldSecondsRemaining(calledAt, 5);
-    expect(remaining).toBeGreaterThan(230);
-    expect(remaining).toBeLessThanOrEqual(240);
+    const remaining = tableHoldSecondsRemaining(calledAt, 2);
+    expect(remaining).toBeGreaterThan(50);
+    expect(remaining).toBeLessThanOrEqual(60);
   });
 
   it('formats hold countdown as mm:ss', () => {
