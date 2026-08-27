@@ -20,6 +20,8 @@ export interface QueueEntryProps {
   source: QueueEntrySource;
   partySize: number;
   notes: string | null;
+  /** Mode-specific JSON from Prisma — read path only (not mutated by domain). */
+  metadata?: Record<string, unknown>;
   notificationPreference: NotificationPreference;
   priority: number;
   isVip: boolean;
@@ -89,6 +91,7 @@ export class QueueEntry {
       source: input.source,
       partySize: input.partySize,
       notes: input.notes ?? null,
+      metadata: {},
       notificationPreference: input.notificationPreference,
       priority: input.priority,
       isVip: input.isVip,
@@ -115,7 +118,7 @@ export class QueueEntry {
   }
 
   static rehydrate(props: QueueEntryProps): QueueEntry {
-    return new QueueEntry({ ...props });
+    return new QueueEntry({ ...props, metadata: props.metadata ?? {} });
   }
 
   get id(): string {
@@ -153,6 +156,9 @@ export class QueueEntry {
   }
   get notes(): string | null {
     return this.props.notes;
+  }
+  get metadata(): Record<string, unknown> {
+    return this.props.metadata ?? {};
   }
   get notificationPreference(): NotificationPreference {
     return this.props.notificationPreference;

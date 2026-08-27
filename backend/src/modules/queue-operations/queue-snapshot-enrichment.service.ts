@@ -18,6 +18,9 @@ export type EnrichedLiveQueueSnapshot = LiveQueueSnapshot & {
   entries: EnrichedLiveQueueEntrySnapshot[];
 };
 
+const serviceModeCache = new Map<string, { expiresAt: number; mode: ServiceMode }>();
+const SERVICE_MODE_CACHE_TTL_MS = 60_000;
+
 @Injectable()
 export class QueueSnapshotEnrichmentService {
   constructor(@Optional() private readonly prisma?: PrismaService) {}
@@ -29,41 +32,40 @@ export class QueueSnapshotEnrichmentService {
         serviceMode: 'DINE_IN',
         entries: snapshot.entries.map((e) => ({
           ...e,
-          notes: null,
-          metadata: {},
+          notes: e.notes ?? null,
+          metadata: normalizeEntryMetadata(e.metadata, e.notes ?? null, 'DINE_IN'),
           serviceMode: 'DINE_IN' as ServiceMode,
         })),
       };
     }
 
-    const entryIds = snapshot.entries.map((e) => e.id);
+    const serviceMode = await this.resolveServiceMode(snapshot.queueId);
 
-    // Single round-trip: queue mode + entry notes/metadata in parallel.
-    const [queue, rows] = await Promise.all([
-      this.prisma.queue.findFirst({
-        where: { id: snapshot.queueId, deletedAt: null },
-        select: { serviceMode: true },
-      }),
-      entryIds.length === 0
-        ? Promise.resolve(
-            [] as Array<{ id: string; notes: string | null; metadata: unknown }>,
-          )
-        : this.prisma.queueEntry.findMany({
-            where: { id: { in: entryIds }, deletedAt: null },
-            select: { id: true, notes: true, metadata: true },
-          }),
-    ]);
-
-    const serviceMode = queue?.serviceMode ?? 'DINE_IN';
-    const byId = new Map(rows.map((r) => [r.id, r]));
-
+    // Notes/metadata are already hydrated on the live snapshot — avoid a
+    // second findMany over every active entry id.
     const entries: EnrichedLiveQueueEntrySnapshot[] = snapshot.entries.map((e) => {
-      const row = byId.get(e.id);
-      const notes = row?.notes ?? null;
-      const metadata = normalizeEntryMetadata(row?.metadata, notes, serviceMode);
+      const notes = e.notes ?? null;
+      const metadata = normalizeEntryMetadata(e.metadata, notes, serviceMode);
       return { ...e, notes, metadata, serviceMode };
     });
 
     return { ...snapshot, serviceMode, entries };
+  }
+
+  private async resolveServiceMode(queueId: string): Promise<ServiceMode> {
+    const cached = serviceModeCache.get(queueId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.mode;
+    }
+    const queue = await this.prisma!.queue.findFirst({
+      where: { id: queueId, deletedAt: null },
+      select: { serviceMode: true },
+    });
+    const mode = queue?.serviceMode ?? 'DINE_IN';
+    serviceModeCache.set(queueId, {
+      expiresAt: Date.now() + SERVICE_MODE_CACHE_TTL_MS,
+      mode,
+    });
+    return mode;
   }
 }

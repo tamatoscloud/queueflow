@@ -123,22 +123,23 @@ export function LightWaitingExperience({
     setNotifyBusy(true);
     setNotifyError(null);
     try {
-      const permission = await Notification.requestPermission();
-      const granted = permission === 'granted';
+      const { enableGuestPushNotifications } = await import(
+        '@/lib/notifications/web-push'
+      );
+      const result = await enableGuestPushNotifications(tracking.entry.id);
+      const granted = result.ok && Notification.permission === 'granted';
       setBrowserNotify(granted);
       if (granted) {
         try {
           new Notification("You're set", {
-            body: "We'll alert you here when staff calls your number.",
+            body: "We'll alert you here when staff calls your number — even if this tab is in the background.",
             tag: `queueflow-ready-${tracking.entry.id}`,
           });
         } catch {
           // Some browsers require a gesture beyond permission — toggle still works.
         }
-      } else if (permission === 'denied') {
-        setNotifyError(
-          'Notifications are blocked. Allow them in your browser site settings.',
-        );
+      } else if (result.error) {
+        setNotifyError(result.error);
       }
     } finally {
       setNotifyBusy(false);

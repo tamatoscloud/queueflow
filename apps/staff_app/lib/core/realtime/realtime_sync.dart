@@ -11,7 +11,7 @@ import 'realtime_client.dart';
 void bindRealtimeRefresh({
   required Ref ref,
   required RealtimeClient client,
-  required void Function() onRefresh,
+  required void Function(RealtimeEnvelope? event) onRefresh,
   required Future<bool> Function() onSubscribe,
   Duration pollInterval = const Duration(seconds: 10),
   Duration coalesce = const Duration(milliseconds: 800),
@@ -19,13 +19,25 @@ void bindRealtimeRefresh({
 }) {
   Timer? pollTimer;
   Timer? coalesceTimer;
+  RealtimeEnvelope? pendingEvent;
   var disposed = false;
 
-  void scheduleRefresh() {
+  void scheduleRefresh([RealtimeEnvelope? event]) {
     if (disposed) return;
+    if (event != null) pendingEvent = event;
     coalesceTimer?.cancel();
-    coalesceTimer = Timer(coalesce, () {
-      if (!disposed) onRefresh();
+    final waitOnly = pendingEvent?.event == 'EstimatedWaitChanged';
+    final delay = waitOnly
+        ? (coalesce.inMilliseconds < 1200
+            ? const Duration(milliseconds: 1200)
+            : coalesce)
+        : coalesce;
+    coalesceTimer = Timer(delay, () {
+      if (!disposed) {
+        final e = pendingEvent;
+        pendingEvent = null;
+        onRefresh(e);
+      }
     });
   }
 
@@ -52,7 +64,7 @@ void bindRealtimeRefresh({
   });
   unawaited(client.connect());
 
-  final eventSub = client.events.listen((_) => scheduleRefresh());
+  final eventSub = client.events.listen(scheduleRefresh);
   final authSub = client.subscriptionAuthorized.listen((authorized) {
     if (authorized) {
       stopPolling();

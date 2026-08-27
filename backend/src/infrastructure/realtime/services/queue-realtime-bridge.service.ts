@@ -10,10 +10,16 @@ import {
 import type { EstimatedWaitPayload, RealtimeEnvelope } from '../constants/socket-events';
 import { QueueRealtimeEmitterService } from './queue-realtime-emitter.service';
 
+const ESTIMATED_WAIT_DEBOUNCE_MS = 350;
+
 @Injectable()
 export class QueueRealtimeBridgeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(QueueRealtimeBridgeService.name);
   private unsubscribe: (() => void) | null = null;
+  private readonly estimatedWaitTimers = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout>; businessId: string }
+  >();
 
   constructor(
     @Inject(EVENT_BUS) private readonly eventBus: NestEventBus,
@@ -29,6 +35,10 @@ export class QueueRealtimeBridgeService implements OnModuleInit, OnModuleDestroy
 
   onModuleDestroy(): void {
     this.unsubscribe?.();
+    for (const pending of this.estimatedWaitTimers.values()) {
+      clearTimeout(pending.timer);
+    }
+    this.estimatedWaitTimers.clear();
   }
 
   async handleDomainEvent(event: DomainEvent): Promise<void> {
@@ -46,8 +56,20 @@ export class QueueRealtimeBridgeService implements OnModuleInit, OnModuleDestroy
     }
 
     if (WAIT_AFFECTING_DOMAIN_EVENTS.has(event.type)) {
-      await this.emitEstimatedWait(event.aggregateId, event.businessId);
+      this.scheduleEstimatedWait(event.aggregateId, event.businessId);
     }
+  }
+
+  private scheduleEstimatedWait(queueId: string, businessId: string): void {
+    const existing = this.estimatedWaitTimers.get(queueId);
+    if (existing) {
+      clearTimeout(existing.timer);
+    }
+    const timer = setTimeout(() => {
+      this.estimatedWaitTimers.delete(queueId);
+      void this.emitEstimatedWait(queueId, businessId);
+    }, ESTIMATED_WAIT_DEBOUNCE_MS);
+    this.estimatedWaitTimers.set(queueId, { timer, businessId });
   }
 
   private toEnvelope(

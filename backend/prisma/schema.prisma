@@ -383,6 +383,7 @@ model Business {
   restaurantTables RestaurantTable[]
   waiterProfiles   WaiterProfile[]
   kitchenOrders    KitchenOrder[]
+  webPushSubscriptions WebPushSubscription[]
 
   @@map("businesses")
 }
@@ -1109,6 +1110,7 @@ model Customer {
   queueEntries  QueueEntry[]
   notifications Notification[]
   feedback      Feedback[]
+  webPushSubscriptions WebPushSubscription[]
 
   @@index([businessId, phone])
   @@index([businessId, lastVisitAt])
@@ -1417,4 +1419,28 @@ model SupportTicket {
   @@index([businessId, status])
   @@index([assignedToUserId])
   @@map("support_tickets")
+}
+
+/// Browser Web Push subscription for a guest tracking an entry.
+/// Scoped by entryId + endpoint so guests can re-subscribe after refresh.
+model WebPushSubscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId String?  @map("customer_id") @db.Uuid
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  queueEntryId String @map("queue_entry_id") @db.Uuid
+
+  endpoint   String
+  p256dh     String
+  auth       String
+  userAgent  String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([endpoint])
+  @@index([queueEntryId])
+  @@index([businessId, queueEntryId])
+  @@map("web_push_subscriptions")
 }

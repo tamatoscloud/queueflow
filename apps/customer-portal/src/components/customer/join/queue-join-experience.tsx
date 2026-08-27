@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueueLanding, ServiceMode } from '@/lib/api/types';
 import { CustomerDetailsForm } from '@/components/customer/join/customer-details-form';
 import { JoinQueueCTA } from '@/components/customer/join/join-queue-cta';
@@ -33,6 +33,7 @@ import {
   type ModeJoinFormValues,
 } from '@/lib/schemas/forms';
 import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
+import { buildTrackingFromJoin } from '@/lib/tracking/seed-from-join';
 
 type QueueJoinExperienceProps = {
   data: QueueLanding;
@@ -64,6 +65,7 @@ function joinCopy(mode: ServiceMode): { title: string; subtitle: string; cta: st
 
 export function QueueJoinExperience({ data, queueId }: QueueJoinExperienceProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeSession, setActiveSession] = useState<ReturnType<typeof loadQueueSession>>(null);
   const isRestaurant = isRestaurantDemo(data.business.name);
@@ -139,6 +141,13 @@ export function QueueJoinExperience({ data, queueId }: QueueJoinExperienceProps)
         joinedAt: new Date().toISOString(),
         trackingToken: result.trackingToken,
       });
+      queryClient.setQueryData(
+        queryKeys.entryTracking(result.entryId),
+        buildTrackingFromJoin(result, data, {
+          partySize: values.partySize,
+          notes: buildJoinNotes(values),
+        }),
+      );
       router.push(`/track/${result.entryId}?welcome=1`);
     } catch (err) {
       if (err instanceof ApiClientError && err.code === 'DUPLICATE_ACTIVE_JOIN') {

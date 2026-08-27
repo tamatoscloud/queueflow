@@ -16,6 +16,9 @@ export interface LiveQueueEntrySnapshot {
   source: string;
   joinedAt: Date;
   calledAt: Date | null;
+  /** Inline enrichment — avoids a second Prisma round-trip on staff snapshot. */
+  notes?: string | null;
+  metadata?: unknown;
 }
 
 export interface LiveQueueSnapshot {

@@ -16,6 +16,9 @@ describe('QueueNotificationBridgeService idempotency', () => {
     getLiveQueueSnapshot: vi.fn(),
     estimateWaitTime: vi.fn(),
   };
+  const webPush = {
+    sendToEntry: vi.fn().mockResolvedValue(undefined),
+  };
   const eventBus = {
     subscribe: vi.fn().mockReturnValue({ unsubscribe: vi.fn() }),
   };
@@ -29,6 +32,7 @@ describe('QueueNotificationBridgeService idempotency', () => {
       dispatch as never,
       repository as never,
       engine as never,
+      webPush as never,
     );
     repository.findEntryContext.mockResolvedValue({
       id: 'entry-1',

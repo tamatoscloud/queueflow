@@ -20,6 +20,12 @@ export interface EntryTrackingSubscribeOptions {
   /** Persist a recovered/refreshed token (must not log the value). */
   onToken?: (token: string) => void;
   intervalMs?: number;
+  /**
+   * When true, socket events update React Query via onRealtimeEvent instead of
+   * triggering a full HTTP tracking refetch on every event.
+   */
+  patchFromEvents?: boolean;
+  onRealtimeEvent?: (eventName: RealtimeEventName, envelope: unknown) => void;
 }
 
 export interface QueueRealtimeAdapter {
@@ -49,6 +55,9 @@ const TRACKING_EVENTS: RealtimeEventName[] = [
   'QueueClosed',
   'EstimatedWaitChanged',
 ];
+
+/** Events that still need a full HTTP refresh even when patching. */
+const HTTP_REFRESH_EVENTS = new Set<RealtimeEventName>(['QueueUpdated']);
 
 interface SubscribeAck {
   ok?: boolean;
@@ -113,6 +122,15 @@ function subscribeEntrySocket<T>(
         }),
       );
     }
+
+    if (options.patchFromEvents) {
+      options.onRealtimeEvent?.(eventName, envelope);
+      if (HTTP_REFRESH_EVENTS.has(eventName)) {
+        void refresh();
+      }
+      return;
+    }
+
     void refresh();
   };
 
@@ -182,6 +200,7 @@ function subscribeEntrySocket<T>(
       let ok = await emitSubscribe(token);
       if (ok) {
         stopFallback();
+        // One reconcile after subscribe — then socket patches drive the UI.
         void refresh();
         return;
       }

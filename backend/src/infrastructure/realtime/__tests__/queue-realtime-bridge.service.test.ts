@@ -42,6 +42,7 @@ describe('QueueRealtimeBridgeService', () => {
   });
 
   it('maps CustomerJoined to socket event and entry room', async () => {
+    vi.useFakeTimers();
     const event: DomainEvent<'CustomerJoined'> = {
       type: 'CustomerJoined',
       aggregateId: 'q1',
@@ -51,6 +52,7 @@ describe('QueueRealtimeBridgeService', () => {
     };
 
     await bridge.handleDomainEvent(event);
+    await vi.advanceTimersByTimeAsync(400);
 
     expect(emitter.emitToQueue).toHaveBeenCalledWith(
       'q1',
@@ -63,6 +65,7 @@ describe('QueueRealtimeBridgeService', () => {
       expect.any(Object),
     );
     expect(emitter.emitEstimatedWait).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it('maps QueuePaused without entry room', async () => {

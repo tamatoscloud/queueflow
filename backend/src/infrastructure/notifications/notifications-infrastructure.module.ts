@@ -22,6 +22,7 @@ import { NotificationTemplateService } from './services/notification-template.se
 import { NotificationDispatcher } from './services/notification-dispatcher.service';
 import { NotificationDispatchService } from './services/notification-dispatch.service';
 import { NotificationWorker } from './worker/notification.worker';
+import { WebPushService } from './services/web-push.service';
 
 const providerAdapters = [
   MockNotificationProvider,
@@ -67,6 +68,7 @@ const providerAdapters = [
     },
     NotificationWorker,
     QueueNotificationBridgeService,
+    WebPushService,
   ],
   exports: [
     NotificationDispatchService,
@@ -78,6 +80,7 @@ const providerAdapters = [
     NotificationJobRepository,
     NOTIFICATION_QUEUE,
     NotificationDispatcher,
+    WebPushService,
   ],
 })
 export class NotificationsInfrastructureModule {}

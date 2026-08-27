@@ -1,9 +1,19 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { CustomerPortalService } from './customer-portal.service';
 import {
   SubmitFeedbackDto,
+  SubscribeWebPushDto,
   UpdateEntryContactDto,
 } from './dto/customer-portal.dto';
 
@@ -38,6 +48,21 @@ export class CustomerPortalController {
   @ApiOperation({ summary: 'Guest-facing restaurant menu (public)' })
   menu(@Param('businessId', ParseUUIDPipe) businessId: string) {
     return this.portal.getBusinessMenu(businessId);
+  }
+
+  @Get('push/vapid-public-key')
+  @ApiOperation({ summary: 'VAPID public key for browser Web Push' })
+  vapidPublicKey() {
+    return this.portal.getWebPushPublicKey();
+  }
+
+  @Post('push/subscribe')
+  @ApiOperation({ summary: 'Register browser Web Push subscription for an entry' })
+  subscribePush(
+    @Body() dto: SubscribeWebPushDto,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.portal.subscribeWebPush(dto, userAgent);
   }
 
   @Post('feedback')

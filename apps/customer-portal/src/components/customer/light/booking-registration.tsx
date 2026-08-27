@@ -24,6 +24,9 @@ import {
 } from '@/lib/schemas/forms';
 import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
 import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
+import { buildTrackingFromJoin } from '@/lib/tracking/seed-from-join';
+import { queryKeys } from '@/lib/api/query-keys';
+import { useQueryClient } from '@tanstack/react-query';
 import { CalmReturningCustomer } from '@/components/customer/calm/calm-returning-customer';
 import { CalmButton, CalmCard } from '@/components/customer/calm/primitives';
 import {
@@ -88,6 +91,7 @@ function summaryContext(mode: ServiceMode, values: ModeJoinFormValues): string {
 
 export function BookingRegistration({ data, queueId }: BookingRegistrationProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeSession, setActiveSession] = useState<ReturnType<typeof loadQueueSession>>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -174,6 +178,13 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
         fullName: formValues.fullName,
         phone: formValues.phone,
       });
+      queryClient.setQueryData(
+        queryKeys.entryTracking(result.entryId),
+        buildTrackingFromJoin(result, data, {
+          partySize: formValues.partySize,
+          notes: buildJoinNotes(formValues),
+        }),
+      );
       router.push(`/track/${result.entryId}?welcome=1`);
     } catch (err) {
       if (err instanceof ApiClientError && err.code === 'DUPLICATE_ACTIVE_JOIN') {

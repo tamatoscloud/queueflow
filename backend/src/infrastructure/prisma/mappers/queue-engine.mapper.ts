@@ -128,6 +128,10 @@ export function toDomainQueueEntry(row: EntryRow): QueueEntry {
     source: row.source as QueueEntrySource,
     partySize: row.partySize,
     notes: row.notes,
+    metadata:
+      row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : {},
     notificationPreference:
       row.notificationPreference as NotificationPreference,
     priority: row.priority,

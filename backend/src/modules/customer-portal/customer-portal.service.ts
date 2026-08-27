@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { FeedbackStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -12,7 +13,12 @@ import {
   SERVICE_SLOT_MINUTES,
 } from '../../queue-engine/domain/services/wait-estimate-bounds';
 import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
-import type { SubmitFeedbackDto, UpdateEntryContactDto } from './dto/customer-portal.dto';
+import { WebPushService } from '../../infrastructure/notifications/services/web-push.service';
+import type {
+  SubmitFeedbackDto,
+  SubscribeWebPushDto,
+  UpdateEntryContactDto,
+} from './dto/customer-portal.dto';
 import { PhoneNumber } from '../../queue-engine/domain/value-objects';
 import { normalizeGuestMenu } from '../business/guest-menu';
 import { normalizeEntryMetadata } from '../queue-operations/utils/entry-metadata.util';
@@ -26,6 +32,7 @@ export class CustomerPortalService {
     private readonly prisma: PrismaService,
     @Inject(QueueEngineService) private readonly engine: QueueEngineService,
     private readonly realtimeCredentials: RealtimeCredentialService,
+    private readonly webPush: WebPushService,
   ) {}
 
   async getQueueLanding(queueId: string) {
@@ -110,7 +117,13 @@ export class CustomerPortalService {
       include: {
         queueToken: true,
         queue: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            isAcceptingEntries: true,
+            serviceMode: true,
+            priorityEnabled: true,
             business: { select: { id: true, name: true, logoUrl: true } },
             branch: { select: { id: true, name: true } },
           },
@@ -121,28 +134,41 @@ export class CustomerPortalService {
       throw new NotFoundException('Queue entry not found');
     }
 
-    const snapshot = await this.engine.getLiveQueueSnapshot(entry.queueId);
-    const self = snapshot.entries.find((e) => e.id === entryId);
-    const waitingOrdered = snapshot.entries
-      .filter((e) => e.status === 'WAITING')
-      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
-    const position =
-      self?.position ??
-      (entry.status === 'WAITING'
-        ? (() => {
-            const idx = waitingOrdered.findIndex((e) => e.id === entryId);
-            return idx >= 0 ? idx + 1 : null;
-          })()
-        : null);
-    const customersAhead =
-      typeof position === 'number' && entry.status === 'WAITING'
-        ? Math.max(0, position - 1)
-        : 0;
-    const estimatedWaitMinutes =
-      entry.status === 'WAITING'
-        ? (self?.estimatedWaitMinutes ??
-          estimateWaitMinutesForCustomersAhead(customersAhead))
-        : (self?.estimatedWaitMinutes ?? entry.estimatedWaitMinutes ?? 0);
+    // Lightweight position: only waiting ids/order fields — never hydrate the
+    // full live snapshot (that path was multi-second under Railway↔Supabase).
+    let position = 0;
+    let customersAhead = 0;
+    let estimatedWaitMinutes = entry.estimatedWaitMinutes ?? 0;
+
+    if (entry.status === 'WAITING') {
+      const waiting = await this.prisma.queueEntry.findMany({
+        where: {
+          queueId: entry.queueId,
+          deletedAt: null,
+          status: 'WAITING',
+        },
+        select: {
+          id: true,
+          sortOrder: true,
+          joinedAt: true,
+          isVip: true,
+          priority: true,
+        },
+      });
+      const priorityEnabled = entry.queue.priorityEnabled;
+      waiting.sort((a, b) => {
+        if (priorityEnabled) {
+          if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
+          if (a.priority !== b.priority) return b.priority - a.priority;
+        }
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.joinedAt.getTime() - b.joinedAt.getTime();
+      });
+      const idx = waiting.findIndex((row) => row.id === entryId);
+      position = idx >= 0 ? idx + 1 : waiting.length;
+      customersAhead = Math.max(0, position - 1);
+      estimatedWaitMinutes = estimateWaitMinutesForCustomersAhead(customersAhead);
+    }
 
     return {
       entry: {
@@ -168,11 +194,11 @@ export class CustomerPortalService {
       },
       business: entry.queue.business,
       branch: entry.queue.branch,
-      position: position ?? 0,
+      position,
       customersAhead,
       estimatedWaitMinutes,
       averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
-      snapshotGeneratedAt: snapshot.generatedAt,
+      snapshotGeneratedAt: new Date(),
       trackingToken: this.realtimeCredentials.issueEntryTrackingToken(entry.id),
     };
   }
@@ -316,5 +342,41 @@ export class CustomerPortalService {
       menu,
       isDefault: business.settings?.guestMenu == null,
     };
+  }
+
+  getWebPushPublicKey() {
+    const publicKey = this.webPush.getPublicKey();
+    if (!publicKey) {
+      throw new ServiceUnavailableException('Web push is not configured');
+    }
+    return { publicKey, enabled: true };
+  }
+
+  async subscribeWebPush(dto: SubscribeWebPushDto, userAgent?: string) {
+    if (!this.webPush.isEnabled()) {
+      throw new ServiceUnavailableException('Web push is not configured');
+    }
+    if (dto.trackingToken) {
+      const ok = this.realtimeCredentials.verifyEntryTrackingToken(
+        dto.trackingToken,
+        dto.entryId,
+      );
+      if (!ok) {
+        throw new BadRequestException('Invalid tracking token');
+      }
+    }
+    try {
+      return await this.webPush.upsertSubscription({
+        entryId: dto.entryId,
+        endpoint: dto.endpoint,
+        keys: dto.keys,
+        userAgent,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message === 'ENTRY_NOT_FOUND') {
+        throw new NotFoundException('Queue entry not found');
+      }
+      throw err;
+    }
   }
 }

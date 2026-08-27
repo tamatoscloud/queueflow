@@ -1,4 +1,4 @@
-const CACHE = 'queueflow-v1';
+const CACHE = 'queueflow-v2';
 const OFFLINE_URL = '/offline';
 
 self.addEventListener('install', (event) => {
@@ -32,5 +32,50 @@ self.addEventListener('fetch', (event) => {
         }
         return new Response('Offline', { status: 503, statusText: 'Offline' });
       }),
+  );
+});
+
+self.addEventListener('push', (event) => {
+  let data = {
+    title: "It's your turn!",
+    body: 'Please come to the counter',
+    tag: 'queueflow',
+    url: '/',
+  };
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    }
+  } catch {
+    // keep defaults
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      tag: data.tag,
+      data: { url: data.url },
+      renotify: true,
+      requireInteraction: true,
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client && client.url.includes(url)) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
+      return undefined;
+    }),
   );
 });

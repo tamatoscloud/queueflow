@@ -17,6 +17,9 @@ import type {
   ResetPasswordDto,
 } from './dto/auth.dto';
 
+const SESSION_OK_CACHE_TTL_MS = 30_000;
+const sessionOkCache = new Map<string, number>();
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -55,6 +58,7 @@ export class AuthService {
   }
 
   async logout(sessionId: string, userId: string, meta?: { ipAddress?: string; userAgent?: string }) {
+    sessionOkCache.delete(sessionId);
     await this.sessionService.logout(sessionId);
     await this.audit.log({
       actorUserId: userId,
@@ -176,9 +180,22 @@ export class AuthService {
   }
 
   async validateSession(sessionId: string): Promise<void> {
+    const cachedUntil = sessionOkCache.get(sessionId);
+    if (cachedUntil && cachedUntil > Date.now()) {
+      return;
+    }
+
     const session = await this.authRepo.findSession(sessionId);
     if (!session || session.revokedAt || session.expiresAt < new Date()) {
+      sessionOkCache.delete(sessionId);
       throw new UnauthorizedException('Session expired or revoked');
     }
+    sessionOkCache.set(sessionId, Date.now() + SESSION_OK_CACHE_TTL_MS);
+  }
+
+  /** Drop cached session validity (call on logout / revoke). */
+  invalidateSessionCache(sessionId: string): void {
+    sessionOkCache.delete(sessionId);
   }
 }
+

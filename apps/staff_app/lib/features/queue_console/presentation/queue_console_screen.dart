@@ -37,7 +37,7 @@ final queueConsoleRealtimeBindingProvider =
   bindRealtimeRefresh(
     ref: ref,
     client: client,
-    onRefresh: () {
+    onRefresh: (_) {
       if (disposed) return;
       // Don't restart an in-flight snapshot — that made console feel hung.
       final current = ref.read(queueSnapshotProvider(queueId));
@@ -48,8 +48,8 @@ final queueConsoleRealtimeBindingProvider =
       await client.connect();
       return client.subscribeQueueDetail(queueId);
     },
-    pollInterval: const Duration(seconds: 12),
-    coalesce: const Duration(milliseconds: 900),
+    pollInterval: const Duration(seconds: 20),
+    coalesce: const Duration(milliseconds: 1200),
     refreshOnBind: false,
   );
 });

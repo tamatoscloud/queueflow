@@ -8,6 +8,7 @@ import {
   MaxLength,
   Min,
   Matches,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -44,6 +45,36 @@ export class UpdateEntryContactDto {
   @ApiPropertyOptional({
     description: 'Optional Socket.IO tracking token issued at join/tracking',
   })
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  trackingToken?: string;
+}
+
+export class WebPushKeysDto {
+  @IsString()
+  @MaxLength(512)
+  p256dh!: string;
+
+  @IsString()
+  @MaxLength(512)
+  auth!: string;
+}
+
+export class SubscribeWebPushDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID('4')
+  entryId!: string;
+
+  @IsString()
+  @MaxLength(2048)
+  endpoint!: string;
+
+  @Type(() => WebPushKeysDto)
+  @ValidateNested()
+  keys!: WebPushKeysDto;
+
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(512)

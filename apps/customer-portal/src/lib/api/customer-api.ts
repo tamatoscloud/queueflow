@@ -38,6 +38,22 @@ export const customerApi = {
   getBusinessMenu: (businessId: string) =>
     apiFetch<GuestMenuResponse>(`/customer-portal/businesses/${businessId}/menu`),
 
+  getWebPushPublicKey: () =>
+    apiFetch<{ publicKey: string; enabled: boolean }>(
+      '/customer-portal/push/vapid-public-key',
+    ),
+
+  subscribeWebPush: (payload: {
+    entryId: string;
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+    trackingToken?: string;
+  }) =>
+    apiFetch<{ ok: true }>('/customer-portal/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   submitFeedback: (payload: SubmitFeedbackPayload) =>
     apiFetch<unknown>('/customer-portal/feedback', {
       method: 'POST',

@@ -54,6 +54,12 @@ import type {
 import type { QueueMetrics, WaitEstimate } from '../domain/value-objects';
 import type { DomainEvent } from '../domain/events/queue-events';
 
+const LIVE_SNAPSHOT_CACHE_TTL_MS = 400;
+const liveSnapshotCache = new Map<
+  string,
+  { expiresAt: number; snapshot: LiveQueueSnapshot }
+>();
+
 export interface QueueEngineDeps {
   queues: QueueRepository;
   entries: QueueEntryRepository;
@@ -758,6 +764,11 @@ export class QueueEngineService {
   }
 
   async getLiveQueueSnapshot(queueId: string): Promise<LiveQueueSnapshot> {
+    const cached = liveSnapshotCache.get(queueId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.snapshot;
+    }
+
     // Active-only: full-history hydration made staff console multi-second on busy queues.
     const [queue, active] = await Promise.all([
       this.requireQueue(queueId),
@@ -802,10 +813,12 @@ export class QueueEngineService {
           source: e.source,
           joinedAt: e.joinedAt,
           calledAt: e.calledAt,
+          notes: e.notes,
+          metadata: e.metadata,
         };
       });
 
-    return {
+    const snapshot: LiveQueueSnapshot = {
       queueId: queue.id,
       businessId: queue.businessId,
       branchId: queue.branchId,
@@ -819,6 +832,11 @@ export class QueueEngineService {
       entries: snapshotEntries,
       generatedAt: this.deps.clock.now(),
     };
+    liveSnapshotCache.set(queueId, {
+      expiresAt: Date.now() + LIVE_SNAPSHOT_CACHE_TTL_MS,
+      snapshot,
+    });
+    return snapshot;
   }
 
   // ---------------------------------------------------------------------------

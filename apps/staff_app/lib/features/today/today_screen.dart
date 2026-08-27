@@ -64,12 +64,15 @@ final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
   final client = ref.watch(realtimeClientProvider);
   var disposed = false;
   ref.onDispose(() => disposed = true);
-  void scheduleRefresh() {
+  void scheduleRefresh([RealtimeEnvelope? event]) {
     if (disposed) return;
     // Skip if queues are already loading — invalidating mid-flight restarts slow fetches.
     final queues = ref.read(todayQueuesProvider);
     if (queues.isLoading) return;
-    ref.invalidate(todayQueuesProvider);
+    // ETA-only events shouldn't refetch the whole queue list.
+    if (event?.event != 'EstimatedWaitChanged') {
+      ref.invalidate(todayQueuesProvider);
+    }
     final qid = preferredQueueId;
     if (qid != null && qid.isNotEmpty) {
       final snap = ref.read(todayQueueSnapshotProvider(qid));
@@ -83,8 +86,8 @@ final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
     ref: ref,
     client: client,
     onRefresh: scheduleRefresh,
-    pollInterval: const Duration(seconds: 12),
-    coalesce: const Duration(milliseconds: 900),
+    pollInterval: const Duration(seconds: 20),
+    coalesce: const Duration(milliseconds: 1200),
     refreshOnBind: false,
     onSubscribe: () async {
       await client.connect();

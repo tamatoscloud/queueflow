@@ -16,6 +16,7 @@ import {
 } from '../domain/notification-idempotency';
 import { NotificationDispatchService } from '../services/notification-dispatch.service';
 import { NotificationRepository } from '../repositories/notification.repository';
+import { WebPushService } from '../services/web-push.service';
 
 @Injectable()
 export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDestroy {
@@ -28,6 +29,7 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
     private readonly dispatch: NotificationDispatchService,
     private readonly repository: NotificationRepository,
     private readonly engine: QueueEngineService,
+    private readonly webPush: WebPushService,
   ) {}
 
   onModuleInit(): void {
@@ -105,6 +107,33 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
         eventType: event.type,
       }),
     });
+
+    // Browser Web Push (works with tab backgrounded / lock screen).
+    if (
+      event.type === 'CustomerCalled' ||
+      event.type === 'CustomerRecalled' ||
+      event.type === 'CustomerHeld' ||
+      event.type === 'CustomerSkipped'
+    ) {
+      const title =
+        event.type === 'CustomerHeld'
+          ? "You're on hold"
+          : event.type === 'CustomerSkipped'
+            ? 'You were skipped'
+            : event.type === 'CustomerRecalled'
+              ? 'Please come now'
+              : "It's your turn!";
+      const body =
+        typeof payload.message === 'string'
+          ? payload.message
+          : `Number ${payload.displayCode} · ${payload.queueName}`;
+      void this.webPush.sendToEntry(entryId, {
+        title,
+        body,
+        tag: `queueflow-${event.type}-${entryId}`,
+        url: `/track/${entryId}`,
+      });
+    }
   }
 
   private async handleQueueBroadcast(event: DomainEvent): Promise<void> {
