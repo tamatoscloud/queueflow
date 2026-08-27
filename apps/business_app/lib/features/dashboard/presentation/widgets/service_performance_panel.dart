@@ -34,11 +34,11 @@ class ServicePerformancePanel extends ConsumerWidget {
       error: (_, __) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CalmSectionLabel('Service performance'),
+          const CalmSectionLabel('How each line is doing'),
           const SizedBox(height: AppSpacing.sm),
           CalmCard(
             child: Text(
-              'We couldn\'t load service performance right now.',
+              'We couldn\'t load how each line is doing right now.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.calmWarmGray,
                   ),
@@ -97,7 +97,7 @@ class ServicePerformancePanel extends ConsumerWidget {
           return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CalmSectionLabel('Service performance'),
+              CalmSectionLabel('How each line is doing'),
               SizedBox(height: AppSpacing.sm),
               CalmCard(
                 child: Text('Not enough data yet. Performance will appear as guests are served.'),
@@ -109,7 +109,7 @@ class ServicePerformancePanel extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CalmSectionLabel('Service performance', subtitle: 'Today by mode'),
+            const CalmSectionLabel('How each line is doing', subtitle: 'Today by dine-in, takeaway, and drive-thru'),
             const SizedBox(height: AppSpacing.sm),
             ...cards.map(
               (c) => Padding(

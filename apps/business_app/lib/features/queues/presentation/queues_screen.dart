@@ -20,6 +20,7 @@ import '../../../shared/widgets/calm/calm_live_indicator.dart';
 import '../../../shared/widgets/calm/calm_primary_button.dart';
 import '../../../shared/widgets/calm/calm_section_label.dart';
 import '../../../shared/widgets/skeleton_loaders.dart';
+import '../../branches/presentation/branches_screen.dart';
 import '../../restaurant_demo/presentation/service_mode_helpers.dart';
 
 final queuesRealtimeProvider = Provider.autoDispose<void>((ref) {
@@ -69,36 +70,65 @@ class QueuesScreen extends ConsumerWidget {
 
   Future<void> _createQueue(BuildContext context, WidgetRef ref) async {
     final name = TextEditingController();
-    final prefix = TextEditingController(text: 'A');
     final description = TextEditingController();
     var serviceMode = 'DINE_IN';
     final user = ref.read(currentUserProvider);
-    final branchId = ref.read(selectedBranchIdProvider);
-    if (user?.businessId == null || branchId == null) {
+    var branchId = ref.read(selectedBranchIdProvider);
+    if (user?.businessId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a branch before creating a queue')),
+        const SnackBar(content: Text('Please sign in again, then create a waiting line.')),
       );
       return;
     }
+    if (branchId == null) {
+      final branches = await ref.read(branchesProvider.future);
+      if (branches.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Add a location first, then create a waiting line.')),
+          );
+        }
+        return;
+      }
+      branchId = branches.first.id;
+      ref.read(selectedBranchIdProvider.notifier).state = branchId;
+    }
+    if (!context.mounted) return;
     await showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Create queue'),
+          title: const Text('New waiting line'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-              TextField(controller: prefix, decoration: const InputDecoration(labelText: 'Prefix')),
-              TextField(controller: description, decoration: const InputDecoration(labelText: 'Description')),
+              Text(
+                'Guests join this line when they scan your code.',
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: AppColors.calmWarmGray),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'e.g. Dinner waitlist',
+                ),
+              ),
+              TextField(
+                controller: description,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  hintText: 'Shown to your team only',
+                ),
+              ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: serviceMode,
-                decoration: const InputDecoration(labelText: 'Service mode'),
+                decoration: const InputDecoration(labelText: 'What is this line for?'),
                 items: const [
-                  DropdownMenuItem(value: 'DINE_IN', child: Text('Dine-in')),
-                  DropdownMenuItem(value: 'TAKEAWAY', child: Text('Takeaway')),
-                  DropdownMenuItem(value: 'DRIVE_IN', child: Text('Drive-in')),
+                  DropdownMenuItem(value: 'DINE_IN', child: Text('Dine-in (tables)')),
+                  DropdownMenuItem(value: 'TAKEAWAY', child: Text('Takeaway / pickup')),
+                  DropdownMenuItem(value: 'DRIVE_IN', child: Text('Drive-thru / car')),
                 ],
                 onChanged: (v) {
                   if (v != null) setLocal(() => serviceMode = v);
@@ -110,11 +140,14 @@ class QueuesScreen extends ConsumerWidget {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             FilledButton(
               onPressed: () async {
+                final trimmed = name.text.trim();
+                if (trimmed.isEmpty) return;
+                final prefix = trimmed.characters.first.toUpperCase();
                 await ref.read(businessApiClientProvider).createQueue({
                   'businessId': user!.businessId,
                   'branchId': branchId,
-                  'name': name.text.trim(),
-                  'prefix': prefix.text.trim().isEmpty ? 'A' : prefix.text.trim(),
+                  'name': trimmed,
+                  'prefix': prefix.isEmpty ? 'A' : prefix,
                   'serviceMode': serviceMode,
                   if (description.text.isNotEmpty) 'description': description.text.trim(),
                 });
@@ -144,7 +177,7 @@ class QueuesScreen extends ConsumerWidget {
             itemBuilder: (_, __) => const ListTileSkeleton(),
           ),
           error: (e, _) => PageError(
-            message: 'We couldn\'t load your queues.',
+            message: 'We couldn’t load your waiting lines.',
             onRetry: () => ref.invalidate(queuesProvider),
           ),
           data: (queues) {
@@ -153,8 +186,8 @@ class QueuesScreen extends ConsumerWidget {
                 children: const [
                   SizedBox(height: 80),
                   EmptyStateView(
-                    title: 'No queues yet',
-                    message: 'Create your first queue to start serving customers.',
+                    title: 'No waiting lines yet',
+                    message: 'Create your first line so guests can join and you can start serving.',
                     icon: Icons.queue_outlined,
                   ),
                 ],
@@ -163,7 +196,7 @@ class QueuesScreen extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                const CalmSectionLabel('Your queues', subtitle: 'Open console or show customer QR'),
+                const CalmSectionLabel('Your waiting lines', subtitle: 'Serve guests or show their join code'),
                 const SizedBox(height: AppSpacing.sm),
                 ...queues.map((q) {
                   final info = ServiceModeInfo.forMode(q.serviceMode);
@@ -222,7 +255,7 @@ class QueuesScreen extends ConsumerWidget {
                                 child: OutlinedButton.icon(
                                   onPressed: () => context.push(AppRoutes.restaurantQr),
                                   icon: const Icon(Icons.qr_code_2),
-                                  label: const Text('QR'),
+                                  label: const Text('Guest code'),
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.sm),
@@ -235,7 +268,7 @@ class QueuesScreen extends ConsumerWidget {
                                     minimumSize: const Size(0, 48),
                                   ),
                                   icon: const Icon(Icons.campaign_outlined),
-                                  label: const Text('Open console'),
+                                  label: const Text('Serve guests'),
                                 ),
                               ),
                             ],
@@ -255,7 +288,7 @@ class QueuesScreen extends ConsumerWidget {
         backgroundColor: AppColors.calmViolet,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('New queue'),
+        label: const Text('New line'),
       ),
     );
   }
@@ -439,7 +472,7 @@ class _QueueDetailBody extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Manage queue',
+                              'Line settings',
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                             ),
                             Text(
@@ -476,7 +509,7 @@ class _QueueDetailBody extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Customer QR',
+                              'Guest join code',
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                             ),
                             Text(
@@ -491,7 +524,7 @@ class _QueueDetailBody extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                const CalmSectionLabel('Queue status'),
+                const CalmSectionLabel('Line status'),
                 const SizedBox(height: AppSpacing.sm),
                 Wrap(
                   spacing: 8,
@@ -528,7 +561,7 @@ class _QueueDetailBody extends ConsumerWidget {
           child: SafeArea(
             top: false,
             child: CalmPrimaryButton(
-              label: 'Open queue console',
+              label: 'Serve guests',
               icon: Icons.play_arrow_rounded,
               onPressed: () => context.push(AppRoutes.queueConsole(queueId)),
             ),
@@ -544,11 +577,26 @@ class _QueueDetailBody extends ConsumerWidget {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('Pause ${info.label} queue?'),
-          content: const Text('Customers will no longer be able to join until you reopen it.'),
+          title: Text('Pause ${info.label} line?'),
+          content: const Text('Guests will not be able to join until you open it again.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Pause')),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    if (action == 'close') {
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Close ${info.label} line?'),
+          content: const Text('This stops the line for now. Guests already waiting stay until you finish serving them.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Close line')),
           ],
         ),
       );

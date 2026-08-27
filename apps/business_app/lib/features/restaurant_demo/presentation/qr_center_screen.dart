@@ -71,7 +71,7 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
   void _copyUrl(BuildContext context, String url, {String? message}) {
     Clipboard.setData(ClipboardData(text: url));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message ?? 'URL copied to clipboard')),
+      SnackBar(content: Text(message ?? 'Link copied — you can share it or paste it into a poster')),
     );
   }
 
@@ -129,7 +129,7 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
             itemBuilder: (_, __) => const ListTileSkeleton(),
           ),
           error: (e, _) => PageError(
-            message: '$e',
+            message: 'We couldn’t load guest codes. Pull to try again.',
             onRetry: () => ref.invalidate(queuesProvider),
           ),
           data: (queues) {
@@ -160,8 +160,8 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
               padding: EdgeInsets.all(isTablet ? AppSpacing.lg : AppSpacing.md),
               children: [
                 const CalmSectionLabel(
-                  'Customer QR codes',
-                  subtitle: 'Print or share so guests can scan and join',
+                  'Guest join codes',
+                  subtitle: 'Print or share so guests can scan and join your line',
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 SegmentedButton<int>(

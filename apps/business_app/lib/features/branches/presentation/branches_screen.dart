@@ -69,13 +69,13 @@ class BranchesScreen extends ConsumerWidget {
                   children: [
                     const Expanded(
                       child: CalmSectionLabel(
-                        'My restaurants',
+                        'My locations',
                         subtitle: 'Select your current branch',
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.add),
-                      tooltip: 'Add branch',
+                      tooltip: 'Add location',
                       onPressed: () => context.push(AppRoutes.branchAdd),
                     ),
                   ],
@@ -118,8 +118,8 @@ class BranchesScreen extends ConsumerWidget {
                             icon: const Icon(Icons.more_vert, color: AppColors.calmWarmGray),
                             itemBuilder: (_) => const [
                               PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              PopupMenuItem(value: 'switch', child: Text('Switch to branch')),
-                              PopupMenuItem(value: 'delete', child: Text('Delete')),
+                              PopupMenuItem(value: 'switch', child: Text('Switch to this location')),
+                              PopupMenuItem(value: 'delete', child: Text('Remove')),
                             ],
                             onSelected: (v) async {
                               if (v == 'edit') await context.push(AppRoutes.branchEdit(b.id));
@@ -133,6 +133,28 @@ class BranchesScreen extends ConsumerWidget {
                                 }
                               }
                               if (v == 'delete') {
+                                if (!context.mounted) return;
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: Text('Remove ${b.name}?'),
+                                    content: const Text(
+                                      'This location will be removed. Waiting lines at this location may stop working for guests.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.pop(ctx, true),
+                                        style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+                                        child: const Text('Remove'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed != true) return;
                                 await ref.read(businessApiClientProvider).deleteBranch(b.id);
                                 ref.invalidate(branchesProvider);
                               }
@@ -225,7 +247,7 @@ class _BranchFormScreenState extends ConsumerState<BranchFormScreen> {
   Widget build(BuildContext context) {
     final loadingExisting = widget.branchId != null && !_initialized;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.branchId == null ? 'Add branch' : 'Edit branch')),
+      appBar: AppBar(title: Text(widget.branchId == null ? 'Add location' : 'Edit location')),
       body: loadingExisting
           ? const PageLoading()
           : Padding(

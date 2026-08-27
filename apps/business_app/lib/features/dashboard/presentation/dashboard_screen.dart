@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:queueflow_network/queueflow_network.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
@@ -7,17 +8,17 @@ import '../../../core/models/models.dart';
 import '../../../core/network/business_api_client.dart';
 import '../../../core/realtime/realtime_client.dart';
 import '../../../core/realtime/realtime_sync.dart';
+import '../../../core/routing/app_routes.dart';
 import '../../../core/session/session_providers.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
+import '../../../shared/widgets/calm/calm_primary_button.dart';
 import '../../../shared/widgets/skeleton_loaders.dart';
 import 'widgets/calm_avg_wait_card.dart';
 import 'widgets/calm_live_activity.dart';
 import 'widgets/calm_needs_attention.dart';
 import 'widgets/calm_owner_header.dart';
 import 'widgets/calm_quick_actions.dart';
-import 'widgets/calm_service_mode_overview.dart';
 import 'widgets/calm_waiting_now.dart';
-import 'widgets/owner_quick_actions.dart';
 import 'widgets/service_performance_panel.dart';
 
 final dashboardProvider = FutureProvider.autoDispose((ref) async {
@@ -91,11 +92,25 @@ String _connectionLabel(AsyncValue<RealtimeStatus> status) {
   );
 }
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _showMore = false;
+
+  String? _primaryServeQueueId(List<QueueModel> queues) {
+    final open = queues.where((q) => q.isActive || q.isPaused).toList();
+    if (open.isEmpty) return queues.isNotEmpty ? queues.first.id : null;
+    open.sort((a, b) => b.waitingCount.compareTo(a.waitingCount));
+    return open.first.id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(dashboardRealtimeBindingProvider);
     final async = ref.watch(dashboardProvider);
     final realtimeStatus = ref.watch(realtimeStatusProvider);
@@ -105,7 +120,6 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.calmIvory,
-      floatingActionButton: const OwnerQuickActionsFab(),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(dashboardProvider),
         child: async.when(
@@ -117,7 +131,7 @@ class DashboardScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'We couldn\'t load your restaurant data.',
+                    'We couldn’t load your restaurant right now.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
@@ -131,7 +145,8 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           data: (data) {
-            final leftColumn = [
+            final serveId = _primaryServeQueueId(data.queues);
+            final primary = <Widget>[
               CalmOwnerHeader(
                 ownerName: user?.fullName ?? 'there',
                 businessName: data.businessName,
@@ -141,15 +156,39 @@ class DashboardScreen extends ConsumerWidget {
                 connectionLabel: connectionLabel,
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (serveId != null) ...[
+                CalmPrimaryButton(
+                  label: data.waiting > 0 ? 'Serve guests now' : 'Open live line',
+                  icon: Icons.play_arrow_rounded,
+                  onPressed: () => context.push(AppRoutes.queueConsole(serveId)),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                OutlinedButton.icon(
+                  onPressed: () => context.push(AppRoutes.restaurantQr),
+                  icon: const Icon(Icons.qr_code_2),
+                  label: const Text('Show guest join codes'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: AppColors.calmCharcoal,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ] else ...[
+                CalmPrimaryButton(
+                  label: 'Create your first waiting line',
+                  icon: Icons.add,
+                  onPressed: () => context.push(AppRoutes.queues),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              CalmNeedsAttention(queues: data.queues, summary: data.summary),
+              const SizedBox(height: AppSpacing.lg),
               CalmWaitingNow(queues: data.queues),
               const SizedBox(height: AppSpacing.lg),
               CalmAvgWaitCard(summary: data.summary),
-              const SizedBox(height: AppSpacing.lg),
-              CalmNeedsAttention(queues: data.queues, summary: data.summary),
             ];
 
-            final rightColumn = [
-              CalmServiceModeOverview(queues: data.queues),
+            final more = <Widget>[
               const SizedBox(height: AppSpacing.lg),
               ServicePerformancePanel(queues: data.queues),
               const SizedBox(height: AppSpacing.lg),
@@ -161,18 +200,14 @@ class DashboardScreen extends ConsumerWidget {
             return ListView(
               padding: EdgeInsets.all(isTablet ? AppSpacing.lg : AppSpacing.md),
               children: [
-                if (isTablet)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: Column(children: leftColumn)),
-                      const SizedBox(width: AppSpacing.lg),
-                      Expanded(child: Column(children: rightColumn)),
-                    ],
-                  )
-                else
-                  ...leftColumn,
-                if (!isTablet) ...rightColumn,
+                ...primary,
+                const SizedBox(height: AppSpacing.md),
+                TextButton(
+                  onPressed: () => setState(() => _showMore = !_showMore),
+                  child: Text(_showMore ? 'Hide extra details' : 'See more details'),
+                ),
+                if (_showMore) ...more,
+                const SizedBox(height: AppSpacing.xl),
               ],
             );
           },

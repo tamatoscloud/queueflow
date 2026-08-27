@@ -51,7 +51,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     } catch (_) {
       setState(() {
         _loading = false;
-        _error = 'We couldn\'t find that customer. Try a different name, phone, or token.';
+        _error = 'We couldn’t find that guest. Try a name, phone, or ticket number.';
       });
     }
   }
@@ -68,7 +68,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             Text(
-              'Customers',
+              'Guests',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: AppColors.calmCharcoal,
@@ -76,13 +76,13 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Find a customer quickly',
+              'Look up someone by name, phone, or ticket number',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.calmWarmGray),
             ),
             const SizedBox(height: AppSpacing.lg),
             CalmSearchField(
               controller: _search,
-              hint: 'Search name, phone or token',
+              hint: 'Search name, phone or ticket #',
               onSubmitted: (_) => _lookup(),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -118,7 +118,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               const SizedBox(height: AppSpacing.xl),
               const CalmEmptyState(
                 title: 'Find a customer',
-                message: 'Search by name, phone number, or queue token to view their visit history.',
+                message: 'Search by name, phone number, or ticket number to see their visits.',
                 icon: Icons.person_search_outlined,
               ),
             ],

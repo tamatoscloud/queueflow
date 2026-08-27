@@ -27,13 +27,13 @@ class StaffShell extends ConsumerStatefulWidget {
     (
       icon: Icons.queue_outlined,
       selectedIcon: Icons.queue,
-      label: 'Queues',
+      label: 'Lines',
       route: AppRoutes.queues,
     ),
     (
       icon: Icons.people_outline,
       selectedIcon: Icons.people,
-      label: 'Customers',
+      label: 'Guests',
       route: AppRoutes.customers,
     ),
     (
@@ -62,30 +62,24 @@ class _StaffShellState extends ConsumerState<StaffShell> {
     final branchesAsync = ref.watch(branchesProvider);
     final selectedBranchId = ref.watch(selectedBranchIdProvider);
     final selected = _indexFor(location);
-    final brightness = Theme.of(context).brightness;
     final product = context.productTheme;
     final destinations = StaffShell.destinations;
 
     return Scaffold(
-      backgroundColor: brightness == Brightness.light
-          ? AppColors.lightBackground
-          : AppColors.darkBackground,
+      backgroundColor: AppColors.calmIvory,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: brightness == Brightness.light
-            ? AppColors.lightSurface
-            : AppColors.darkSurface,
+        backgroundColor: AppColors.calmIvory,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                gradient: product.gradient,
+                color: product.accent,
                 borderRadius: AppRadius.mdAll,
-                boxShadow: AppShadows.glow(product.accent),
               ),
-              child: const Icon(Icons.bolt, color: Colors.white, size: 20),
+              child: const Icon(Icons.storefront_outlined, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
             Column(
@@ -95,10 +89,11 @@ class _StaffShellState extends ConsumerState<StaffShell> {
                   _titleFor(location),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
+                        color: AppColors.calmCharcoal,
                       ),
                 ),
                 Text(
-                  'Staff Console',
+                  'Front desk',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: product.accent,
                         fontWeight: FontWeight.w600,
@@ -136,11 +131,8 @@ class _StaffShellState extends ConsumerState<StaffShell> {
           const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(2),
-          child: Container(
-            height: 2,
-            decoration: BoxDecoration(gradient: product.gradient),
-          ),
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: AppColors.calmBorder),
         ),
       ),
       body: OfflineBanner(
@@ -156,9 +148,7 @@ class _StaffShellState extends ConsumerState<StaffShell> {
                   ),
                   Container(
                     width: 1,
-                    color: brightness == Brightness.light
-                        ? AppColors.lightBorder
-                        : AppColors.darkBorder,
+                    color: AppColors.calmBorder,
                   ),
                   Expanded(child: widget.child),
                 ],

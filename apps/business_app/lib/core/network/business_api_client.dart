@@ -164,18 +164,46 @@ class BusinessApiClient {
       );
 
   // Staff
+  Future<StaffRosterModel> getStaffRoster({String? businessId}) => _parser.getData(
+        () => _dio.get('/staff', queryParameters: {
+          if (businessId != null) 'businessId': businessId,
+        }),
+        StaffRosterModel.fromJson,
+      );
+
   Future<void> inviteStaff(StaffInviteRequest request) =>
       _parser.postVoid(() => _dio.post('/staff/invitations', data: request.toJson()));
 
-  Future<void> disableStaff(String userId) =>
-      _parser.postVoid(() => _dio.patch('/staff/$userId/disable'));
-
-  Future<void> updateStaffRole(String userId, String roleName) => _parser.postVoid(
-        () => _dio.put('/staff/$userId/role', data: {'roleName': roleName}),
+  Future<void> resendStaffInvite(String invitationId, {String? businessId}) =>
+      _parser.postVoid(
+        () => _dio.post(
+          '/staff/invitations/$invitationId/resend',
+          queryParameters: {if (businessId != null) 'businessId': businessId},
+        ),
       );
 
-  Future<void> assignStaffBranches(String userId, List<String> branchIds) => _parser.postVoid(
-        () => _dio.put('/staff/$userId/branches', data: {'branchIds': branchIds}),
+  Future<void> disableStaff(String userId, {String? businessId}) =>
+      _parser.postVoid(
+        () => _dio.patch(
+          '/staff/$userId/disable',
+          queryParameters: {if (businessId != null) 'businessId': businessId},
+        ),
+      );
+
+  Future<void> updateStaffRole(String userId, String roleName, {String? businessId}) =>
+      _parser.postVoid(
+        () => _dio.put('/staff/$userId/role', data: {
+          'roleName': roleName,
+          if (businessId != null) 'businessId': businessId,
+        }),
+      );
+
+  Future<void> assignStaffBranches(String userId, List<String> branchIds, {String? businessId}) =>
+      _parser.postVoid(
+        () => _dio.put('/staff/$userId/branches', data: {
+          'branchIds': branchIds,
+          if (businessId != null) 'businessId': businessId,
+        }),
       );
 
   // Business

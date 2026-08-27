@@ -57,7 +57,7 @@ class _OwnerQuickActionsSheet extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               _ActionTile(
                 icon: Icons.add,
-                label: 'Add queue',
+                label: 'Add waiting line',
                 onTap: () {
                   Navigator.pop(context);
                   context.push(AppRoutes.queues);
@@ -65,7 +65,7 @@ class _OwnerQuickActionsSheet extends StatelessWidget {
               ),
               _ActionTile(
                 icon: Icons.store_mall_directory_outlined,
-                label: 'Add branch',
+                label: 'Add location',
                 onTap: () {
                   Navigator.pop(context);
                   context.push(AppRoutes.branchAdd);
@@ -73,7 +73,7 @@ class _OwnerQuickActionsSheet extends StatelessWidget {
               ),
               _ActionTile(
                 icon: Icons.person_add_outlined,
-                label: 'Invite staff',
+                label: 'Invite team member',
                 onTap: () {
                   Navigator.pop(context);
                   context.push(AppRoutes.staff);
@@ -81,7 +81,7 @@ class _OwnerQuickActionsSheet extends StatelessWidget {
               ),
               _ActionTile(
                 icon: Icons.qr_code_2,
-                label: 'QR Center',
+                label: 'Guest join codes',
                 onTap: () {
                   Navigator.pop(context);
                   context.push(AppRoutes.restaurantQr);
@@ -89,7 +89,7 @@ class _OwnerQuickActionsSheet extends StatelessWidget {
               ),
               _ActionTile(
                 icon: Icons.bar_chart_outlined,
-                label: 'View reports',
+                label: 'View today’s numbers',
                 onTap: () {
                   Navigator.pop(context);
                   context.push(AppRoutes.reports);

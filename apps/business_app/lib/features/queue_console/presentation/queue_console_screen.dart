@@ -64,15 +64,15 @@ class QueueConsoleScreen extends ConsumerWidget {
         elevation: 0,
         title: async.when(
           data: (s) => Text(s.queue.name),
-          loading: () => const Text('Queue'),
-          error: (_, __) => const Text('Queue'),
+          loading: () => const Text('Live line'),
+          error: (_, __) => const Text('Live line'),
         ),
         actions: [
           IconButton(
-            tooltip: 'Queue QR — scan to join',
+            tooltip: 'Guest join code',
             icon: const Icon(Icons.qr_code_2, color: AppColors.primary),
             onPressed: () {
-              final name = ref.read(queueSnapshotProvider(queueId)).asData?.value.queue.name ?? 'Queue';
+              final name = ref.read(queueSnapshotProvider(queueId)).asData?.value.queue.name ?? 'Line';
               showQueueJoinQrSheet(
                 context,
                 queueId: queueId,
@@ -94,7 +94,7 @@ class QueueConsoleScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('We couldn\'t load this queue.'),
+                const Text('We couldn’t load this waiting line.'),
                 const SizedBox(height: AppSpacing.md),
                 CalmPrimaryButton(label: 'Try again', onPressed: refresh),
               ],
@@ -435,7 +435,7 @@ Future<void> transferEntry(
   await showDialog<void>(
     context: ref.context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Transfer to another queue'),
+      title: const Text('Transfer to another line'),
       content: DropdownButtonFormField<String>(
         initialValue: targetId,
         items: [for (final q in targets) DropdownMenuItem(value: q.id, child: Text(q.name))],
@@ -469,7 +469,7 @@ Future<void> showWalkIn(
   await showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Add customer'),
+      title: const Text('Add guest'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

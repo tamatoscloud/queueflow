@@ -27,23 +27,24 @@ class AppShell extends ConsumerStatefulWidget {
 
   final Widget child;
 
+  /// Primary jobs first (bottom nav on phone = first 5). Everything else is in More.
   static final destinations = [
     (icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Home', route: AppRoutes.dashboard),
-    (icon: Icons.queue_outlined, selectedIcon: Icons.queue, label: 'Queues', route: AppRoutes.queues),
-    (icon: Icons.qr_code_2_outlined, selectedIcon: Icons.qr_code_2, label: 'QR', route: AppRoutes.restaurantQr),
-    (icon: Icons.restaurant_menu_outlined, selectedIcon: Icons.restaurant_menu, label: 'Menu', route: AppRoutes.menu),
-    (icon: Icons.badge_outlined, selectedIcon: Icons.badge, label: 'Staff', route: AppRoutes.staff),
-    (icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: 'Reports', route: AppRoutes.reports),
-    (icon: Icons.store_outlined, selectedIcon: Icons.store, label: 'Branches', route: AppRoutes.branches),
-    (icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Customers', route: AppRoutes.customers),
-    (icon: Icons.star_outline, selectedIcon: Icons.star, label: 'Reviews', route: AppRoutes.reviews),
-    (icon: Icons.notifications_outlined, selectedIcon: Icons.notifications, label: 'Alerts', route: AppRoutes.notifications),
+    (icon: Icons.queue_outlined, selectedIcon: Icons.queue, label: 'Lines', route: AppRoutes.queues),
+    (icon: Icons.qr_code_2_outlined, selectedIcon: Icons.qr_code_2, label: 'Guest codes', route: AppRoutes.restaurantQr),
+    (icon: Icons.badge_outlined, selectedIcon: Icons.badge, label: 'Team', route: AppRoutes.staff),
     (icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings', route: AppRoutes.settings),
+    (icon: Icons.restaurant_menu_outlined, selectedIcon: Icons.restaurant_menu, label: 'Menu', route: AppRoutes.menu),
+    (icon: Icons.store_outlined, selectedIcon: Icons.store, label: 'Locations', route: AppRoutes.branches),
+    (icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Guests', route: AppRoutes.customers),
+    (icon: Icons.star_outline, selectedIcon: Icons.star, label: 'Reviews', route: AppRoutes.reviews),
+    (icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: 'Reports', route: AppRoutes.reports),
+    (icon: Icons.notifications_outlined, selectedIcon: Icons.notifications, label: 'Alerts', route: AppRoutes.notifications),
   ];
 
   static final developerDestinations = [
-    (icon: Icons.science_outlined, selectedIcon: Icons.science, label: 'Demo Simulator', route: AppRoutes.restaurantSimulator),
-    (icon: Icons.table_restaurant_outlined, selectedIcon: Icons.table_restaurant, label: 'Table Floor', route: AppRoutes.restaurantTables),
+    (icon: Icons.science_outlined, selectedIcon: Icons.science, label: 'Demo tools', route: AppRoutes.restaurantSimulator),
+    (icon: Icons.table_restaurant_outlined, selectedIcon: Icons.table_restaurant, label: 'Table layout', route: AppRoutes.restaurantTables),
   ];
 
   @override
@@ -81,6 +82,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                         'More',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
+                              color: AppColors.calmCharcoal,
                             ),
                       ),
                     ),
@@ -113,26 +115,14 @@ class _AppShellState extends ConsumerState<AppShell> {
               child: const Icon(Icons.storefront_outlined, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
-            Text(
-              _titleFor(location),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: product.accent.withValues(alpha: 0.1),
-                borderRadius: AppRadius.fullAll,
-              ),
+            Flexible(
               child: Text(
-                'OWNER',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: product.accent,
+                _titleFor(location),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
+                      color: AppColors.calmCharcoal,
                     ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

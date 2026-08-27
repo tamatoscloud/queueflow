@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import 'routes/app_router.dart';
-import 'theme/theme_mode_provider.dart';
 
 class BusinessApp extends ConsumerWidget {
   const BusinessApp({super.key});
@@ -12,14 +11,24 @@ class BusinessApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'QueueFlow Business',
+      title: 'QueueFlow',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode,
+      theme: AppTheme.light.copyWith(
+        scaffoldBackgroundColor: AppColors.calmIvory,
+        extensions: [
+          ...AppTheme.light.extensions.values,
+          const ProductTheme(identity: ProductIdentity.owner),
+        ],
+      ),
+      darkTheme: AppTheme.dark.copyWith(
+        extensions: [
+          ...AppTheme.dark.extensions.values,
+          const ProductTheme(identity: ProductIdentity.owner),
+        ],
+      ),
+      themeMode: ThemeMode.light,
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

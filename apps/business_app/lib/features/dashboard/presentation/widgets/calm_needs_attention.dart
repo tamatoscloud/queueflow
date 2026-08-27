@@ -38,7 +38,7 @@ List<AttentionItem> buildAttentionItems({
     final info = ServiceModeInfo.forMode(mode);
     if (waiting >= 8) {
       items.add(AttentionItem(
-        message: '${info.label} queue is getting busy — $waiting ${info.waitingLabel}',
+        message: '${info.label} line is getting busy — $waiting ${info.waitingLabel}',
         severity: AttentionSeverity.worthChecking,
       ));
     }
@@ -48,14 +48,14 @@ List<AttentionItem> buildAttentionItems({
   for (final q in paused) {
     final info = ServiceModeInfo.forMode(q.serviceMode);
     items.add(AttentionItem(
-      message: '${info.label} queue is paused',
+      message: '${info.label} line is paused',
       severity: AttentionSeverity.needsAttention,
     ));
   }
 
   if (summary.noShows >= 3) {
     items.add(AttentionItem(
-      message: '${summary.noShows} no-shows today',
+      message: '${summary.noShows} guests missed their turn today',
       severity: summary.noShows >= 5
           ? AttentionSeverity.needsAttention
           : AttentionSeverity.worthChecking,
@@ -65,7 +65,7 @@ List<AttentionItem> buildAttentionItems({
   final closed = queues.where((q) => q.isClosed).length;
   if (closed > 0 && queues.length == closed) {
     items.add(const AttentionItem(
-      message: 'All queues are closed',
+      message: 'All waiting lines are closed',
       severity: AttentionSeverity.needsAttention,
     ));
   }

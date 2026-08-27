@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
 
-import '../../../core/network/api_error_message.dart' show apiExceptionMessage;
 import '../../../core/network/business_api_client.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
 import '../../../shared/widgets/calm/calm_card.dart';
@@ -27,9 +26,9 @@ class ReportsScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(reportsProvider),
         child: async.when(
-          loading: () => const PageLoading(message: 'Loading reports…'),
+          loading: () => const PageLoading(message: 'Loading today’s numbers…'),
           error: (e, _) => PageError(
-            message: apiExceptionMessage(e),
+            message: 'We couldn’t load today’s numbers. Pull to try again.',
             onRetry: () => ref.invalidate(reportsProvider),
           ),
           data: (summary) {
@@ -38,8 +37,8 @@ class ReportsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: const [
                   EmptyStateView(
-                    title: 'No report data yet',
-                    message: 'Reports will appear once your queues have activity today.',
+                    title: 'Quiet so far today',
+                    message: 'Numbers appear here once guests start joining your lines.',
                     icon: Icons.bar_chart_outlined,
                   ),
                 ],
@@ -50,8 +49,8 @@ class ReportsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
                 CalmSectionLabel(
-                  'Today',
-                  subtitle: summary.date.isNotEmpty ? summary.date : 'Your restaurant today',
+                  'Today’s snapshot',
+                  subtitle: summary.date.isNotEmpty ? summary.date : 'How your restaurant is doing today',
                 ),
                 const SizedBox(height: AppSpacing.md),
                 CalmCard(
@@ -59,9 +58,9 @@ class ReportsScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Column(
                     children: [
-                      _ReportRow(label: 'Served', value: '${summary.totalServed}'),
+                      _ReportRow(label: 'Guests served', value: '${summary.totalServed}'),
                       const Divider(height: 24),
-                      _ReportRow(label: 'No-shows', value: '${summary.noShows}'),
+                      _ReportRow(label: 'Missed / no-shows', value: '${summary.noShows}'),
                       const Divider(height: 24),
                       _ReportRow(
                         label: 'Average wait',
@@ -75,7 +74,7 @@ class ReportsScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
                 CalmCard(
                   child: Text(
-                    'More reports will appear as more data becomes available. Weekly and monthly views are not available yet.',
+                    'This is today’s summary. More detailed weekly and monthly views are coming later.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.calmWarmGray,
                         ),

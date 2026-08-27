@@ -16,6 +16,39 @@ export class StaffRepository {
     });
   }
 
+  findRoleByName(roleName: string, businessId: string) {
+    return this.prisma.role.findFirst({
+      where: {
+        name: roleName.toUpperCase(),
+        deletedAt: null,
+        OR: [{ businessId }, { businessId: null, isSystem: true }],
+      },
+    });
+  }
+
+  listStaffUsers(businessId: string) {
+    return this.prisma.user.findMany({
+      where: { businessId, deletedAt: null },
+      orderBy: { fullName: 'asc' },
+      include: {
+        userRoles: { include: { role: true } },
+        userBranches: true,
+      },
+    });
+  }
+
+  listPendingInvitations(businessId: string) {
+    return this.prisma.staffInvitation.findMany({
+      where: {
+        businessId,
+        status: StaffInvitationStatus.PENDING,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { role: true },
+    });
+  }
+
   createInvitation(data: Prisma.StaffInvitationCreateInput) {
     return this.prisma.staffInvitation.create({ data });
   }

@@ -30,13 +30,13 @@ String apiExceptionMessage(Object error) {
   if (error is ApiException) {
     return error.when(
       noConnection: () =>
-          'Cannot reach the server. Check that the backend is running and the API URL is correct.',
-      timeout: () => 'Request timed out. The server may be slow or unreachable.',
-      unauthorized: () => 'Invalid email or password.',
-      forbidden: () => 'You do not have permission to perform this action.',
-      notFound: () => 'The requested resource was not found.',
+          'We can’t reach QueueFlow right now. Check your Wi‑Fi and try again.',
+      timeout: () => 'That’s taking longer than usual. Please try again in a moment.',
+      unauthorized: () => 'That email or password doesn’t look right.',
+      forbidden: () => 'You don’t have permission to do that.',
+      notFound: () => 'We couldn’t find what you were looking for.',
       server: (statusCode, message) => _sanitizeServerMessage(statusCode, message),
-      unknown: (_) => 'An unexpected error occurred. Please try again.',
+      unknown: (_) => 'Something went wrong. Please try again.',
     );
   }
   return error.toString();

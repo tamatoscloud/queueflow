@@ -101,8 +101,8 @@ class CalmOwnerHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             waiting > 0
-                ? '$waiting waiting across your queues'
-                : 'Queues are clear — ready for guests',
+                ? '$waiting guests waiting across your lines'
+                : 'No one waiting — ready for guests',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.calmWarmGray,
                 ),

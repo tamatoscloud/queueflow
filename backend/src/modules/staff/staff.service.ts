@@ -34,25 +34,66 @@ export class StaffService {
     }
   }
 
-  async invite(dto: InviteStaffDto, meta?: { ipAddress?: string; userAgent?: string }) {
-    this.businessContext.resolveBusinessId(dto.businessId);
+  private async resolveRole(businessId: string, roleId?: string, roleName?: string) {
+    if (roleId) {
+      const role = await this.staffRepo.findRole(roleId, businessId);
+      if (!role) throw new NotFoundException('Role not found');
+      return role;
+    }
+    if (roleName) {
+      const role = await this.staffRepo.findRoleByName(roleName, businessId);
+      if (!role) throw new NotFoundException(`Role "${roleName}" not found`);
+      return role;
+    }
+    throw new BadRequestException('Choose a role for this team member');
+  }
+
+  async list(businessId?: string) {
+    const resolvedBusinessId = this.businessContext.resolveBusinessId(businessId);
     this.assertStaffPermission();
 
-    const role = await this.staffRepo.findRole(dto.roleId, dto.businessId);
-    if (!role) {
-      throw new NotFoundException('Role not found');
-    }
+    const [users, invitations] = await Promise.all([
+      this.staffRepo.listStaffUsers(resolvedBusinessId),
+      this.staffRepo.listPendingInvitations(resolvedBusinessId),
+    ]);
 
-    const existing = await this.staffRepo.findPendingInvitation(dto.businessId, dto.email);
+    return {
+      members: users.map((u) => ({
+        id: u.id,
+        email: u.email,
+        fullName: u.fullName,
+        status: u.status,
+        role: u.userRoles[0]?.role.name ?? 'STAFF',
+        roleName: u.userRoles[0]?.role.name ?? 'STAFF',
+        branchIds: u.userBranches.map((b) => b.branchId),
+      })),
+      invitations: invitations.map((inv) => ({
+        id: inv.id,
+        email: inv.email,
+        status: inv.status,
+        role: inv.role.name,
+        roleName: inv.role.name,
+        expiresAt: inv.expiresAt,
+      })),
+    };
+  }
+
+  async invite(dto: InviteStaffDto, meta?: { ipAddress?: string; userAgent?: string }) {
+    const businessId = this.businessContext.resolveBusinessId(dto.businessId);
+    this.assertStaffPermission();
+
+    const role = await this.resolveRole(businessId, dto.roleId, dto.roleName);
+
+    const existing = await this.staffRepo.findPendingInvitation(businessId, dto.email);
     if (existing) {
-      throw new ConflictException('A pending invitation already exists for this email');
+      throw new ConflictException('An invite is already waiting for this email');
     }
 
     const token = generateOpaqueToken(32);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const invitation = await this.staffRepo.createInvitation({
-      business: { connect: { id: dto.businessId } },
-      role: { connect: { id: dto.roleId } },
+      business: { connect: { id: businessId } },
+      role: { connect: { id: role.id } },
       ...(dto.branchId ? { branch: { connect: { id: dto.branchId } } } : {}),
       email: dto.email.toLowerCase(),
       token,
@@ -62,12 +103,12 @@ export class StaffService {
     });
 
     await this.audit.log({
-      businessId: dto.businessId,
+      businessId,
       actorUserId: this.businessContext.userId,
       action: 'staff.invited',
       entityType: 'staff_invitation',
       entityId: invitation.id,
-      afterData: { email: dto.email, roleId: dto.roleId },
+      afterData: { email: dto.email, roleId: role.id, fullName: dto.fullName },
       ipAddress: meta?.ipAddress,
       userAgent: meta?.userAgent,
     });
@@ -131,12 +172,12 @@ export class StaffService {
     return { userId: user.id, businessId: invitation.businessId };
   }
 
-  async resend(invitationId: string, businessId: string, meta?: { ipAddress?: string; userAgent?: string }) {
-    this.businessContext.resolveBusinessId(businessId);
+  async resend(invitationId: string, businessId?: string, meta?: { ipAddress?: string; userAgent?: string }) {
+    const resolvedBusinessId = this.businessContext.resolveBusinessId(businessId);
     this.assertStaffPermission();
 
     const invitation = await this.staffRepo.findInvitationById(invitationId);
-    if (!invitation || invitation.businessId !== businessId) {
+    if (!invitation || invitation.businessId !== resolvedBusinessId) {
       throw new NotFoundException('Invitation not found');
     }
     if (invitation.status !== StaffInvitationStatus.PENDING) {
@@ -150,7 +191,7 @@ export class StaffService {
     });
 
     await this.audit.log({
-      businessId,
+      businessId: resolvedBusinessId,
       actorUserId: this.businessContext.userId,
       action: 'staff.invitation_resent',
       entityType: 'staff_invitation',
@@ -166,18 +207,18 @@ export class StaffService {
     return payload;
   }
 
-  async disable(userId: string, businessId: string, meta?: { ipAddress?: string; userAgent?: string }) {
-    this.businessContext.resolveBusinessId(businessId);
+  async disable(userId: string, businessId?: string, meta?: { ipAddress?: string; userAgent?: string }) {
+    const resolvedBusinessId = this.businessContext.resolveBusinessId(businessId);
     this.assertStaffPermission();
 
-    const user = await this.staffRepo.findStaffUser(userId, businessId);
+    const user = await this.staffRepo.findStaffUser(userId, resolvedBusinessId);
     if (!user) {
       throw new NotFoundException('Staff user not found');
     }
 
     await this.staffRepo.disableUser(userId);
     await this.audit.log({
-      businessId,
+      businessId: resolvedBusinessId,
       actorUserId: this.businessContext.userId,
       action: 'staff.disabled',
       entityType: 'user',
@@ -193,32 +234,29 @@ export class StaffService {
     dto: ChangeStaffRoleDto,
     meta?: { ipAddress?: string; userAgent?: string },
   ) {
-    this.businessContext.resolveBusinessId(dto.businessId);
+    const businessId = this.businessContext.resolveBusinessId(dto.businessId);
     if (!this.businessContext.hasPermission(Permission.STAFF_MANAGE_ROLES)) {
       throw new ForbiddenException('Insufficient permissions');
     }
 
-    const user = await this.staffRepo.findStaffUser(userId, dto.businessId);
+    const user = await this.staffRepo.findStaffUser(userId, businessId);
     if (!user) {
       throw new NotFoundException('Staff user not found');
     }
-    const role = await this.staffRepo.findRole(dto.roleId, dto.businessId);
-    if (!role) {
-      throw new NotFoundException('Role not found');
-    }
+    const role = await this.resolveRole(businessId, dto.roleId, dto.roleName);
 
-    await this.staffRepo.replaceUserRoles(userId, dto.roleId, dto.businessId, this.businessContext.userId);
+    await this.staffRepo.replaceUserRoles(userId, role.id, businessId, this.businessContext.userId);
     await this.audit.log({
-      businessId: dto.businessId,
+      businessId,
       actorUserId: this.businessContext.userId,
       action: 'staff.role_changed',
       entityType: 'user',
       entityId: userId,
-      afterData: { roleId: dto.roleId },
+      afterData: { roleId: role.id, roleName: role.name },
       ipAddress: meta?.ipAddress,
       userAgent: meta?.userAgent,
     });
-    return { userId, roleId: dto.roleId };
+    return { userId, roleId: role.id, roleName: role.name };
   }
 
   async assignBranches(
@@ -226,12 +264,12 @@ export class StaffService {
     dto: AssignBranchesDto,
     meta?: { ipAddress?: string; userAgent?: string },
   ) {
-    this.businessContext.resolveBusinessId(dto.businessId);
+    const businessId = this.businessContext.resolveBusinessId(dto.businessId);
     if (!this.businessContext.hasPermission(Permission.STAFF_MANAGE_ROLES)) {
       throw new ForbiddenException('Insufficient permissions');
     }
 
-    const user = await this.staffRepo.findStaffUser(userId, dto.businessId);
+    const user = await this.staffRepo.findStaffUser(userId, businessId);
     if (!user) {
       throw new NotFoundException('Staff user not found');
     }
@@ -243,7 +281,7 @@ export class StaffService {
       this.businessContext.userId,
     );
     await this.audit.log({
-      businessId: dto.businessId,
+      businessId,
       actorUserId: this.businessContext.userId,
       action: 'staff.branches_assigned',
       entityType: 'user',

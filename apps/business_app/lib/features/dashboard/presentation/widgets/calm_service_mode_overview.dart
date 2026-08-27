@@ -127,7 +127,7 @@ class CalmServiceModeOverview extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CalmSectionLabel('Service modes'),
+        const CalmSectionLabel('Ways guests are served'),
         const SizedBox(height: AppSpacing.sm),
         ...cards.map(
           (c) => Padding(

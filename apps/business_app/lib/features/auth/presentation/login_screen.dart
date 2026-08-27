@@ -1,10 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:queueflow_theme/queueflow_theme.dart';
-import 'package:queueflow_ui/queueflow_ui.dart';
-import 'package:queueflow_utils/queueflow_utils.dart';
-import 'package:queueflow_widgets/queueflow_widgets.dart';
+import 'package:queueflow_shared/queueflow_shared.dart';
 
 import '../../../core/network/connection_diagnostics.dart';
 import '../../../core/routing/app_routes.dart';
@@ -31,6 +29,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  String _friendlyAuthError(Object e) {
+    final raw = apiExceptionMessage(e);
+    final lower = raw.toLowerCase();
+    if (lower.contains('invalid email') || lower.contains('unauthorized') || lower.contains('password')) {
+      return 'That email or password doesn’t look right. Please try again.';
+    }
+    if (lower.contains('reach') || lower.contains('timeout') || lower.contains('connection')) {
+      return 'We can’t reach QueueFlow right now. Check your Wi‑Fi and try again.';
+    }
+    return 'Something went wrong signing in. Please try again.';
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -44,7 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
       if (mounted) context.go(AppRoutes.dashboard);
     } catch (e) {
-      setState(() => _error = apiExceptionMessage(e));
+      setState(() => _error = _friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -52,102 +62,97 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final diagnostics = ref.watch(connectionDiagnosticsProvider);
+    final config = ref.watch(appConfigProvider);
+    final showDiagnostics = kDebugMode || !config.flavor.isProduction;
+    final diagnostics = showDiagnostics ? ref.watch(connectionDiagnosticsProvider) : null;
 
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
-      body: Column(
-        children: [
-          const GradientHeader(
-            title: 'QueueFlow Business',
-            subtitle: 'Sign in to manage your queues',
-            compact: true,
-          ),
-          Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: AppCard(
+      backgroundColor: AppColors.calmIvory,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.calmViolet,
+                      borderRadius: AppRadius.lgAll,
+                    ),
+                    child: const Icon(Icons.storefront_outlined, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'QueueFlow',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.calmCharcoal,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Sign in to manage your restaurant waiting lines',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.calmWarmGray,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  AppCard(
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          diagnostics.when(
-                            loading: () => const LinearProgressIndicator(
-                              color: AppColors.primary,
-                              backgroundColor: AppColors.neutral100,
-                            ),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (result) => switch (result) {
-                              ConnectionOk(:final apiBaseUrl, :final latencyMs) => Container(
-                                  padding: const EdgeInsets.all(AppSpacing.sm),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.successLight,
-                                    borderRadius: AppRadius.lgAll,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.check_circle_outline,
-                                          size: 18, color: AppColors.success),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Connected to $apiBaseUrl (${latencyMs}ms)',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(color: AppColors.success),
+                          if (diagnostics != null) ...[
+                            diagnostics.when(
+                              loading: () => const LinearProgressIndicator(
+                                color: AppColors.primary,
+                                backgroundColor: AppColors.neutral100,
+                              ),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (result) => switch (result) {
+                                ConnectionOk() => const SizedBox.shrink(),
+                                ConnectionFailed() => Container(
+                                    padding: const EdgeInsets.all(AppSpacing.sm),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.dangerLight,
+                                      borderRadius: AppRadius.lgAll,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Can’t connect right now',
+                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                                color: AppColors.danger,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ConnectionFailed(:final apiBaseUrl, :final message, :final hint) =>
-                                AppCard(
-                                  variant: AppCardVariant.outlined,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.cloud_off_outlined,
-                                              color: AppColors.danger, size: 20),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Cannot reach backend',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(color: AppColors.danger),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(apiBaseUrl,
-                                          style: Theme.of(context).textTheme.bodySmall),
-                                      const SizedBox(height: 4),
-                                      Text(message),
-                                      if (hint != null) ...[
                                         const SizedBox(height: 4),
-                                        Text(hint,
-                                            style: Theme.of(context).textTheme.bodySmall),
+                                        Text(
+                                          'Check your Wi‑Fi, then try again.',
+                                          style: Theme.of(context).textTheme.bodySmall,
+                                        ),
+                                        AppButton(
+                                          label: 'Try again',
+                                          variant: AppButtonVariant.ghost,
+                                          size: AppButtonSize.sm,
+                                          onPressed: () =>
+                                              ref.invalidate(connectionDiagnosticsProvider),
+                                        ),
                                       ],
-                                      AppButton(
-                                        label: 'Retry connection',
-                                        variant: AppButtonVariant.ghost,
-                                        size: AppButtonSize.sm,
-                                        onPressed: () =>
-                                            ref.invalidate(connectionDiagnosticsProvider),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.md),
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
                           AppTextField(
                             controller: _email,
                             label: 'Email',
@@ -193,11 +198,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

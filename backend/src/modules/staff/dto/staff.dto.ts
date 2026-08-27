@@ -8,20 +8,38 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class InviteStaffDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
   @IsUUID('4')
-  businessId!: string;
+  businessId?: string;
 
   @ApiProperty()
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ description: 'Display name used when the invite is accepted' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  fullName?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @ValidateIf((o: InviteStaffDto) => !o.roleName)
   @IsUUID('4')
-  roleId!: string;
+  roleId?: string;
+
+  @ApiPropertyOptional({
+    description: 'System role name (MANAGER, RECEPTIONIST, STAFF, VIEWER)',
+    example: 'RECEPTIONIST',
+  })
+  @ValidateIf((o: InviteStaffDto) => !o.roleId)
+  @IsString()
+  roleName?: string;
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
@@ -47,19 +65,27 @@ export class AcceptInvitationDto {
 }
 
 export class ChangeStaffRoleDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid' })
+  @ValidateIf((o: ChangeStaffRoleDto) => !o.roleName)
   @IsUUID('4')
-  roleId!: string;
+  roleId?: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional()
+  @ValidateIf((o: ChangeStaffRoleDto) => !o.roleId)
+  @IsString()
+  roleName?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
   @IsUUID('4')
-  businessId!: string;
+  businessId?: string;
 }
 
 export class AssignBranchesDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
   @IsUUID('4')
-  businessId!: string;
+  businessId?: string;
 
   @ApiProperty({ type: [String], format: 'uuid' })
   @IsArray()

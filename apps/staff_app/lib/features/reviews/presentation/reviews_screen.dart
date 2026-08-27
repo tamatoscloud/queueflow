@@ -29,74 +29,82 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(reviewsProvider(_ratingFilter));
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(reviewsProvider(_ratingFilter));
-        await ref.read(reviewsProvider(_ratingFilter).future);
-      },
-      child: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          Text(
-            'Reviews',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Guest ratings after their visit',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutral500),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _FilterChip(
-                  label: 'All',
-                  selected: _ratingFilter == null,
-                  onTap: () => setState(() => _ratingFilter = null),
-                ),
-                for (var i = 5; i >= 1; i--)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: _FilterChip(
-                      label: '$i ★',
-                      selected: _ratingFilter == i,
-                      onTap: () => setState(() => _ratingFilter = i),
-                    ),
+    return ColoredBox(
+      color: AppColors.calmIvory,
+      child: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(reviewsProvider(_ratingFilter));
+          await ref.read(reviewsProvider(_ratingFilter).future);
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            Text(
+              'Reviews',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.calmCharcoal,
                   ),
-              ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          async.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            const SizedBox(height: 4),
+            Text(
+              'Guest ratings after their visit',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.calmWarmGray,
+                  ),
             ),
-            error: (_, __) => PageError(
-              message: "We couldn't load reviews. Pull to retry.",
-              onRetry: () => ref.invalidate(reviewsProvider(_ratingFilter)),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return const EmptyStateView(
-                  title: 'No reviews yet',
-                  message: 'When guests rate their visit, reviews show up here.',
-                  icon: Icons.star_outline,
-                );
-              }
-              return Column(
+            const SizedBox(height: AppSpacing.md),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
                 children: [
-                  for (final item in items) ...[
-                    _ReviewCard(item: item),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
+                  _FilterChip(
+                    label: 'All',
+                    selected: _ratingFilter == null,
+                    onTap: () => setState(() => _ratingFilter = null),
+                  ),
+                  for (var i = 5; i >= 1; i--)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _FilterChip(
+                        label: '$i ★',
+                        selected: _ratingFilter == i,
+                        onTap: () => setState(() => _ratingFilter = i),
+                      ),
+                    ),
                 ],
-              );
-            },
-          ),
-        ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            async.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              ),
+              error: (_, __) => PageError(
+                message: "We couldn't load reviews. Pull to retry.",
+                onRetry: () => ref.invalidate(reviewsProvider(_ratingFilter)),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return const EmptyStateView(
+                    title: 'No reviews yet',
+                    message: 'When guests rate their visit, reviews show up here.',
+                    icon: Icons.star_outline,
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final item in items) ...[
+                      _ReviewCard(item: item),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -12,10 +12,10 @@ class CalmQuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      (icon: Icons.qr_code_2_outlined, label: 'QR Center', route: AppRoutes.restaurantQr),
-      (icon: Icons.queue_outlined, label: 'Queues', route: AppRoutes.queues),
-      (icon: Icons.badge_outlined, label: 'Staff', route: AppRoutes.staff),
-      (icon: Icons.bar_chart_outlined, label: 'Reports', route: AppRoutes.reports),
+      (icon: Icons.qr_code_2_outlined, label: 'Guest codes', route: AppRoutes.restaurantQr),
+      (icon: Icons.queue_outlined, label: 'Waiting lines', route: AppRoutes.queues),
+      (icon: Icons.badge_outlined, label: 'Invite team', route: AppRoutes.staff),
+      (icon: Icons.bar_chart_outlined, label: 'Today’s numbers', route: AppRoutes.reports),
     ];
 
     return Column(

@@ -9,8 +9,10 @@ import 'package:queueflow_widgets/queueflow_widgets.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/business_api_client.dart';
 import '../../../core/routing/staff_routes.dart';
+import '../../../shared/widgets/calm/calm_card.dart';
 
-final guestsListProvider = FutureProvider.autoDispose.family<List<CustomerModel>, String>((ref, q) async {
+final guestsListProvider =
+    FutureProvider.autoDispose.family<List<CustomerModel>, String>((ref, q) async {
   final api = ref.watch(businessApiClientProvider);
   final query = q.trim();
   if (query.isEmpty) {
@@ -48,8 +50,11 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(guestsListProvider(_appliedQuery));
 
-    return Scaffold(
-      body: RefreshIndicator(
+    return ColoredBox(
+      color: AppColors.calmIvory,
+      child: RefreshIndicator(
+        color: AppColors.primary,
+        backgroundColor: Colors.white,
         onRefresh: () async {
           ref.invalidate(guestsListProvider(_appliedQuery));
           await ref.read(guestsListProvider(_appliedQuery).future);
@@ -59,27 +64,56 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           children: [
             Text(
               'Guests',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.calmCharcoal,
+                  ),
             ),
             const SizedBox(height: 4),
             Text(
               _appliedQuery.isEmpty
                   ? 'People currently waiting or called'
                   : 'Results for “$_appliedQuery”',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutral500),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.calmWarmGray,
+                  ),
             ),
             const SizedBox(height: AppSpacing.md),
-            AppCard(
+            CalmCard(
+              backgroundColor: Colors.white,
               child: TextField(
                 controller: _search,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.calmCharcoal,
+                    ),
+                cursorColor: AppColors.primary,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   hintText: 'Search name, phone or ticket #',
-                  border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 28),
+                  hintStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.calmWarmGray,
+                      ),
+                  filled: true,
+                  fillColor: AppColors.calmLilac.withValues(alpha: 0.35),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.calmBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.arrow_forward),
+                    icon: const Icon(Icons.arrow_forward, color: AppColors.calmCharcoal),
                     onPressed: _applySearch,
                   ),
                 ),
@@ -90,7 +124,9 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             async.when(
               loading: () => const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
               ),
               error: (_, __) => PageError(
                 message: "We couldn't load guests. Pull to retry.",
@@ -135,7 +171,8 @@ class _GuestCard extends StatelessWidget {
       if (guest.queueName != null && guest.queueName!.isNotEmpty) guest.queueName!,
     ].where((s) => s.isNotEmpty).join(' · ');
 
-    return AppCard(
+    return CalmCard(
+      backgroundColor: Colors.white,
       onTap: () => context.push(StaffRoutes.customerDetail(guest.id)),
       child: Row(
         children: [
@@ -147,24 +184,32 @@ class _GuestCard extends StatelessWidget {
               children: [
                 Text(
                   guest.fullName.isEmpty ? 'Guest' : guest.fullName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.calmCharcoal,
+                      ),
                 ),
                 if (subtitle.isNotEmpty)
-                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.calmWarmGray,
+                        ),
+                  ),
               ],
             ),
           ),
           if (guest.activeStatus != null && guest.activeStatus!.isNotEmpty)
             StatusBadge(status: guest.activeStatus!),
-          const Icon(Icons.chevron_right, color: AppColors.neutral400),
+          const Icon(Icons.chevron_right, color: AppColors.calmWarmGray),
         ],
       ),
     );
   }
 }
 
-final customerDetailProvider =
-    FutureProvider.autoDispose.family<(CustomerModel, List<CustomerHistoryEntry>), String>((ref, id) async {
+final customerDetailProvider = FutureProvider.autoDispose
+    .family<(CustomerModel, List<CustomerHistoryEntry>), String>((ref, id) async {
   final api = ref.watch(businessApiClientProvider);
   final customer = await api.getCustomer(id);
   final history = await api.getCustomerHistory(id);
@@ -186,7 +231,19 @@ class CustomerDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(customerDetailProvider(customerId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Guest')),
+      backgroundColor: AppColors.calmIvory,
+      appBar: AppBar(
+        backgroundColor: AppColors.calmIvory,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: AppColors.calmCharcoal,
+        title: Text(
+          'Guest',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.calmCharcoal,
+              ),
+        ),
+      ),
       body: async.when(
         loading: () => const PageLoading(),
         error: (e, _) => PageError(
@@ -196,14 +253,17 @@ class CustomerDetailScreen extends ConsumerWidget {
         data: (data) {
           final (customer, history) = data;
           final active = history
-              .where((h) => h.status == 'WAITING' || h.status == 'CALLED' || h.status == 'HOLDING')
+              .where((h) =>
+                  h.status == 'WAITING' || h.status == 'CALLED' || h.status == 'HOLDING')
               .toList();
-          final latest = active.isNotEmpty ? active.first : (history.isNotEmpty ? history.first : null);
+          final latest =
+              active.isNotEmpty ? active.first : (history.isNotEmpty ? history.first : null);
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
-              GlassPanel(
+              CalmCard(
+                backgroundColor: Colors.white,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -217,12 +277,17 @@ class CustomerDetailScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 customer.fullName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.w800),
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.calmCharcoal,
+                                    ),
                               ),
-                              Text(customer.phone, style: Theme.of(context).textTheme.bodyLarge),
+                              Text(
+                                customer.phone,
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: AppColors.calmWarmGray,
+                                    ),
+                              ),
                             ],
                           ),
                         ),
@@ -230,12 +295,15 @@ class CustomerDetailScreen extends ConsumerWidget {
                     ),
                     if (latest != null) ...[
                       const SizedBox(height: AppSpacing.lg),
-                      const Divider(),
+                      const Divider(color: AppColors.calmBorder),
                       const SizedBox(height: AppSpacing.sm),
                       _DetailRow(label: 'Queue', value: latest.queueName),
                       if (latest.displayCode != null && latest.displayCode!.isNotEmpty)
                         _DetailRow(label: 'Ticket', value: '#${latest.displayCode}'),
-                      _DetailRow(label: 'Joined', value: DateFormat.jm().format(latest.joinedAt)),
+                      _DetailRow(
+                        label: 'Joined',
+                        value: DateFormat.jm().format(latest.joinedAt),
+                      ),
                       _DetailRow(label: 'Status', value: latest.status),
                       const SizedBox(height: AppSpacing.md),
                       AppButton(
@@ -248,7 +316,14 @@ class CustomerDetailScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              const SectionHeader(title: 'Queue history'),
+              Text(
+                'Queue history',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.calmCharcoal,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               if (history.isEmpty)
                 const EmptyStateView(
                   title: 'No history',
@@ -259,7 +334,8 @@ class CustomerDetailScreen extends ConsumerWidget {
                 ...history.map(
                   (h) => Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: AppCard(
+                    child: CalmCard(
+                      backgroundColor: Colors.white,
                       child: Row(
                         children: [
                           Expanded(
@@ -268,14 +344,16 @@ class CustomerDetailScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   h.queueName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.calmCharcoal,
+                                      ),
                                 ),
                                 Text(
                                   DateFormat.yMMMd().add_jm().format(h.joinedAt),
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppColors.calmWarmGray,
+                                      ),
                                 ),
                               ],
                             ),
@@ -307,10 +385,21 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500)),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.calmWarmGray,
+                  ),
+            ),
           ),
           Expanded(
-            child: Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.calmCharcoal,
+                  ),
+            ),
           ),
         ],
       ),

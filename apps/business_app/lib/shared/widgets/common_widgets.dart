@@ -21,12 +21,12 @@ class RealtimeStatusChip extends ConsumerWidget {
             ),
           RealtimeStatus.connecting => (
               AppBadgeVariant.warning,
-              'Connecting',
+              'Updating…',
               Icons.sync,
             ),
           RealtimeStatus.reconnecting => (
               AppBadgeVariant.warning,
-              'Reconnecting',
+              'Updating…',
               Icons.sync,
             ),
           RealtimeStatus.disconnected => (
@@ -78,7 +78,7 @@ class BranchSwitcher extends ConsumerWidget {
               const Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
-                'All branches',
+                'All locations',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
@@ -95,7 +95,7 @@ class BranchSwitcher extends ConsumerWidget {
                 children: [
                   Icon(Icons.hub_outlined, size: 18, color: AppColors.neutral500),
                   SizedBox(width: 8),
-                  Text('All branches'),
+                  Text('All locations'),
                 ],
               ),
             ),

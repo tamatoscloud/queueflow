@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// App-level UI preference — not a design token (tokens live in
-/// `packages/theme`). Defaults to system; a future settings feature will
-/// persist the user's choice via `StorageService`.
+/// Staff floor UI is designed for the calm light (ivory) theme.
+/// System dark mode was making Guests/Reviews cards unreadable against the shell.
 final StateProvider<ThemeMode> themeModeProvider = StateProvider<ThemeMode>(
-  (ref) => ThemeMode.system,
+  (ref) => ThemeMode.light,
 );

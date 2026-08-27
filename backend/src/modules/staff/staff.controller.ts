@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -33,6 +34,14 @@ function requestMeta(req: Request) {
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
+  @Get()
+  @RequirePermissions(Permission.STAFF_INVITE)
+  @ApiOperation({ summary: 'List team members and pending invitations' })
+  @ApiStandardOkResponse('Staff roster')
+  list(@Query('businessId') businessId?: string) {
+    return this.staffService.list(businessId);
+  }
+
   @Post('invitations')
   @RequirePermissions(Permission.STAFF_INVITE)
   @ApiOperation({ summary: 'Invite staff member' })
@@ -53,7 +62,7 @@ export class StaffController {
   @ApiOperation({ summary: 'Resend pending invitation' })
   resend(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('businessId', ParseUUIDPipe) businessId: string,
+    @Query('businessId') businessId: string | undefined,
     @Req() req: Request,
   ) {
     return this.staffService.resend(id, businessId, requestMeta(req));
@@ -64,7 +73,7 @@ export class StaffController {
   @ApiOperation({ summary: 'Disable staff account' })
   disable(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Query('businessId', ParseUUIDPipe) businessId: string,
+    @Query('businessId') businessId: string | undefined,
     @Req() req: Request,
   ) {
     return this.staffService.disable(userId, businessId, requestMeta(req));
