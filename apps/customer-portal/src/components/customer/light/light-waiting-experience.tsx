@@ -105,19 +105,8 @@ export function LightWaitingExperience({
 
   const requestBrowserNotify = async () => {
     if (typeof window === 'undefined') return;
-    if (!('Notification' in window)) {
-      setNotifyError('Notifications are not supported in this browser.');
-      return;
-    }
     if (!window.isSecureContext) {
       setNotifyError('Notifications need HTTPS.');
-      return;
-    }
-    if (Notification.permission === 'denied') {
-      setNotifyError(
-        'Notifications are blocked. Allow them in your browser site settings, then try again.',
-      );
-      setBrowserNotify(false);
       return;
     }
     setNotifyBusy(true);
@@ -127,12 +116,15 @@ export function LightWaitingExperience({
         '@/lib/notifications/web-push'
       );
       const result = await enableGuestPushNotifications(tracking.entry.id);
-      const granted = result.ok && Notification.permission === 'granted';
+      const granted =
+        result.ok &&
+        'Notification' in window &&
+        Notification.permission === 'granted';
       setBrowserNotify(granted);
       if (granted) {
         try {
           new Notification("You're set", {
-            body: "We'll alert you here when staff calls your number — even if this tab is in the background.",
+            body: "We'll alert you when staff calls your number — even if this tab is in the background.",
             tag: `queueflow-ready-${tracking.entry.id}`,
           });
         } catch {
@@ -290,7 +282,8 @@ export function LightWaitingExperience({
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-bold text-black">Browser Notifications</p>
               <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
-                Alert you on this device when staff calls your number (keep this tab open).
+                Alert you when staff calls. On iPhone: Add to Home Screen first. Live updates
+                still work while this page is open.
               </p>
               <button
                 type="button"
