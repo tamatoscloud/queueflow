@@ -45,6 +45,13 @@ class QueueSnapshotModel {
       generatedAt: DateTime.tryParse(json['generatedAt'] as String? ?? '') ?? DateTime.now(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'queue': queue.toJson(),
+        'entries': entries.map((e) => e.toJson()).toList(),
+        'metrics': metrics.toJson(),
+        'generatedAt': generatedAt.toIso8601String(),
+      };
 }
 
 class QueueMetricsModel {
@@ -69,6 +76,14 @@ class QueueMetricsModel {
         averageWaitMinutes: _metricInt(json['averageWaitMinutes']),
         noShowCount: _metricInt(json['noShowCount']),
       );
+
+  Map<String, dynamic> toJson() => {
+        'waitingCount': waitingCount,
+        'calledCount': calledCount,
+        'completedToday': completedToday,
+        'averageWaitMinutes': averageWaitMinutes,
+        'noShowCount': noShowCount,
+      };
 }
 
 int _metricInt(dynamic value) {

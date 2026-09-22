@@ -49,6 +49,11 @@ class _StaffRealtimeFeedbackState extends ConsumerState<StaffRealtimeFeedback> {
     if (messenger == null) return;
 
     HapticFeedback.mediumImpact();
+    // Alert beep for join/call so staff notice when looking away from the board.
+    // Full FCM needs Firebase project config per build; in-app sound covers foreground ops.
+    if (event.event == 'CustomerJoined' || event.event == 'CustomerCalled') {
+      SystemSound.play(SystemSoundType.alert);
+    }
     messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(

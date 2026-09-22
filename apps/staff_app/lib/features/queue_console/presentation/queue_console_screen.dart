@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
+import '../../../core/cache/cached_fetch.dart';
+import '../../../core/cache/offline_cache_service.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/api_error_message.dart' show apiExceptionMessage;
 import '../../../core/network/business_api_client.dart';
@@ -19,10 +21,15 @@ import '../../../shared/widgets/staff/staff_empty_states.dart';
 
 final queueSnapshotProvider =
     FutureProvider.autoDispose.family<QueueSnapshotModel, String>((ref, queueId) async {
-  return ref
-      .watch(businessApiClientProvider)
-      .getQueueSnapshot(queueId)
-      .timeout(const Duration(seconds: 25));
+  final api = ref.watch(businessApiClientProvider);
+  final cache = ref.watch(offlineCacheProvider);
+  return cachedFetch(
+    cache: cache,
+    cacheKey: 'queue-snapshot:$queueId',
+    fetch: () => api.getQueueSnapshot(queueId).timeout(const Duration(seconds: 25)),
+    fromJson: QueueSnapshotModel.fromJson,
+    toJson: (s) => s.toJson(),
+  );
 });
 
 final queueConsoleRealtimeBindingProvider =
@@ -726,69 +733,159 @@ Future<void> showWalkIn(
   String queueId,
   Future<void> Function() refresh,
 ) async {
-  final name = TextEditingController();
-  final phone = TextEditingController();
-  var submitting = false;
   await showDialog<void>(
     context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setLocal) => AlertDialog(
-        title: const Text('Add customer'),
-        content: Column(
+    builder: (ctx) => _WalkInDialog(queueId: queueId, refresh: refresh),
+  );
+}
+
+class _WalkInDialog extends ConsumerStatefulWidget {
+  const _WalkInDialog({required this.queueId, required this.refresh});
+
+  final String queueId;
+  final Future<void> Function() refresh;
+
+  @override
+  ConsumerState<_WalkInDialog> createState() => _WalkInDialogState();
+}
+
+class _WalkInDialogState extends ConsumerState<_WalkInDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  int _partySize = 1;
+  bool _submitting = false;
+
+  static const _maxParty = 12;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  String? _validateName(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Name is required';
+    if (v.length > 120) return 'Name is too long';
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Phone is required';
+    final digits = v.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 7) return 'Enter a valid phone number';
+    return null;
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(businessApiClientProvider).walkIn(widget.queueId, {
+        'fullName': _name.text.trim(),
+        'phone': _phone.text.trim(),
+        'partySize': _partySize,
+        'notificationPreference': 'SMS',
+      });
+      if (mounted) Navigator.pop(context);
+      await widget.refresh();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiExceptionMessage(e))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add walk-in guest'),
+      content: Form(
+        key: _formKey,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: name,
+            TextFormField(
+              controller: _name,
               decoration: const InputDecoration(labelText: 'Name'),
               textInputAction: TextInputAction.next,
-              enabled: !submitting,
+              textCapitalization: TextCapitalization.words,
+              enabled: !_submitting,
+              validator: _validateName,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
-            TextField(
-              controller: phone,
-              decoration: const InputDecoration(labelText: 'Phone'),
+            TextFormField(
+              controller: _phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone',
+                hintText: '+92300…',
+              ),
               keyboardType: TextInputType.phone,
-              enabled: !submitting,
+              textInputAction: TextInputAction.done,
+              enabled: !_submitting,
+              validator: _validatePhone,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              onFieldSubmitted: (_) => _submit(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Party size',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                IconButton.filledTonal(
+                  onPressed: _submitting || _partySize <= 1
+                      ? null
+                      : () => setState(() => _partySize--),
+                  icon: const Icon(Icons.remove),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '$_partySize',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: _submitting || _partySize >= _maxParty
+                      ? null
+                      : () => setState(() => _partySize++),
+                  icon: const Icon(Icons.add),
+                ),
+              ],
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: submitting ? null : () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: submitting
-                ? null
-                : () async {
-                    setLocal(() => submitting = true);
-                    try {
-                      await ref.read(businessApiClientProvider).walkIn(queueId, {
-                        'fullName': name.text.trim(),
-                        'phone': phone.text.trim(),
-                        'partySize': 1,
-                        'notificationPreference': 'SMS',
-                      });
-                      if (ctx.mounted) Navigator.pop(ctx);
-                      await refresh();
-                    } catch (e) {
-                      setLocal(() => submitting = false);
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text(apiExceptionMessage(e))),
-                        );
-                      }
-                    }
-                  },
-            child: submitting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Add'),
-          ),
-        ],
       ),
-    ),
-  );
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Add'),
+        ),
+      ],
+    );
+  }
 }

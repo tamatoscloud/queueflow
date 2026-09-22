@@ -6,6 +6,8 @@ import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
 
+import '../../core/cache/cached_fetch.dart';
+import '../../core/cache/offline_cache_service.dart';
 import '../../core/connectivity/connectivity_provider.dart';
 import '../../core/models/queue_entry_model.dart';
 import '../../core/models/queue_model.dart';
@@ -36,18 +38,25 @@ final todayQueuesProvider = FutureProvider.autoDispose((ref) async {
   final auth = ref.watch(authControllerProvider);
   if (!auth.isAuthenticated) return <QueueModel>[];
   final api = ref.watch(businessApiClientProvider);
+  final cache = ref.watch(offlineCacheProvider);
   final user = auth.session?.user;
   final branchId = ref.watch(selectedBranchIdProvider);
   try {
     // Keep this path fast. Never await N queue snapshots here — realtime /
     // polling invalidate this provider and a slow enrich loop caused an
     // endless "Loading today's queue…" spinner after login.
-    return await api
-        .getQueues(
-          branchId: branchId,
-          businessId: user?.businessId,
-        )
-        .timeout(const Duration(seconds: 25));
+    return await cachedFetchList(
+      cache: cache,
+      cacheKey: 'today-queues:${branchId ?? 'all'}:${user?.businessId ?? ''}',
+      fetch: () => api
+          .getQueues(
+            branchId: branchId,
+            businessId: user?.businessId,
+          )
+          .timeout(const Duration(seconds: 25)),
+      fromJson: QueueModel.fromJson,
+      toJson: (q) => q.toJson(),
+    );
   } on UnauthorizedException {
     await ref.read(authControllerProvider.notifier).sessionExpired();
     rethrow;
@@ -289,9 +298,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     // Treat connectivity "loading" as online so Live Queue never gates forever
     // on web when connectivity_plus has not emitted an initial event yet.
     final isOnline = online.valueOrNull ?? true;
-    if (!isOnline) {
+    final hasCachedQueues = queuesAsync.hasValue && (queuesAsync.valueOrNull?.isNotEmpty ?? false);
+    if (!isOnline && !hasCachedQueues) {
       return StaffOfflineState(
-        showCachedHint: queuesAsync.hasValue,
+        showCachedHint: false,
         onRetry: () => ref.invalidate(todayQueuesProvider),
       );
     }
@@ -313,6 +323,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         final snapshotAsync = ref.watch(todayQueueSnapshotProvider(primary.id));
 
         if (primary.isPaused) {
+          if (!isOnline) {
+            return StaffOfflineState(
+              showCachedHint: true,
+              onRetry: () => ref.invalidate(todayQueuesProvider),
+            );
+          }
           return StaffQueuePausedState(
             onResume: () => queueAction(ref, primary.id, 'resume', () async {
               _invalidateSnapshots(queues);
@@ -327,11 +343,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         );
         final hasActiveBoard = totalWaiting > 0 || calledOnPrimary != null;
         final modeInfo = ServiceModeInfo.forMode(primary.serviceMode);
-        final liveLabel = realtimeStatus.when(
-          data: _realtimeLabel,
-          loading: () => 'Connecting',
-          error: (_, __) => 'Updating',
-        );
+        final liveLabel = !isOnline
+            ? 'Offline · saved'
+            : realtimeStatus.when(
+                data: _realtimeLabel,
+                loading: () => 'Connecting',
+                error: (_, __) => 'Updating',
+              );
 
         return Stack(
           children: [
@@ -342,7 +360,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   AppSpacing.md,
                   AppSpacing.md,
                   AppSpacing.md,
-                  hasActiveBoard ? 180 : AppSpacing.xl,
+                  hasActiveBoard && isOnline ? 180 : AppSpacing.xl,
                 ),
                 children: [
                   StaffGreetingHeader(
@@ -350,6 +368,34 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     venueName: venueName ?? primary.name,
                     trailing: CalmLiveIndicator(label: liveLabel),
                   ),
+                  if (!isOnline) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Material(
+                      color: AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.wifi_off_rounded, size: 20, color: AppColors.warning),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                'Showing last saved queue. Actions are paused until you reconnect.',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.calmCharcoal,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
                   WaitingCountBanner(
                     count: totalWaiting,
@@ -363,27 +409,32 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   if (!hasActiveBoard) ...[
                     const SizedBox(height: AppSpacing.xl),
                     StaffQueueEmptyState(
-                      onAddCustomer: () =>
-                          showWalkIn(context, ref, primary.id, () async {
-                            _invalidateSnapshots(queues);
-                          }),
+                      onAddCustomer: isOnline
+                          ? () => showWalkIn(context, ref, primary.id, () async {
+                                _invalidateSnapshots(queues);
+                              })
+                          : null,
                     ),
                   ] else ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    FriendlyActionTile(
-                      icon: Icons.person_add_alt_1_rounded,
-                      label: 'Add a walk-in guest',
-                      subtitle: 'Someone arrived without scanning the QR',
-                      onTap: () =>
-                          showWalkIn(context, ref, primary.id, () async {
-                            _invalidateSnapshots(queues);
-                          }),
-                    ),
+                    if (isOnline) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      FriendlyActionTile(
+                        icon: Icons.person_add_alt_1_rounded,
+                        label: 'Add a walk-in guest',
+                        subtitle: 'Someone arrived without scanning the QR',
+                        onTap: () =>
+                            showWalkIn(context, ref, primary.id, () async {
+                              _invalidateSnapshots(queues);
+                            }),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.sm),
                     FriendlyActionTile(
                       icon: Icons.list_alt_rounded,
                       label: 'See the full waiting list',
-                      subtitle: 'Hold, skip, or move guests',
+                      subtitle: isOnline
+                          ? 'Hold, skip, or move guests'
+                          : 'Read-only while offline',
                       tint: AppColors.infoLight,
                       iconColor: AppColors.info,
                       onTap: () =>
@@ -423,7 +474,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ],
               ),
             ),
-            if (hasActiveBoard)
+            if (hasActiveBoard && isOnline)
               Positioned(
                 left: 0,
                 right: 0,

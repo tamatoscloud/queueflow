@@ -144,14 +144,16 @@ class StaffOfflineState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Reconnect to see the live queue and call guests. Actions are paused while offline.',
+              showCachedHint
+                  ? 'Showing a saved queue is not available for this state — reconnect to continue.'
+                  : 'Reconnect to see the live queue and call guests. Actions are paused while offline.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutral600),
               textAlign: TextAlign.center,
             ),
             if (showCachedHint) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'A saved queue snapshot is not available on this screen yet — reconnect to continue.',
+                'Open Live Queue again after reconnecting to load the latest board.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500),
                 textAlign: TextAlign.center,
               ),
