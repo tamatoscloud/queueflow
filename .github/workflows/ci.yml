@@ -83,7 +83,13 @@ jobs:
           # native plugin build hooks (mobile_scanner / jni).
           melos exec -c 1 --scope="queueflow_core" --scope="queueflow_models" --scope="queueflow_network" -- "dart run build_runner build --delete-conflicting-outputs"
           if [ "${{ matrix.app }}" = "business_app" ] || [ "${{ matrix.app }}" = "staff_app" ]; then
-            (cd "apps/${{ matrix.app }}" && dart run build_runner build --delete-conflicting-outputs --build-filter="lib/**/auth_user.dart")
+            # Package-path filters are required; a bare lib/** glob writes 0 outputs.
+            (cd "apps/${{ matrix.app }}" && dart run build_runner build --delete-conflicting-outputs \
+              --build-filter="package:${{ matrix.app }}/features/auth/data/models/auth_user.dart" \
+              --build-filter="package:${{ matrix.app }}/features/auth/data/models/auth_user.freezed.dart" \
+              --build-filter="package:${{ matrix.app }}/features/auth/data/models/auth_user.g.dart")
+            test -f "apps/${{ matrix.app }}/lib/features/auth/data/models/auth_user.freezed.dart"
+            test -f "apps/${{ matrix.app }}/lib/features/auth/data/models/auth_user.g.dart"
           fi
 
       - name: Prepare env assets for analyzer

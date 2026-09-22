@@ -28,6 +28,6 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Turn waiting into'), findsOneWidget);
+    expect(find.textContaining('Turn waiting lines into'), findsOneWidget);
   });
 }
