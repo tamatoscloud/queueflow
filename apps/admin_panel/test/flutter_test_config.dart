@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,10 +6,9 @@ import 'package:queueflow_theme/testing/font_test_setup.dart';
 
 /// Allows tiny antialias diffs across Linux CI vs local renderers.
 class _ThresholdComparator extends LocalFileComparator {
-  _ThresholdComparator(Uri testFile, {this.maxDiffPercent = 0.15})
-      : super(testFile);
+  _ThresholdComparator(super.testFile);
 
-  final double maxDiffPercent;
+  static const maxDiffPercent = 0.15;
 
   @override
   Future<bool> compare(Uint8List imageBytes, Uri golden) async {
@@ -38,10 +36,8 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 
   final previous = goldenFileComparator;
   if (previous is LocalFileComparator) {
-    // Preserve basedir so goldens resolve next to each test file.
     goldenFileComparator = _ThresholdComparator(
       Uri.parse('${previous.basedir}/test.dart'),
-      maxDiffPercent: 0.15,
     );
   }
 
