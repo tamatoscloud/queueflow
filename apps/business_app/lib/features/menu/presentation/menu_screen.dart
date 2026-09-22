@@ -65,7 +65,7 @@ class GuestMenuCategoryDraft {
       id: (json['id'] as String?) ?? UniqueKey().toString(),
       name: (json['name'] as String?) ?? 'Category',
       items: rawItems
-          .whereType<Map>()
+          .whereType<Map<Object?, Object?>>()
           .map((e) => GuestMenuItemDraft.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
     );
@@ -103,7 +103,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final menu = payload['menu'] as Map<String, dynamic>? ?? const {};
     final cats = (menu['categories'] as List?) ?? const [];
     _draft = cats
-        .whereType<Map>()
+        .whereType<Map<Object?, Object?>>()
         .map((e) => GuestMenuCategoryDraft.fromJson(Map<String, dynamic>.from(e)))
         .toList();
     _isDefault = payload['isDefault'] == true;
@@ -278,7 +278,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             final cats = (menu['categories'] as List?) ?? const [];
             _isDefault = payload['isDefault'] == true;
             return cats
-                .whereType<Map>()
+                .whereType<Map<Object?, Object?>>()
                 .map((e) => GuestMenuCategoryDraft.fromJson(Map<String, dynamic>.from(e)))
                 .toList();
           }();
