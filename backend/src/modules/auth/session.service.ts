@@ -58,7 +58,8 @@ export class SessionService {
       expiresAt,
     });
 
-    await this.authRepo.updateLastLogin(user.id);
+    // Fire-and-forget — lastLoginAt must not serialize another remote DB RTT into login.
+    void this.authRepo.updateLastLogin(user.id);
     const authUser = toAuthenticatedUser(user, session.id);
     const accessToken = this.tokenService.signAccess({
       sub: authUser.id,

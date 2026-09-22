@@ -94,8 +94,9 @@ export class QueueService {
     };
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
-    // Parallel queries beat a serial $transaction under high DB RTT.
-    const [totalItems, data] = await Promise.all([
+    // Parallel queries beat serial remote-DB RTTs (Supabase often 1–2s each).
+    // Scope waitingCount by the same queue filters so it can run in the same wave.
+    const [totalItems, data, grouped] = await Promise.all([
       this.prisma.queue.count({ where }),
       this.prisma.queue.findMany({
         where,
@@ -103,25 +104,22 @@ export class QueueService {
         take: pageSize,
         orderBy: { [sortBy]: sortOrder },
       }),
+      this.prisma.queueEntry.groupBy({
+        by: ['queueId'],
+        where: {
+          deletedAt: null,
+          status: 'WAITING',
+          queue: where,
+        },
+        _count: { _all: true },
+      }),
     ]);
 
     // Staff Live Queue aggregates waitingCount from this list. Without it the
     // console always shows "You're all clear" even when guests have joined.
-    const queueIds = data.map((q) => q.id);
     const waitingByQueue = new Map<string, number>();
-    if (queueIds.length > 0) {
-      const grouped = await this.prisma.queueEntry.groupBy({
-        by: ['queueId'],
-        where: {
-          queueId: { in: queueIds },
-          deletedAt: null,
-          status: 'WAITING',
-        },
-        _count: { _all: true },
-      });
-      for (const row of grouped) {
-        waitingByQueue.set(row.queueId, row._count._all);
-      }
+    for (const row of grouped) {
+      waitingByQueue.set(row.queueId, row._count._all);
     }
 
     return {

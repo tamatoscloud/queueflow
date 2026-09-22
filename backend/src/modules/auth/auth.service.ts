@@ -38,8 +38,9 @@ export class AuthService {
       platform: dto.platform,
       ipAddress: meta?.ipAddress,
       userAgent: meta?.userAgent,
-    }).then(async (result) => {
-      await this.audit.log({
+    }).then((result) => {
+      // Non-blocking audit — do not add a full DB RTT to the login critical path.
+      void this.audit.log({
         businessId: result.user.businessId,
         actorUserId: result.user.id,
         action: 'auth.login',
