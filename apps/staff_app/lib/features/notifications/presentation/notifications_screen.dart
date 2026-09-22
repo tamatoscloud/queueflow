@@ -105,9 +105,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       body: RefreshIndicator(
         onRefresh: () => ref.read(notificationsNotifierProvider.notifier).refresh(),
         child: async.when(
-          loading: () => const PageLoading(message: 'Loading alerts…'),
+          loading: () => const PageLoading(message: 'Loading messages…'),
           error: (e, _) => PageError(
-            message: "We couldn't load alerts. We'll keep trying.",
+            message: "We couldn't load message delivery history.",
             onRetry: () => ref.read(notificationsNotifierProvider.notifier).refresh(),
           ),
           data: (items) {
@@ -116,9 +116,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 children: const [
                   SizedBox(height: 80),
                   EmptyStateView(
-                    title: 'All clear',
-                    message: 'No alerts right now. Customer updates will appear here.',
-                    icon: Icons.notifications_none_outlined,
+                    title: 'No messages yet',
+                    message:
+                        'SMS and WhatsApp delivery to guests will show up here. Floor alerts appear as banners on Live Queue.',
+                    icon: Icons.sms_outlined,
                   ),
                 ],
               );
@@ -138,25 +139,30 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
                 Text(
-                  'Alerts',
+                  'Guest messages',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Delivery log for SMS / WhatsApp sent to guests — not staff push alerts.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral600),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (grouped[_AlertCategory.attention]!.isNotEmpty)
                   _AlertSection(
-                    title: 'Needs attention',
+                    title: 'Failed delivery',
                     emoji: '🔴',
                     items: grouped[_AlertCategory.attention]!,
                   ),
                 if (grouped[_AlertCategory.issue]!.isNotEmpty)
                   _AlertSection(
-                    title: 'Customer issue',
+                    title: 'Pending / sent',
                     emoji: '🟡',
                     items: grouped[_AlertCategory.issue]!,
                   ),
                 if (grouped[_AlertCategory.completed]!.isNotEmpty)
                   _AlertSection(
-                    title: 'Completed',
+                    title: 'Delivered',
                     emoji: '🟢',
                     items: grouped[_AlertCategory.completed]!,
                   ),

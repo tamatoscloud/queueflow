@@ -11,13 +11,21 @@ class RealtimeStatusChip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(realtimeStatusProvider);
+    final authorized = ref.watch(realtimeAuthorizedProvider);
     return status.when(
       data: (s) {
+        final isLive = s == RealtimeStatus.connected &&
+            (authorized.valueOrNull ?? false);
         final (variant, label, icon) = switch (s) {
-          RealtimeStatus.connected => (
+          RealtimeStatus.connected when isLive => (
               AppBadgeVariant.success,
               'Live',
               Icons.circle,
+            ),
+          RealtimeStatus.connected => (
+              AppBadgeVariant.warning,
+              'Updating',
+              Icons.sync,
             ),
           RealtimeStatus.connecting => (
               AppBadgeVariant.warning,

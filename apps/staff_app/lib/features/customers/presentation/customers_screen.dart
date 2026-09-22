@@ -220,12 +220,7 @@ class CustomerDetailScreen extends ConsumerWidget {
   const CustomerDetailScreen({super.key, required this.customerId});
   final String customerId;
 
-  String _primaryActionLabel(String? status) => switch (status) {
-        'CALLED' => 'Seat customer',
-        'HOLDING' => 'Resume',
-        'WAITING' => 'Call customer',
-        _ => 'View queue',
-      };
+  String _primaryActionLabel(String? status) => 'Open Live Queue';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -309,7 +304,14 @@ class CustomerDetailScreen extends ConsumerWidget {
                       AppButton(
                         label: _primaryActionLabel(latest.status),
                         icon: Icons.campaign_outlined,
-                        onPressed: () => context.push(StaffRoutes.today),
+                        onPressed: () => context.go(StaffRoutes.today),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Live Queue is where you call, seat, or hold guests.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.calmWarmGray,
+                            ),
                       ),
                     ],
                   ],

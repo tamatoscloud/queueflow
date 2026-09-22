@@ -127,8 +127,10 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
       if (!mounted) return;
       setState(() {
         _calledEntry = entry;
+        // Optimistic only — delivery confirmation lives under Messages.
         _notified = true;
         _calling = false;
+        _successMessage = 'Called — notifying guest…';
       });
       await widget.onRefresh();
     } catch (e) {

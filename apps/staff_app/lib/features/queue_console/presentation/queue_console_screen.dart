@@ -91,19 +91,59 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
 
   Future<void> _refresh() async => ref.invalidate(queueSnapshotProvider(widget.queueId));
 
+  /// Call Next must not stack CALLED guests or call a non-next waiting guest.
   void _openCallNextSheet(
     BuildContext context,
-    String serviceMode,
-    QueueEntryModel? next, {
-    bool calling = false,
+    String serviceMode, {
+    QueueEntryModel? focusEntry,
+    List<QueueEntryModel> called = const [],
+    QueueEntryModel? nextUp,
   }) {
+    if (called.isNotEmpty) {
+      showCallNextSheet(
+        context: context,
+        ref: ref,
+        queueId: widget.queueId,
+        serviceMode: serviceMode,
+        nextEntry: called.first,
+        calling: false,
+        onRefresh: _refresh,
+      );
+      return;
+    }
+
+    final target = nextUp;
+    if (focusEntry != null && target != null && focusEntry.id != target.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Next up is #${target.displayCode.isEmpty ? '—' : target.displayCode} '
+            '(${target.customerName ?? 'guest'}). '
+            'Use Hold / No-show to reorder before calling another guest.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      showCallNextSheet(
+        context: context,
+        ref: ref,
+        queueId: widget.queueId,
+        serviceMode: serviceMode,
+        nextEntry: target,
+        calling: false,
+        onRefresh: _refresh,
+      );
+      return;
+    }
+
     showCallNextSheet(
       context: context,
       ref: ref,
       queueId: widget.queueId,
       serviceMode: serviceMode,
-      nextEntry: next,
-      calling: calling,
+      nextEntry: focusEntry ?? target,
+      calling: (focusEntry ?? target) != null,
       onRefresh: _refresh,
     );
   }
@@ -209,14 +249,15 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
               onCallNext: () => _openCallNextSheet(
                 context,
                 serviceMode,
-                nextUp,
-                calling: nextUp != null,
+                called: called,
+                nextUp: nextUp,
               ),
               onCallEntry: (entry) => _openCallNextSheet(
                 context,
                 serviceMode,
-                entry,
-                calling: true,
+                focusEntry: entry,
+                called: called,
+                nextUp: nextUp,
               ),
               onRefresh: _refresh,
               queueId: widget.queueId,
@@ -317,8 +358,9 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                           onCall: () => _openCallNextSheet(
                             context,
                             serviceMode,
-                            nextUp,
-                            calling: true,
+                            focusEntry: nextUp,
+                            called: called,
+                            nextUp: nextUp,
                           ),
                         ),
                         if (waiting.length > 1) ...[
@@ -336,8 +378,9 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                                 onCall: () => _openCallNextSheet(
                                   context,
                                   serviceMode,
-                                  e,
-                                  calling: true,
+                                  focusEntry: e,
+                                  called: called,
+                                  nextUp: nextUp,
                                 ),
                                 onHold: () => entryAction(ref, widget.queueId, e.id, 'hold', _refresh),
                                 onSkip: () => entryAction(ref, widget.queueId, e.id, 'skip', _refresh),
@@ -352,16 +395,18 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: totalWaiting > 0
+                child: totalWaiting > 0 || called.isNotEmpty
                     ? CalmQueueStickyAction(
                         waitingCount: totalWaiting,
                         waitingUnit: modeInfo.waitingLabel,
-                        actionLabel: modeInfo.callNextActionLabel,
+                        actionLabel: called.isNotEmpty
+                            ? 'Manage called guest'
+                            : modeInfo.callNextActionLabel,
                         onPressed: () => _openCallNextSheet(
                           context,
                           serviceMode,
-                          nextUp,
-                          calling: nextUp != null,
+                          called: called,
+                          nextUp: nextUp,
                         ),
                       )
                     : CalmQueueStickyAction(

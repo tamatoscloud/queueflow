@@ -144,14 +144,14 @@ class StaffOfflineState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Changes will sync when you are back online.',
+              'Reconnect to see the live queue and call guests. Actions are paused while offline.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.neutral600),
               textAlign: TextAlign.center,
             ),
             if (showCachedHint) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Showing the latest saved queue.',
+                'A saved queue snapshot is not available on this screen yet — reconnect to continue.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500),
                 textAlign: TextAlign.center,
               ),
