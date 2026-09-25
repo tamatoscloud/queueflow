@@ -422,7 +422,7 @@ class _PublicPairScreenState extends ConsumerState<PublicPairScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      'QueueFlow Display',
+                      'Quyk Display',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),

@@ -87,7 +87,7 @@ export function LightPartySelect({
           aria-label="Increase party size"
           disabled={value >= 20}
           onClick={() => onChange(Math.min(20, value + 1))}
-          className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-[var(--on-primary)] disabled:opacity-40"
+          className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white disabled:opacity-40"
         >
           +
         </button>

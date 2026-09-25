@@ -580,7 +580,7 @@ class _TestimonialsSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"QueueFlow cut our front-desk chaos in half. Guests love the digital pass."',
+              '"Quyk cut our front-desk chaos in half. Guests love the digital pass."',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.5),
             ),
             const SizedBox(height: 12),
@@ -682,7 +682,7 @@ class _Footer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Text(
-        '© ${DateTime.now().year} QueueFlow. All rights reserved.',
+        '© ${DateTime.now().year} Quyk. All rights reserved.',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500),
       ),

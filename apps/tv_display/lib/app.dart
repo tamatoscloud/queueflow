@@ -40,7 +40,7 @@ class TvDisplayApp extends ConsumerWidget {
     );
 
     return MaterialApp.router(
-      title: 'QueueFlow TV',
+      title: 'Quyk TV',
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeMode,

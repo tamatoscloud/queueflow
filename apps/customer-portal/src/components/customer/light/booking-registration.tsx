@@ -22,7 +22,7 @@ import {
   takeawayJoinSchema,
   type ModeJoinFormValues,
 } from '@/lib/schemas/forms';
-import { loadQueueSession, saveQueueSession, clearQueueSession } from '@/lib/storage/session';
+import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
 import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
 import { buildTrackingFromJoin } from '@/lib/tracking/seed-from-join';
 import { queryKeys } from '@/lib/api/query-keys';
@@ -135,14 +135,6 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
   const values = form.watch();
 
   useEffect(() => {
-    const fresh =
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('fresh') === '1';
-    if (fresh) {
-      clearQueueSession();
-      setActiveSession(null);
-      return;
-    }
     const session = loadQueueSession();
     if (session?.queueId === queueId) {
       setActiveSession(session);
@@ -226,7 +218,6 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
         businessName={data.business.name}
         displayCode={activeSession.displayCode}
         queueId={queueId}
-        onJoinAsSomeoneElse={() => setActiveSession(null)}
       />
     );
   }
@@ -373,7 +364,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           <button
             type="button"
             onClick={() => setShowSummary(false)}
-            className="text-center text-sm font-medium text-[var(--brand-forest)]"
+            className="text-center text-sm font-medium text-[var(--primary)]"
           >
             Edit details
           </button>

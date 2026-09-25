@@ -45,7 +45,7 @@ class GradientHeader extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.primary,
+                        color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -54,7 +54,7 @@ class GradientHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primary.withValues(alpha: 0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                         ),
                   ),
                 ],

@@ -253,7 +253,7 @@ export function LightWaitingExperience({
             });
             router.push(`/menu/${tracking.business.id}?${qs.toString()}`);
           }}
-          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[var(--primary)] text-[15px] font-semibold text-[var(--on-primary)] shadow-[0_4px_14px_rgba(0,62,49,0.18)] transition-opacity hover:opacity-95 active:scale-[0.98]"
+          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#9b8cff] text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(155,140,255,0.35)] transition-opacity hover:opacity-95 active:scale-[0.98]"
         >
           Browse Menu
         </button>
@@ -262,7 +262,7 @@ export function LightWaitingExperience({
       <section className="space-y-3 py-6">
         <div className="rounded-2xl bg-[#f3f0ff] p-4">
           <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--on-primary)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#9b8cff] text-white">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path
                   d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7"
@@ -294,7 +294,7 @@ export function LightWaitingExperience({
                 onClick={toggleNotify}
                 className={cn(
                   'relative mt-3 h-7 w-12 rounded-full transition-colors disabled:opacity-60',
-                  browserNotify ? 'bg-[var(--primary)]' : 'bg-[#d4d0e8]',
+                  browserNotify ? 'bg-[#9b8cff]' : 'bg-[#d4d0e8]',
                 )}
               >
                 <span
@@ -313,7 +313,7 @@ export function LightWaitingExperience({
 
         <div className="rounded-2xl bg-[#f3f0ff] p-4">
           <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--on-primary)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#9b8cff] text-white">
               <MessageCircle className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
@@ -377,7 +377,7 @@ export function LightWaitingExperience({
                 type="button"
                 disabled={phoneBusy}
                 onClick={() => void savePhone()}
-                className="flex-1 rounded-full bg-[var(--primary)] py-3 text-sm font-semibold text-[var(--on-primary)] disabled:opacity-60"
+                className="flex-1 rounded-full bg-[#9b8cff] py-3 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {phoneBusy ? 'Saving…' : 'Save'}
               </button>

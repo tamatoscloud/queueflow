@@ -59,7 +59,7 @@ export function CalmFeedback({ entryId }: { entryId: string }) {
         <p className="text-sm text-[#6b6870]">Your feedback helps us create better experiences.</p>
         <Link
           href="/"
-          className="flex h-14 w-full items-center justify-center rounded-full bg-[var(--primary)] text-base font-semibold text-[var(--on-primary)] shadow-sm"
+          className="flex h-14 w-full items-center justify-center rounded-full bg-[#8b7cf8] text-base font-semibold text-white shadow-sm"
         >
           Done
         </Link>

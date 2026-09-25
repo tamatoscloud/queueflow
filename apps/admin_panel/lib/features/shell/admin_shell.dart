@@ -72,7 +72,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     for (final d in [..._primaryDestinations, ..._moreDestinations]) {
       if (path.startsWith(d.route)) return d.label;
     }
-    return 'QueueFlow';
+    return 'Quyk';
   }
 
   void _openMoreMenu() => _scaffoldKey.currentState?.openDrawer();
@@ -174,7 +174,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'QueueFlow',
+                              'Quyk',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             Text('Platform administration', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.calmWarmGray)),
@@ -234,7 +234,7 @@ class _CalmNavRail extends StatelessWidget {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('QueueFlow', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                        Text('Quyk', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
                         Text('Admin', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.calmWarmGray)),
                       ],
                     )

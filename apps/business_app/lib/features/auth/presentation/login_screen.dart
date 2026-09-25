@@ -36,7 +36,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return 'That email or password doesn’t look right. Please try again.';
     }
     if (lower.contains('reach') || lower.contains('timeout') || lower.contains('connection')) {
-      return 'We can’t reach QueueFlow right now. Check your Wi‑Fi and try again.';
+      return 'We can’t reach Quyk right now. Check your Wi‑Fi and try again.';
     }
     return 'Something went wrong signing in. Please try again.';
   }
@@ -89,7 +89,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'QueueFlow',
+                    'Quyk',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: AppColors.calmCharcoal,

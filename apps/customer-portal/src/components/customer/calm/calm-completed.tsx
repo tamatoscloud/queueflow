@@ -71,7 +71,7 @@ export function CalmCompleted({ tracking, className }: CalmCompletedProps) {
 
       <Link
         href={`/feedback/${tracking.entry.id}`}
-        className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-semibold text-[var(--on-primary)] shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         Share feedback
       </Link>

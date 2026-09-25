@@ -66,19 +66,19 @@ export function LightReadyExperience({
       aria-live="assertive"
     >
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--primary)]/90">It&apos;s your turn</p>
-        <h2 className="mt-2 text-lg font-bold text-[var(--primary)]">{businessName}</h2>
-        <h1 className="mt-3 text-4xl font-extrabold leading-tight text-[var(--primary)] sm:text-5xl">
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-white/90">It&apos;s your turn</p>
+        <h2 className="mt-2 text-lg font-bold text-white">{businessName}</h2>
+        <h1 className="mt-3 text-4xl font-extrabold leading-tight text-white sm:text-5xl">
           {copy.readyTitle}
         </h1>
-        <p className="mt-3 text-base leading-relaxed text-[var(--primary)]/90">
+        <p className="mt-3 text-base leading-relaxed text-white/90">
           {copy.readyDescription(branchName)}
         </p>
       </div>
 
       <div className="w-full rounded-3xl bg-white px-4 py-8 text-foreground shadow-lg">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">Your number</p>
-        <p className="mt-2 font-display text-7xl font-bold tabular-nums text-[var(--brand-forest)]">{displayCode}</p>
+        <p className="mt-2 font-display text-7xl font-bold tabular-nums text-primary">{displayCode}</p>
         {context ? <p className="mt-2 text-sm text-muted">{context}</p> : null}
         <p className="mt-4 text-base font-semibold text-foreground">{copy.readyHoldMessage}</p>
         <p className="mt-2 text-xs tabular-nums text-muted">

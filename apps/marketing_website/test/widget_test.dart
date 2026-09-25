@@ -1,4 +1,4 @@
-// Smoke test verifying the bootstrap → DI → router → theme pipeline
+// Smoke test verifying the bootstrap â†’ DI â†’ router â†’ theme pipeline
 // renders without a real .env file (Riverpod overrides stand in for it).
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,9 +11,9 @@ void main() {
   ) async {
     const testConfig = AppConfig(
       flavor: Flavor.dev,
-      apiBaseUrl: 'https://api.dev.queueflow.test',
-      wsBaseUrl: 'wss://api.dev.queueflow.test',
-      appName: 'QueueFlow (Test)',
+      apiBaseUrl: 'https://api.dev.Quyk.test',
+      wsBaseUrl: 'wss://api.dev.Quyk.test',
+      appName: 'Quyk (Test)',
       enableLogging: true,
       apiTimeoutSeconds: 30,
     );

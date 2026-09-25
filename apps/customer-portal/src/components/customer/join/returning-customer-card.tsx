@@ -38,7 +38,7 @@ export function ReturningCustomerCard({
       <button
         type="button"
         onClick={onContinue}
-        className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-[var(--on-primary)] transition-all hover:brightness-105 active:scale-[0.98]"
+        className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-success px-4 py-2.5 text-sm font-bold text-white transition-all hover:brightness-105 active:scale-[0.98]"
       >
         Continue tracking
         <ArrowRight className="h-4 w-4" aria-hidden />
@@ -47,7 +47,7 @@ export function ReturningCustomerCard({
         <button
           type="button"
           onClick={onJoinAsSomeoneElse}
-          className="mt-3 w-full text-center text-sm font-medium text-[var(--brand-forest)]"
+          className="mt-3 w-full text-center text-sm font-medium text-primary"
         >
           Join as someone else
         </button>

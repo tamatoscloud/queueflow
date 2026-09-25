@@ -115,7 +115,7 @@ export function CalmLanding({ data, queueId }: CalmLandingProps) {
 
       <Link
         href={`/q/${queueId}/join`}
-        className="flex h-16 w-full items-center justify-center rounded-2xl bg-[var(--brand-forest)] text-lg font-bold uppercase tracking-wide text-[var(--primary)] shadow-md transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex h-16 w-full items-center justify-center rounded-2xl bg-primary-dark text-lg font-bold uppercase tracking-wide text-white shadow-md transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         Join queue
       </Link>

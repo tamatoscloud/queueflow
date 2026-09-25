@@ -5,7 +5,7 @@ import 'package:queueflow_network/queueflow_network.dart';
 void main() {
   test('apiExceptionMessage maps noConnection', () {
     const err = ApiException.noConnection();
-    expect(apiExceptionMessage(err), contains('reach QueueFlow'));
+    expect(apiExceptionMessage(err), contains('reach Quyk'));
   });
 
   test('apiExceptionMessage maps unauthorized', () {

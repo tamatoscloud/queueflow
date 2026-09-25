@@ -21,15 +21,15 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: 'QueueFlow',
-    template: '%s · QueueFlow',
+    default: 'Quyk',
+    template: '%s · Quyk',
   },
   description: 'Join and track your queue in real time',
-  applicationName: 'QueueFlow',
+  applicationName: 'Quyk',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'QueueFlow',
+    title: 'Quyk',
   },
   formatDetection: {
     telephone: false,

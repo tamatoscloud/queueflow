@@ -41,15 +41,15 @@ abstract final class AppTheme {
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: AppColors.primary,
-      onPrimary: AppColors.onPrimary,
-      primaryContainer: AppColors.primary.withValues(alpha: 0.22),
-      onPrimaryContainer: AppColors.brandForest,
-      secondary: AppColors.brandForest,
-      onSecondary: AppColors.primary,
-      secondaryContainer: AppColors.brandForest.withValues(alpha: 0.12),
-      onSecondaryContainer: AppColors.brandForest,
-      tertiary: AppColors.brandForestLight,
-      onTertiary: AppColors.primary,
+      onPrimary: Colors.white,
+      primaryContainer: AppColors.primary.withValues(alpha: 0.12),
+      onPrimaryContainer: AppColors.primaryDark,
+      secondary: AppColors.secondary,
+      onSecondary: Colors.white,
+      secondaryContainer: AppColors.secondary.withValues(alpha: 0.12),
+      onSecondaryContainer: AppColors.secondary,
+      tertiary: AppColors.accent,
+      onTertiary: Colors.white,
       error: AppColors.danger,
       onError: Colors.white,
       surface: surface,
@@ -96,18 +96,18 @@ abstract final class AppTheme {
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
+          foregroundColor: Colors.white,
           disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-          textStyle: textTheme.labelLarge?.copyWith(color: AppColors.onPrimary),
+          textStyle: textTheme.labelLarge?.copyWith(color: Colors.white),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           elevation: 0,
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
         ),
@@ -122,7 +122,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.brandForest,
+          foregroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
         ),
@@ -141,7 +141,7 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.lgAll,
-          borderSide: const BorderSide(color: AppColors.brandForest, width: 2),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.lgAll,
@@ -160,11 +160,11 @@ abstract final class AppTheme {
         elevation: 0,
         height: 72,
         backgroundColor: surface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.35),
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return textTheme.labelSmall?.copyWith(
-              color: AppColors.brandForest,
+              color: AppColors.primary,
               fontWeight: FontWeight.w600,
             );
           }
@@ -172,18 +172,18 @@ abstract final class AppTheme {
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.brandForest);
+            return const IconThemeData(color: AppColors.primary);
           }
           return IconThemeData(color: onMuted);
         }),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: surface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.35),
-        selectedIconTheme: const IconThemeData(color: AppColors.brandForest),
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        selectedIconTheme: const IconThemeData(color: AppColors.primary),
         unselectedIconTheme: IconThemeData(color: onMuted),
         selectedLabelTextStyle: textTheme.labelMedium?.copyWith(
-          color: AppColors.brandForest,
+          color: AppColors.primary,
         ),
         unselectedLabelTextStyle: textTheme.labelMedium?.copyWith(color: onMuted),
       ),

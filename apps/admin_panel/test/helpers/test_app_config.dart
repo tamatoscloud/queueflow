@@ -12,9 +12,9 @@ import 'package:queueflow_shared/queueflow_shared.dart';
 List<Override> testAppOverrides() {
   const testConfig = AppConfig(
     flavor: Flavor.dev,
-    apiBaseUrl: 'https://api.dev.queueflow.test',
-    wsBaseUrl: 'wss://api.dev.queueflow.test',
-    appName: 'QueueFlow Admin (Test)',
+    apiBaseUrl: 'https://api.dev.Quyk.test',
+    wsBaseUrl: 'wss://api.dev.Quyk.test',
+    appName: 'Quyk Admin (Test)',
     enableLogging: false,
     apiTimeoutSeconds: 30,
   );
