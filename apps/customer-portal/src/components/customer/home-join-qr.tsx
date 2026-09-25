@@ -41,7 +41,7 @@ export function HomeJoinQr() {
           <Sparkles className="h-3 w-3" aria-hidden />
           Real-time queue tracking
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">QueueFlow</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quyk</h1>
         <p className="mx-auto mt-3 max-w-sm text-muted">
           Scan this QR with your phone camera to join the live waiting list.
         </p>

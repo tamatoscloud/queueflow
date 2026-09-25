@@ -7,25 +7,25 @@ abstract final class AppGradients {
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.primary, AppColors.accentPurple],
+    colors: [AppColors.brandForest, AppColors.brandForestLight],
   );
 
   static const LinearGradient secondary = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.secondary, AppColors.primary],
+    colors: [AppColors.brandForestLight, AppColors.primaryDark],
   );
 
   static const LinearGradient accent = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [AppColors.accent, AppColors.accentPurple],
+    colors: [AppColors.primaryDark, AppColors.primary],
   );
 
   static const LinearGradient success = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF10B981), Color(0xFF06B6D4)],
+    colors: [Color(0xFF10B981), Color(0xFF0A5C4A)],
   );
 
   static const LinearGradient warm = LinearGradient(
@@ -38,8 +38,8 @@ abstract final class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      AppColors.primary.withValues(alpha: 0.08),
-      AppColors.accentPurple.withValues(alpha: 0.06),
+      AppColors.primary.withValues(alpha: 0.18),
+      AppColors.brandForest.withValues(alpha: 0.06),
       AppColors.secondary.withValues(alpha: 0.04),
     ],
   );
@@ -48,8 +48,8 @@ abstract final class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      AppColors.primary.withValues(alpha: 0.15),
-      AppColors.accentPurple.withValues(alpha: 0.10),
+      AppColors.primary.withValues(alpha: 0.12),
+      AppColors.brandForestLight.withValues(alpha: 0.55),
       AppColors.darkBackground,
     ],
   );

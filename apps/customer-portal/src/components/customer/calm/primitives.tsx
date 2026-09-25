@@ -37,9 +37,9 @@ export function CalmButton({
       type="button"
       className={cn(
         'flex h-14 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50',
-        variant === 'primary' && 'bg-primary text-white shadow-sm',
+        variant === 'primary' && 'bg-primary text-[var(--on-primary)] shadow-sm',
         variant === 'secondary' && 'border border-border bg-surface text-foreground',
-        variant === 'ghost' && 'text-primary',
+        variant === 'ghost' && 'text-[var(--brand-forest)]',
         className,
       )}
       {...props}
@@ -74,7 +74,7 @@ export function CalmHeading({
   return (
     <h1 className={cn('text-3xl font-bold leading-tight text-foreground', className)}>
       {children}
-      {accent ? <span className="text-primary">{accent}</span> : null}
+      {accent ? <span className="text-[var(--brand-forest)]">{accent}</span> : null}
     </h1>
   );
 }

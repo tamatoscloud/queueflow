@@ -73,10 +73,11 @@ class AppButton extends StatelessWidget {
             width: spinnerSize,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: variant == AppButtonVariant.primary ||
-                      variant == AppButtonVariant.danger
-                  ? Colors.white
-                  : AppColors.primary,
+              color: variant == AppButtonVariant.primary
+                  ? AppColors.onPrimary
+                  : variant == AppButtonVariant.danger
+                      ? Colors.white
+                      : AppColors.brandForest,
             ),
           )
         : Row(
@@ -106,7 +107,7 @@ class AppButton extends StatelessWidget {
           style: mergeMinHeight(
             FilledButton.styleFrom(
               padding: padding,
-              backgroundColor: size == AppButtonSize.xl ? AppColors.primaryDark : null,
+              backgroundColor: size == AppButtonSize.xl ? AppColors.primary : null,
             ),
           ),
           child: child,
@@ -116,8 +117,8 @@ class AppButton extends StatelessWidget {
           style: mergeMinHeight(
             FilledButton.styleFrom(
               padding: padding,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-              foregroundColor: AppColors.primary,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.35),
+              foregroundColor: AppColors.brandForest,
             ),
           ),
           child: child,

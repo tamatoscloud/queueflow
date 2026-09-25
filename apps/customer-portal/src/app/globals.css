@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
-/* ─── QueueFlow Design Tokens ─── */
+/* ─── Quyk Design Tokens ─── */
 :root {
   /* Brand */
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --secondary: #06b6d4;
-  --accent: #ec4899;
-  --accent-purple: #a855f7;
+  --primary: #e7ff27;
+  --primary-light: #f0ff6a;
+  --primary-dark: #c5db00;
+  --on-primary: #003e31;
+  --brand-forest: #003e31;
+  --brand-forest-light: #0a5c4a;
+  --secondary: #0a5c4a;
+  --accent: #e7ff27;
+  --accent-purple: #0a5c4a;
 
   /* Semantic */
   --success: #10b981;
@@ -17,20 +20,20 @@
   --warning-light: #fef3c7;
   --danger: #ef4444;
   --danger-light: #fee2e2;
-  --info: #3b82f6;
-  --info-light: #dbeafe;
+  --info: #0a5c4a;
+  --info-light: #d1faf0;
 
   /* Neutrals */
-  --neutral-50: #f8fafc;
-  --neutral-100: #f1f5f9;
-  --neutral-200: #e2e8f0;
-  --neutral-300: #cbd5e1;
-  --neutral-400: #94a3b8;
-  --neutral-500: #64748b;
-  --neutral-600: #475569;
-  --neutral-700: #334155;
-  --neutral-800: #1e293b;
-  --neutral-900: #0f172a;
+  --neutral-50: #f5f7f6;
+  --neutral-100: #ecf1ef;
+  --neutral-200: #d7e0dc;
+  --neutral-300: #b7c5bf;
+  --neutral-400: #8a9a93;
+  --neutral-500: #5f7068;
+  --neutral-600: #45554e;
+  --neutral-700: #2f3d37;
+  --neutral-800: #1b2924;
+  --neutral-900: #0c1613;
 
   /* Surfaces */
   --background: var(--neutral-50);
@@ -41,17 +44,17 @@
   --border: var(--neutral-200);
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
-  --gradient-mesh: radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 100%, rgba(6, 182, 212, 0.06) 0%, transparent 50%);
+  --gradient-primary: linear-gradient(135deg, #003e31 0%, #0a5c4a 100%);
+  --gradient-secondary: linear-gradient(135deg, #0a5c4a 0%, #c5db00 100%);
+  --gradient-mesh: radial-gradient(ellipse at 20% 0%, rgba(231, 255, 39, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 62, 49, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 92, 74, 0.06) 0%, transparent 50%);
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04);
-  --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+  --shadow-sm: 0 1px 2px rgba(12, 22, 19, 0.04);
+  --shadow-md: 0 4px 16px rgba(12, 22, 19, 0.06), 0 1px 4px rgba(12, 22, 19, 0.03);
+  --shadow-lg: 0 8px 32px rgba(12, 22, 19, 0.1), 0 2px 8px rgba(12, 22, 19, 0.04);
+  --shadow-glow: 0 0 24px rgba(231, 255, 39, 0.35);
 
   /* Radius */
   --radius-sm: 8px;
@@ -64,15 +67,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0d12;
-    --foreground: #f1f5f9;
-    --surface: #151821;
-    --surface-elevated: #1c2030;
-    --muted: #94a3b8;
-    --border: #2a3042;
-    --gradient-mesh: radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 40%),
-      #0b0d12;
+    --background: #003e31;
+    --foreground: #f5f7f6;
+    --surface: #0a4a3b;
+    --surface-elevated: #0f5645;
+    --muted: #b7c5bf;
+    --border: #1a6352;
+    --gradient-mesh: radial-gradient(ellipse at 20% 0%, rgba(231, 255, 39, 0.14) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(10, 92, 74, 0.35) 0%, transparent 40%),
+      #003e31;
   }
 }
 
@@ -82,67 +85,73 @@
 
 /* Customer ticket experience — always light, ignores OS dark mode */
 .booking-light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f5f7f6;
+  --foreground: #0c1613;
   --surface: #ffffff;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  background: #f8fafc;
-  color: #0f172a;
+  --muted: #5f7068;
+  --border: #d7e0dc;
+  --primary: #e7ff27;
+  --primary-light: #f0ff6a;
+  --primary-dark: #c5db00;
+  --on-primary: #003e31;
+  --brand-forest: #003e31;
+  background: #f5f7f6;
+  color: #0c1613;
 }
 
-/* Post-join waiting screen — screenshot match */
+/* Post-join waiting screen */
 .booking-waiting {
   --background: #ffffff;
-  --foreground: #0a0a0a;
+  --foreground: #0c1613;
   --surface: #ffffff;
-  --muted: #6b7280;
-  --border: #ececf0;
-  --primary: #9b8cff;
-  --primary-light: #b4a9ff;
-  --primary-dark: #7c6cf0;
-  --card-lilac: #f3f0ff;
+  --muted: #5f7068;
+  --border: #d7e0dc;
+  --primary: #e7ff27;
+  --primary-light: #f0ff6a;
+  --primary-dark: #c5db00;
+  --on-primary: #003e31;
+  --brand-forest: #003e31;
+  --card-lilac: #e8f7e0;
   --timer-peach: #f3d9c4;
-  --timer-ring: #ebe6ff;
+  --timer-ring: #e8f7e0;
   background: #ffffff;
-  color: #0a0a0a;
+  color: #0c1613;
 }
 
 .booking-waiting .text-primary {
-  color: #9b8cff;
+  color: #003e31;
 }
 
 .booking-waiting .bg-primary {
-  background-color: #9b8cff;
+  background-color: #e7ff27;
+  color: #003e31;
 }
 
 .booking-waiting .border-primary {
-  border-color: #9b8cff;
+  border-color: #c5db00;
 }
 
 .booking-light .text-primary {
-  color: #6366f1;
+  color: #003e31;
 }
 
 .booking-light .bg-primary {
-  background-color: #6366f1;
+  background-color: #e7ff27;
+  color: #003e31;
 }
 
 .booking-light .border-primary {
-  border-color: #6366f1;
+  border-color: #c5db00;
 }
 
 /* Queue status pills (customer journey) */
 .status-waiting {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #e8f7e0;
+  color: #003e31;
 }
 .status-called {
-  background: #4f46e5;
-  color: #ffffff;
+  background: #e7ff27;
+  color: #003e31;
 }
 .status-completed {
   background: #d1fae5;
@@ -157,8 +166,8 @@
   color: #047857;
 }
 .status-updating {
-  background: #f1f5f9;
-  color: #64748b;
+  background: #ecf1ef;
+  color: #5f7068;
 }
 
 @media (prefers-reduced-motion: reduce) {

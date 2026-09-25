@@ -57,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Column(
         children: [
           const GradientHeader(
-            title: 'QueueFlow Staff',
+            title: 'Quyk Staff',
             subtitle: 'Sign in to run the floor',
             compact: true,
           ),

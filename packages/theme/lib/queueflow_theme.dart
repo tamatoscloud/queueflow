@@ -4,12 +4,13 @@
 library;
 
 export 'src/app_theme.dart';
-export 'src/product_identities.dart';
+export 'src/brand_assets.dart';
 export 'src/breakpoints/breakpoints.dart';
+export 'src/product_identities.dart';
 export 'src/tokens/app_colors.dart';
 export 'src/tokens/app_gradients.dart';
+export 'src/tokens/app_motion.dart';
 export 'src/tokens/app_radius.dart';
 export 'src/tokens/app_shadows.dart';
 export 'src/tokens/app_spacing.dart';
-export 'src/tokens/app_motion.dart';
 export 'src/tokens/app_typography.dart';

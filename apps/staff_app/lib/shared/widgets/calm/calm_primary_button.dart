@@ -24,7 +24,7 @@ class CalmPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (variant) {
-      CalmPrimaryVariant.violet => (AppColors.primaryDark, Colors.white),
+      CalmPrimaryVariant.violet => (AppColors.primary, AppColors.onPrimary),
       CalmPrimaryVariant.success => (AppColors.success, Colors.white),
       CalmPrimaryVariant.danger => (AppColors.danger, Colors.white),
     };

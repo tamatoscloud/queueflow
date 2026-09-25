@@ -27,7 +27,7 @@ export function CalmEnded({ variant, queueId, serviceMode, reason }: CalmEndedPr
       {queueId ? (
         <Link
           href={`/q/${queueId}`}
-          className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] text-base font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] text-base font-semibold text-[var(--on-primary)] shadow-sm transition-opacity hover:opacity-95"
         >
           <RotateCcw className="h-4 w-4" aria-hidden />
           {ended.rejoinLabel}

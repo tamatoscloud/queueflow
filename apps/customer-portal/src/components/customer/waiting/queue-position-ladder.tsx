@@ -50,7 +50,7 @@ export function QueuePositionLadder({
                 className={cn(
                   'rounded-xl px-4 py-1.5 text-sm font-bold transition-all duration-300',
                   isActive || isReady
-                    ? 'scale-105 bg-primary text-white shadow-md'
+                    ? 'scale-105 bg-primary text-[var(--on-primary)] shadow-md'
                     : 'text-muted',
                   bump && isActive && 'animate-success-pop',
                 )}
