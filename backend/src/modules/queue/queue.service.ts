@@ -94,7 +94,8 @@ export class QueueService {
     };
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
-    // Parallel queries beat a serial $transaction under high DB RTT.
+    // One round-trip for rows + waiting counts (filtered relation _count),
+    // parallel with total count — avoids a follow-up groupBy under high RTT.
     const [totalItems, data] = await Promise.all([
       this.prisma.queue.count({ where }),
       this.prisma.queue.findMany({
@@ -102,32 +103,22 @@ export class QueueService {
         skip: paginationSkip(page, pageSize),
         take: pageSize,
         orderBy: { [sortBy]: sortOrder },
+        include: {
+          _count: {
+            select: {
+              entries: {
+                where: { deletedAt: null, status: 'WAITING' },
+              },
+            },
+          },
+        },
       }),
     ]);
 
-    // Staff Live Queue aggregates waitingCount from this list. Without it the
-    // console always shows "You're all clear" even when guests have joined.
-    const queueIds = data.map((q) => q.id);
-    const waitingByQueue = new Map<string, number>();
-    if (queueIds.length > 0) {
-      const grouped = await this.prisma.queueEntry.groupBy({
-        by: ['queueId'],
-        where: {
-          queueId: { in: queueIds },
-          deletedAt: null,
-          status: 'WAITING',
-        },
-        _count: { _all: true },
-      });
-      for (const row of grouped) {
-        waitingByQueue.set(row.queueId, row._count._all);
-      }
-    }
-
     return {
-      data: data.map((q) => ({
+      data: data.map(({ _count, ...q }) => ({
         ...q,
-        waitingCount: waitingByQueue.get(q.id) ?? 0,
+        waitingCount: _count.entries,
       })),
       meta: paginatedMeta(page, pageSize, totalItems),
     };

@@ -1,0 +1,8 @@
+# Railway service config (Root Directory: backend)
+# Liveness must NOT hit the deep /health route (Redis/Supabase probes).
+
+[deploy]
+healthcheckPath = "/api/v1/health/live"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

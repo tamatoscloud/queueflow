@@ -57,7 +57,10 @@ Copy [`config/production.env.example`](../config/production.env.example) and inj
 
 ### Health check
 
-`GET /api/v1/health` — use for load balancer probes.
+- **Load balancer / Railway liveness:** `GET /api/v1/health/live` (in-process only, no dependency I/O)
+- **Detailed ops check:** `GET /api/v1/health` (DB + Redis + Supabase + queue; may be `degraded`)
+
+See [`LATENCY_BUDGET.md`](LATENCY_BUDGET.md) for p95 targets.
 
 ## Customer Portal (Next.js)
 

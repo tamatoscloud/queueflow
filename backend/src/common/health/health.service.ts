@@ -27,13 +27,15 @@ export class HealthService {
   ) {}
 
   async getDetailedHealth() {
+    // Cap each dependency probe so a slow Redis/Supabase cannot blow
+    // out Railway/LB timeouts when someone hits the deep health route.
     const [database, redis, supabase, notificationQueue, notificationWorker, socketIo] =
       await Promise.all([
-        this.checkDatabase(),
-        this.checkRedis(),
-        this.checkSupabase(),
-        this.checkNotificationQueue(),
-        this.checkNotificationWorker(),
+        this.withCheckTimeout(this.checkDatabase(), 'database'),
+        this.withCheckTimeout(this.checkRedis(), 'redis'),
+        this.withCheckTimeout(this.checkSupabase(), 'supabase'),
+        this.withCheckTimeout(this.checkNotificationQueue(), 'notificationQueue'),
+        this.withCheckTimeout(this.checkNotificationWorker(), 'notificationWorker'),
         Promise.resolve(this.checkSocketIo()),
       ]);
 
@@ -68,6 +70,35 @@ export class HealthService {
     };
   }
 
+  private readonly dependencyCheckTimeoutMs = Number(
+    process.env.HEALTH_DEPENDENCY_TIMEOUT_MS ?? 1500,
+  );
+
+  private async withCheckTimeout(
+    promise: Promise<HealthCheckResult>,
+    label: string,
+  ): Promise<HealthCheckResult> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<HealthCheckResult>((resolve) => {
+          timer = setTimeout(
+            () =>
+              resolve({
+                status: 'degraded',
+                detail: `${label} timed out after ${this.dependencyCheckTimeoutMs}ms`,
+                latencyMs: this.dependencyCheckTimeoutMs,
+              }),
+            this.dependencyCheckTimeoutMs,
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   private async checkDatabase(): Promise<HealthCheckResult> {
     const started = Date.now();
     try {
@@ -83,7 +114,17 @@ export class HealthService {
   }
 
   private async checkRedis(): Promise<HealthCheckResult> {
-    const health = await this.redis.refreshHealth();
+    // Prefer a recent cached probe; only refresh when stale to keep
+    // /health from reconnecting Redis on every hit.
+    const cached = this.redis.getHealth();
+    const checkedAt = cached.lastCheckedAt
+      ? Date.parse(cached.lastCheckedAt)
+      : 0;
+    const staleMs = Number(process.env.REDIS_HEALTH_CACHE_MS ?? 10_000);
+    const health =
+      checkedAt > 0 && Date.now() - checkedAt < staleMs
+        ? cached
+        : await this.redis.refreshHealth();
     return {
       status: health.status === 'up' ? 'ok' : health.status === 'disabled' ? 'degraded' : 'down',
       latencyMs: health.latencyMs,
