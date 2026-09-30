@@ -69,8 +69,13 @@ bool _matchesSearch(QueueEntryModel entry, String query) {
       entry.displayCode.toLowerCase().contains(q);
 }
 
-String _realtimeLabel(RealtimeStatus status) => switch (status) {
-      RealtimeStatus.connected => 'Live',
+String _realtimeLabel({
+  required RealtimeStatus status,
+  required bool isLive,
+}) =>
+    switch (status) {
+      RealtimeStatus.connected when isLive => 'Live',
+      RealtimeStatus.connected => 'Updating',
       RealtimeStatus.connecting => 'Connecting',
       RealtimeStatus.reconnecting => 'Reconnecting',
       RealtimeStatus.disconnected => 'Updating',
@@ -89,6 +94,7 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
   String? _selectedEntryId;
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  bool _callSheetOpen = false;
 
   @override
   void dispose() {
@@ -99,60 +105,68 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
   Future<void> _refresh() async => ref.invalidate(queueSnapshotProvider(widget.queueId));
 
   /// Call Next must not stack CALLED guests or call a non-next waiting guest.
-  void _openCallNextSheet(
+  Future<void> _openCallNextSheet(
     BuildContext context,
     String serviceMode, {
     QueueEntryModel? focusEntry,
     List<QueueEntryModel> called = const [],
     QueueEntryModel? nextUp,
-  }) {
-    if (called.isNotEmpty) {
-      showCallNextSheet(
+  }) async {
+    if (_callSheetOpen) return;
+    setState(() => _callSheetOpen = true);
+    try {
+      if (called.isNotEmpty) {
+        await showCallNextSheet(
+          context: context,
+          ref: ref,
+          queueId: widget.queueId,
+          serviceMode: serviceMode,
+          nextEntry: called.first,
+          calling: false,
+          onRefresh: _refresh,
+        );
+        return;
+      }
+
+      final target = nextUp;
+      if (focusEntry != null && target != null && focusEntry.id != target.id) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Next up is #${target.displayCode.isEmpty ? '—' : target.displayCode} '
+                '(${target.customerName ?? 'guest'}). '
+                'Use Hold / No-show to reorder before calling another guest.',
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        await showCallNextSheet(
+          context: context,
+          ref: ref,
+          queueId: widget.queueId,
+          serviceMode: serviceMode,
+          nextEntry: target,
+          calling: false,
+          onRefresh: _refresh,
+        );
+        return;
+      }
+
+      await showCallNextSheet(
         context: context,
         ref: ref,
         queueId: widget.queueId,
         serviceMode: serviceMode,
-        nextEntry: called.first,
-        calling: false,
+        nextEntry: focusEntry ?? target,
+        calling: (focusEntry ?? target) != null,
         onRefresh: _refresh,
       );
-      return;
+    } finally {
+      if (mounted) setState(() => _callSheetOpen = false);
     }
-
-    final target = nextUp;
-    if (focusEntry != null && target != null && focusEntry.id != target.id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Next up is #${target.displayCode.isEmpty ? '—' : target.displayCode} '
-            '(${target.customerName ?? 'guest'}). '
-            'Use Hold / No-show to reorder before calling another guest.',
-          ),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-      showCallNextSheet(
-        context: context,
-        ref: ref,
-        queueId: widget.queueId,
-        serviceMode: serviceMode,
-        nextEntry: target,
-        calling: false,
-        onRefresh: _refresh,
-      );
-      return;
-    }
-
-    showCallNextSheet(
-      context: context,
-      ref: ref,
-      queueId: widget.queueId,
-      serviceMode: serviceMode,
-      nextEntry: focusEntry ?? target,
-      calling: (focusEntry ?? target) != null,
-      onRefresh: _refresh,
-    );
   }
 
   List<QueueEntryModel> _filter(List<QueueEntryModel> entries) =>
@@ -164,8 +178,9 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
     final async = ref.watch(queueSnapshotProvider(widget.queueId));
     final isWide = Breakpoints.isTablet(context);
     final realtimeStatus = ref.watch(realtimeStatusProvider);
+    final isRealtimeLive = ref.watch(realtimeLiveProvider);
     final liveLabel = realtimeStatus.when(
-      data: _realtimeLabel,
+      data: (s) => _realtimeLabel(status: s, isLive: isRealtimeLive),
       loading: () => 'Connecting',
       error: (_, __) => 'Updating',
     );
@@ -409,12 +424,14 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                         actionLabel: called.isNotEmpty
                             ? 'Manage called guest'
                             : modeInfo.callNextActionLabel,
-                        onPressed: () => _openCallNextSheet(
-                          context,
-                          serviceMode,
-                          called: called,
-                          nextUp: nextUp,
-                        ),
+                        onPressed: _callSheetOpen
+                            ? null
+                            : () => _openCallNextSheet(
+                                  context,
+                                  serviceMode,
+                                  called: called,
+                                  nextUp: nextUp,
+                                ),
                       )
                     : CalmQueueStickyAction(
                         waitingCount: 0,

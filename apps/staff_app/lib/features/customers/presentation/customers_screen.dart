@@ -276,20 +276,54 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final called = await ref.read(businessApiClientProvider).callNext(queueId);
+      final api = ref.read(businessApiClientProvider);
+      // Never call the wrong person — verify this guest is next before callNext.
+      final snapshot = await api.getQueueSnapshot(queueId);
+      final alreadyCalled = snapshot.currentCalled;
+      if (alreadyCalled != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Finish #${alreadyCalled.displayCode.isEmpty ? '—' : alreadyCalled.displayCode} '
+              '(${alreadyCalled.customerName ?? 'guest'}) first — Seat / Hold / No-show.',
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+      final waiting = snapshot.entries.where((e) => e.status == 'WAITING').toList()
+        ..sort((a, b) => (a.position ?? 999).compareTo(b.position ?? 999));
+      final next = waiting.isEmpty ? null : waiting.first;
+      if (next == null || next.id != entryId) {
+        if (!mounted) return;
+        final nextLabel = next == null
+            ? 'No one is waiting.'
+            : 'Next up is #${next.displayCode.isEmpty ? '—' : next.displayCode} '
+                '(${next.customerName ?? 'guest'}). Open the queue board to call in order.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextLabel),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
+      final called = await api.callNext(queueId);
       if (!mounted) return;
       ref.invalidate(customerDetailProvider(widget.customerId));
-      final match = called.id == entryId;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            match
+            called.id == entryId
                 ? 'Called — notifying guest…'
-                : 'Called next guest #${called.displayCode.isEmpty ? '—' : called.displayCode}. '
-                    'This guest was not next in line.',
+                : 'Called #${called.displayCode.isEmpty ? '—' : called.displayCode}. '
+                    'Queue order changed — refresh and try again.',
           ),
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: match ? 3 : 5),
         ),
       );
     } catch (e) {

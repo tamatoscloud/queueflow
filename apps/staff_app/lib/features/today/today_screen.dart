@@ -117,12 +117,17 @@ String? _venueName(WidgetRef ref) {
   return branches.first.name;
 }
 
-String _realtimeLabel(RealtimeStatus status) => switch (status) {
-  RealtimeStatus.connected => 'Online',
-  RealtimeStatus.connecting => 'Connecting…',
-  RealtimeStatus.reconnecting => 'Reconnecting…',
-  RealtimeStatus.disconnected => 'Refreshing…',
-};
+String _realtimeLabel({
+  required RealtimeStatus status,
+  required bool isLive,
+}) =>
+    switch (status) {
+      RealtimeStatus.connected when isLive => 'Online',
+      RealtimeStatus.connected => 'Updating…',
+      RealtimeStatus.connecting => 'Connecting…',
+      RealtimeStatus.reconnecting => 'Reconnecting…',
+      RealtimeStatus.disconnected => 'Refreshing…',
+    };
 
 String _friendlyCallLabel(ServiceModeInfo modeInfo) => switch (modeInfo.label) {
   'Takeaway' => 'Call next order',
@@ -140,6 +145,7 @@ class TodayScreen extends ConsumerStatefulWidget {
 
 class _TodayScreenState extends ConsumerState<TodayScreen> {
   String? _selectedQueueId;
+  bool _callNextInFlight = false;
 
   QueueEntryModel? _nextWaiting(QueueSnapshotModel? snapshot) {
     if (snapshot == null) return null;
@@ -200,47 +206,55 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Future<void> _callNext(BuildContext context, QueueModel queue) async {
-    setState(() => _selectedQueueId = queue.id);
-    // Prefer cached snapshot — don't block the sheet on a cold network fetch.
-    QueueEntryModel? next;
-    QueueEntryModel? alreadyCalled;
-    final cached = ref.read(todayQueueSnapshotProvider(queue.id));
-    if (cached.hasValue) {
-      alreadyCalled = _currentCalled(cached.requireValue);
-      next = _nextWaiting(cached.requireValue);
-    } else {
-      try {
-        final snapshot = await ref
-            .read(todayQueueSnapshotProvider(queue.id).future)
-            .timeout(const Duration(seconds: 8));
-        alreadyCalled = _currentCalled(snapshot);
-        next = _nextWaiting(snapshot);
-      } catch (e) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiExceptionMessage(e))),
-        );
+    if (_callNextInFlight) return;
+    setState(() {
+      _callNextInFlight = true;
+      _selectedQueueId = queue.id;
+    });
+    try {
+      // Prefer cached snapshot — don't block the sheet on a cold network fetch.
+      QueueEntryModel? next;
+      QueueEntryModel? alreadyCalled;
+      final cached = ref.read(todayQueueSnapshotProvider(queue.id));
+      if (cached.hasValue) {
+        alreadyCalled = _currentCalled(cached.requireValue);
+        next = _nextWaiting(cached.requireValue);
+      } else {
+        try {
+          final snapshot = await ref
+              .read(todayQueueSnapshotProvider(queue.id).future)
+              .timeout(const Duration(seconds: 8));
+          alreadyCalled = _currentCalled(snapshot);
+          next = _nextWaiting(snapshot);
+        } catch (e) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(apiExceptionMessage(e))),
+          );
+          return;
+        }
+      }
+      if (!context.mounted) return;
+      // If someone is already called, reopen their actions (seat / call again)
+      // instead of advancing to the next waiter.
+      if (alreadyCalled != null) {
+        await _openCalledSheet(context, queue, alreadyCalled);
         return;
       }
+      await showCallNextSheet(
+        context: context,
+        ref: ref,
+        queueId: queue.id,
+        serviceMode: queue.serviceMode,
+        nextEntry: next,
+        calling: next != null,
+        onRefresh: () async {
+          ref.invalidate(todayQueueSnapshotProvider(queue.id));
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _callNextInFlight = false);
     }
-    if (!context.mounted) return;
-    // If someone is already called, reopen their actions (seat / call again)
-    // instead of advancing to the next waiter.
-    if (alreadyCalled != null) {
-      await _openCalledSheet(context, queue, alreadyCalled);
-      return;
-    }
-    await showCallNextSheet(
-      context: context,
-      ref: ref,
-      queueId: queue.id,
-      serviceMode: queue.serviceMode,
-      nextEntry: next,
-      calling: next != null,
-      onRefresh: () async {
-        ref.invalidate(todayQueueSnapshotProvider(queue.id));
-      },
-    );
   }
 
   bool _isSessionError(Object error) {
@@ -288,6 +302,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       ref.watch(todayRealtimeProvider(preferredId));
     }
     final realtimeStatus = ref.watch(realtimeStatusProvider);
+    final isRealtimeLive = ref.watch(realtimeLiveProvider);
     final venueName = _venueName(ref);
     final contentMax = StaffContentWidth.maxWidth(context);
 
@@ -343,12 +358,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         );
         final hasActiveBoard = totalWaiting > 0 || calledOnPrimary != null;
         final modeInfo = ServiceModeInfo.forMode(primary.serviceMode);
+        final hasSavedSnapshot = snapshotAsync.hasValue;
         final liveLabel = !isOnline
-            ? 'Offline · saved'
+            ? (hasSavedSnapshot ? 'Offline · saved' : 'Offline')
             : realtimeStatus.when(
-                data: _realtimeLabel,
-                loading: () => 'Connecting',
-                error: (_, __) => 'Updating',
+                data: (s) => _realtimeLabel(status: s, isLive: isRealtimeLive),
+                loading: () => 'Connecting…',
+                error: (_, __) => 'Updating…',
               );
 
         return Stack(
@@ -384,7 +400,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(
-                                'Showing last saved queue. Actions are paused until you reconnect.',
+                                hasSavedSnapshot
+                                    ? 'Showing last saved queue. Actions are paused until you reconnect.'
+                                    : "You're offline. Reconnect to load the guest board — actions are paused.",
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.calmCharcoal,
                                       fontWeight: FontWeight.w600,
@@ -530,7 +548,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                                     ? 'Continue with called guest'
                                     : _friendlyCallLabel(modeInfo),
                                 icon: Icons.campaign_rounded,
-                                onPressed: () => _callNext(context, primary),
+                                onPressed: _callNextInFlight
+                                    ? null
+                                    : () => _callNext(context, primary),
                               ),
                             ),
                           ),
