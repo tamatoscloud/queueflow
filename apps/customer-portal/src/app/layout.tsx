@@ -10,6 +10,8 @@ const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
   display: 'swap',
+  fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
 const playfair = Playfair_Display({
@@ -17,6 +19,9 @@ const playfair = Playfair_Display({
   subsets: ['latin'],
   weight: ['600', '700'],
   display: 'swap',
+  // Avoid null loader crashes in CI when fonts.googleapis.com is flaky.
+  fallback: ['Georgia', 'Times New Roman', 'serif'],
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {
