@@ -29,8 +29,21 @@ Git author <login> must have access to the project on Vercel
 
 **Preferred workaround — author commits as the team owner:**
 
+Agents/maintainers should use the helper (does **not** change git config):
+
+```powershell
+# Windows
+.\scripts\commit-as-deploy.ps1 -Message "fix: whatever"
+```
+
 ```bash
-# Do not change git config permanently. Override per commit:
+# macOS / Linux / Git Bash
+./scripts/commit-as-deploy.sh "fix: whatever"
+```
+
+Equivalent one-liner:
+
+```bash
 git -c user.name="tamatoscloud" -c user.email="tamatos.cloud@gmail.com" commit -m "…"
 git push tamatos HEAD
 ```
