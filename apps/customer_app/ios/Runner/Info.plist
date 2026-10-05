@@ -47,7 +47,7 @@
 	<true/>
 	<!-- Required by queueflow_services' ScannerService (mobile_scanner). -->
 	<key>NSCameraUsageDescription</key>
-	<string>QueueFlow uses the camera to scan queue and ticket QR codes.</string>
+	<string>Quyk uses the camera to scan queue and ticket QR codes.</string>
 	<!-- Required by queueflow_services' NotificationService (firebase_messaging). -->
 	<key>UIBackgroundModes</key>
 	<array>

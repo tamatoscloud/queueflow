@@ -35,17 +35,17 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue(type = "string", name = "app_name", value = "QueueFlow Business Dev")
+            resValue(type = "string", name = "app_name", value = "Quyk Business Dev")
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            resValue(type = "string", name = "app_name", value = "QueueFlow Business Staging")
+            resValue(type = "string", name = "app_name", value = "Quyk Business Staging")
         }
         create("production") {
             dimension = "environment"
-            resValue(type = "string", name = "app_name", value = "QueueFlow Business")
+            resValue(type = "string", name = "app_name", value = "Quyk Business")
         }
     }
 

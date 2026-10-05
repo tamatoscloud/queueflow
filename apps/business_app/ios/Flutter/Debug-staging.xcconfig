@@ -1,3 +1,3 @@
 #include "Debug.xcconfig"
 PRODUCT_BUNDLE_IDENTIFIER = com.queueflow.businessApp.staging
-PRODUCT_NAME = QueueFlow Business Staging
+PRODUCT_NAME = Quyk Business Staging
