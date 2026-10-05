@@ -66,8 +66,8 @@ Future<ConnectionDiagnostics> probeBackend(Dio dio, String apiBaseUrl) async {
     final response = await dio.get<Map<String, dynamic>>(
       '$root/api/v1/health/live',
       options: Options(
-        receiveTimeout: const Duration(seconds: 5),
-        sendTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 20),
+        sendTimeout: const Duration(seconds: 20),
       ),
     );
     stopwatch.stop();

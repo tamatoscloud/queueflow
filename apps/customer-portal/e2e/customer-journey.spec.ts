@@ -60,7 +60,10 @@ test.describe('Customer journey — service modes', () => {
     expect(entryId).toBeTruthy();
 
     await callUntilStatus(api, queues.dineIn, staffToken, entryId!, ['CALLED', 'READY', 'SERVING']);
-    await page.getByText(/your table is ready/i).waitFor({ state: 'visible', timeout: 20_000 });
+    await page
+      .getByText(/your turn|table is ready|please come now/i)
+      .first()
+      .waitFor({ state: 'visible', timeout: 20_000 });
 
     await completeEntry(api, entryId!, staffToken);
     const tracking = await getTracking(api, entryId!);

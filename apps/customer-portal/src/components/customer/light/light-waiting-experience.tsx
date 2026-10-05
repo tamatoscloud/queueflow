@@ -10,6 +10,10 @@ import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
 import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
 import { useWaitCountdown } from '@/hooks/use-wait-countdown';
 import { WaitTimerCircle } from '@/components/customer/light/wait-timer-circle';
+import {
+  formatAhead,
+  getServiceModeCopy,
+} from '@/lib/restaurant/service-mode-config';
 import { cn } from '@/lib/utils';
 
 type LightWaitingExperienceProps = {
@@ -83,11 +87,14 @@ export function LightWaitingExperience({
 
   const session = loadQueueSession();
   const { customersAhead, estimatedWaitMinutes, position } = tracking;
-  const clampedEstimate = clampEstimatedWaitMinutes(estimatedWaitMinutes);
+  const copy = getServiceModeCopy(tracking.queue.serviceMode);
+  // Whole minutes only — avoid false precision like "26.75".
+  const clampedEstimate = Math.round(
+    clampEstimatedWaitMinutes(estimatedWaitMinutes),
+  );
   const countdown = useWaitCountdown(tracking.entry.id, clampedEstimate, true);
 
-  const mins = Math.floor(countdown.remainingSeconds / 60);
-  const secs = countdown.remainingSeconds % 60;
+  const minsLeft = Math.max(0, Math.ceil(countdown.remainingSeconds / 60));
   const totalSeconds = Math.max(1, Math.round(clampedEstimate * 60));
   const progress = countdown.finished
     ? 0.08
@@ -97,6 +104,11 @@ export function LightWaitingExperience({
   const party = pad2(tracking.entry.partySize);
   const queueTotal = Math.max(position, customersAhead + 1);
   const branchLine = [tracking.branch.name].filter(Boolean).join(', ');
+  const aheadText = formatAhead(customersAhead, copy);
+  const waitWhy =
+    customersAhead <= 0
+      ? "You're next in line — please stay nearby."
+      : `${aheadText} · about ${clampedEstimate} min estimated wait`;
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -199,29 +211,46 @@ export function LightWaitingExperience({
           We&apos;ll notify you when your turn approaches.
         </p>
 
+        <div
+          className="mx-auto mt-6 max-w-sm rounded-3xl bg-[#f3f0ff] px-5 py-6"
+          aria-live="polite"
+        >
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8b8b96]">
+            Waiting line
+          </p>
+          <p className="mt-2 font-display text-[56px] font-bold leading-none tracking-tight text-black tabular-nums">
+            {customersAhead}
+          </p>
+          <p className="mt-2 text-[15px] font-semibold text-[#4b5563]">
+            {aheadText}
+            {customersAhead > 0 ? ' of you' : ''}
+          </p>
+          <p className="mt-3 text-[13px] leading-snug text-[#6b7280]">{waitWhy}</p>
+        </div>
+
         <div className="relative mx-auto mt-6 w-[280px]">
           <WaitTimerCircle progress={progress} className="relative" />
         </div>
 
         <p
-          className="mt-5 font-display text-[40px] font-bold leading-none tracking-tight text-black"
+          className="mt-4 font-display text-[36px] font-bold leading-none tracking-tight text-black"
           aria-live="polite"
           aria-atomic="true"
         >
-          {countdown.finished ? (
-            <span className="text-[28px]">Any moment</span>
+          {countdown.finished || customersAhead <= 0 ? (
+            <span className="text-[24px]">Any moment</span>
           ) : (
             <>
-              <span className="tabular-nums">{mins}</span>
+              <span className="text-[15px] font-medium text-[#6b7280]">About </span>
+              <span className="tabular-nums">{minsLeft}</span>
               <span className="ml-1.5 align-baseline text-[15px] font-medium text-[#6b7280]">
-                mins
-              </span>
-              <span className="ml-2 tabular-nums">{pad2(secs)}</span>
-              <span className="ml-1.5 align-baseline text-[15px] font-medium text-[#6b7280]">
-                seconds
+                min left
               </span>
             </>
           )}
+        </p>
+        <p className="mt-2 text-[12px] text-[#9ca3af]">
+          Updates as people ahead of you are served
         </p>
       </section>
 
@@ -238,10 +267,33 @@ export function LightWaitingExperience({
           <InfoTile label="Party Size" value={party} />
         </div>
         <div className="mt-2.5 grid grid-cols-3 gap-2.5">
-          <InfoTile label="Queue" value={String(queueTotal)} />
-          <InfoTile label="Position" value={`#${position}`} />
-          <InfoTile label="Party Size" value={party} />
+          <InfoTile
+            label="Ahead of you"
+            value={String(customersAhead)}
+          />
+          <InfoTile label="In line" value={String(queueTotal)} />
+          <div className="rounded-2xl bg-[#f3f0ff] px-3.5 py-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b8b96]">
+              {copy.tokenLabel}
+            </p>
+            <p
+              className="mt-1 text-[17px] font-bold uppercase leading-tight tracking-wide text-black"
+              aria-label={`Queue token ${tracking.entry.displayCode}`}
+            >
+              {tracking.entry.displayCode}
+            </p>
+          </div>
         </div>
+        <p className="mt-3 text-center text-[12px] leading-snug text-[#6b7280]">
+          You are #{position} of {queueTotal} in line. Show{' '}
+          <span
+            className="font-semibold text-black"
+            aria-label={`Queue token ${tracking.entry.displayCode}`}
+          >
+            {tracking.entry.displayCode}
+          </span>{' '}
+          when staff calls you.
+        </p>
 
         <button
           type="button"

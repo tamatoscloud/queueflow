@@ -61,6 +61,8 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
   String? _successMessage;
   String? _busyAction;
   QueueEntryModel? _calledEntry;
+  /// True next guest when the sheet was opened on the wrong filtered entry.
+  QueueEntryModel? _resolvedNext;
 
   @override
   void initState() {
@@ -125,6 +127,7 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
       _successMessage = null;
     });
     try {
+      final expectedId = widget.nextEntry?.id;
       // Defense in depth: if someone is already CALLED, manage them — don't call again.
       final snapshot = await ref.read(businessApiClientProvider).getQueueSnapshot(widget.queueId);
       final already = snapshot.currentCalled;
@@ -138,8 +141,43 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
         await widget.onRefresh();
         return;
       }
+
+      // Never claim a different guest than the one shown in this sheet.
+      final waiting = snapshot.entries.where((e) => e.status == 'WAITING').toList()
+        ..sort((a, b) => (a.position ?? 999).compareTo(b.position ?? 999));
+      final trueNext = waiting.isEmpty ? null : waiting.first;
+      if (expectedId != null && (trueNext == null || trueNext.id != expectedId)) {
+        if (!mounted) return;
+        final nextLabel = trueNext == null
+            ? 'No one is waiting right now.'
+            : 'Next up is #${trueNext.displayCode.isEmpty ? '—' : trueNext.displayCode} '
+                '(${trueNext.customerName ?? 'guest'}). '
+                'Clear search / finish earlier guests before calling another.';
+        setState(() {
+          _calling = false;
+          _errorMessage = nextLabel;
+          if (trueNext != null) {
+            _calledEntry = null;
+            _resolvedNext = trueNext;
+          }
+        });
+        await widget.onRefresh();
+        return;
+      }
+
       final entry = await ref.read(businessApiClientProvider).callNext(widget.queueId);
       if (!mounted) return;
+      if (expectedId != null && entry.id != expectedId) {
+        setState(() {
+          _calledEntry = entry;
+          _calling = false;
+          _errorMessage =
+              'Queue order changed — called #${entry.displayCode.isEmpty ? '—' : entry.displayCode} '
+              'instead. Refresh and try again.';
+        });
+        await widget.onRefresh();
+        return;
+      }
       setState(() {
         _calledEntry = entry;
         // Optimistic only — delivery confirmation lives under Messages.
@@ -158,7 +196,7 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
   }
 
   Future<void> _entryAction(String action) async {
-    final entry = _calledEntry ?? widget.nextEntry;
+    final entry = _calledEntry ?? _resolvedNext ?? widget.nextEntry;
     if (entry == null || _actionBusy) return;
     setState(() {
       _actionBusy = true;
@@ -210,7 +248,7 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final entry = _calledEntry ?? widget.nextEntry;
+    final entry = _calledEntry ?? _resolvedNext ?? widget.nextEntry;
     final modeInfo = ServiceModeInfo.forMode(widget.serviceMode);
     final isCalled = entry?.status == 'CALLED' || _calledEntry != null;
     final showingSuccess = _successMessage != null;

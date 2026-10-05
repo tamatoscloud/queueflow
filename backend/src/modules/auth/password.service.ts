@@ -20,4 +20,12 @@ export class PasswordService {
   verify(plain: string, hash: string): Promise<boolean> {
     return bcrypt.compare(plain, hash);
   }
+
+  /** True when the stored hash uses a higher cost than the current target. */
+  needsRehash(hash: string): boolean {
+    const match = /^\$2[aby]?\$(\d{2})\$/.exec(hash);
+    if (!match) return false;
+    const cost = Number(match[1]);
+    return Number.isFinite(cost) && cost > ROUNDS;
+  }
 }

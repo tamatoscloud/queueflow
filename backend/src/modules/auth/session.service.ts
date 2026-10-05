@@ -42,6 +42,14 @@ export class SessionService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    // Demo/older hashes may use cost 12+; refresh async so future logins are faster.
+    if (this.passwordService.needsRehash(user.passwordHash)) {
+      void this.passwordService
+        .hash(ctx.password)
+        .then((nextHash) => this.authRepo.updatePassword(user.id, nextHash))
+        .catch(() => undefined);
+    }
+
     const deviceId = ctx.deviceId ?? generateDeviceId();
     const refreshRaw = generateOpaqueToken(48);
     const refreshHash = hashToken(refreshRaw);
