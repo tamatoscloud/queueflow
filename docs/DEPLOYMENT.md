@@ -73,6 +73,8 @@ npm run start
 
 Deploy to **Vercel** (recommended) or any Node.js host.
 
+**Demo / preview deploys:** when GitHub → Vercel shows `Deployment was blocked` (git author protection), use the CLI path from [`VERCEL_DEPLOY_RUNBOOK.md`](VERCEL_DEPLOY_RUNBOOK.md). Always deploy from `apps/customer-portal` (not the monorepo root). Public demo host: `https://queueflow-six-beta.vercel.app`.
+
 Required env vars:
 
 - `NEXT_PUBLIC_API_BASE_URL`
