@@ -25,13 +25,25 @@ Git author <login> must have access to the project on Vercel
 
 **Cause:** Vercel team **git author / fork protection** — the commit author is not a member of the Queueflow Vercel team.
 
-**Fix (org owner, preferred):**
+**Hobby plan note:** Team **Queueflow** is on **Hobby**, so member invites (e.g. `sealiasad`) are not allowed. Until the team is upgraded to Pro:
+
+**Preferred workaround — author commits as the team owner:**
+
+```bash
+# Do not change git config permanently. Override per commit:
+git -c user.name="tamatoscloud" -c user.email="tamatos.cloud@gmail.com" commit -m "…"
+git push tamatos HEAD
+```
+
+That author (`tamatoscloud <tamatos.cloud@gmail.com>`) is the Vercel team OWNER and passes git author checks.
+
+**If Pro is available later:**
 
 1. Vercel → Team **Queueflow** → Settings → Members  
-2. Invite the GitHub author (or disable author protection for this repo if policy allows)  
+2. Invite `se.aliasad@gmail.com` (GitHub `sealiasad`)  
 3. Re-run the failed deployment from the Vercel dashboard
 
-**Fallback (engineer, no team invite):** use **CLI deploy from a slim tree** (below). Do not upload the whole monorepo root.
+**CLI fallback:** use **CLI deploy from a slim tree** (below). Do not upload the whole monorepo root.
 
 ## CLI deploy — customer portal (six-beta)
 
