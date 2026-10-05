@@ -133,4 +133,49 @@ describe('QueueNotificationBridgeService idempotency', () => {
       expect.objectContaining({ type: NotificationType.YOUR_TURN }),
     );
   });
+
+  it('passes guest WhatsApp preference through on CustomerCalled (YOUR_TURN)', async () => {
+    repository.findEntryContext.mockResolvedValue({
+      id: 'entry-wa',
+      customerId: 'cust-wa',
+      customer: { fullName: 'Sam' },
+      notificationPreference: 'WHATSAPP',
+      queueToken: { displayCode: 'A-010' },
+      queue: { name: 'Dine-in' },
+      business: { name: 'Bella Vista', settings: { notificationsEnabled: true } },
+      lastKnownPosition: 1,
+    });
+
+    await bridge.handleDomainEvent({
+      type: 'CustomerCalled',
+      aggregateId: 'queue-1',
+      businessId: 'biz-1',
+      occurredAt: new Date('2026-10-05T12:00:00Z'),
+      payload: { entryId: 'entry-wa', displayCode: 'A-010' },
+    });
+
+    expect(dispatch.scheduleForPreference).toHaveBeenCalledTimes(1);
+    expect(dispatch.scheduleForPreference).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NotificationType.YOUR_TURN,
+        preference: 'WHATSAPP',
+        customerId: 'cust-wa',
+        queueEntryId: 'entry-wa',
+      }),
+    );
+  });
+
+  it('swallows dispatch failures so call path stays demo-safe', async () => {
+    dispatch.scheduleForPreference.mockRejectedValueOnce(new Error('provider timeout'));
+
+    await expect(
+      bridge.handleDomainEvent({
+        type: 'CustomerCalled',
+        aggregateId: 'queue-1',
+        businessId: 'biz-1',
+        occurredAt: new Date(),
+        payload: { entryId: 'entry-1', displayCode: 'A-001' },
+      }),
+    ).resolves.toBeUndefined();
+  });
 });
