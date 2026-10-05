@@ -143,6 +143,18 @@ jobs:
       - name: Tests
         run: npm test
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E Browse Menu (prod demo API)
+        run: npx playwright test e2e/browse-menu.spec.ts
+        env:
+          BASE_URL: https://queueflow-six-beta.vercel.app
+          API_BASE_URL: https://queueflow-backend-production.up.railway.app/api/v1
+          DINE_IN_QUEUE_ID: 5354156e-0e46-41a1-ab49-8c6dd9ac80f7
+          TAKEAWAY_QUEUE_ID: 763167b4-7222-4970-ad13-c3cd34811feb
+          DRIVE_IN_QUEUE_ID: 94f4d0c7-d458-431f-b27c-6995c223ffde
+
       - name: Production build
         run: npm run build
         env:
