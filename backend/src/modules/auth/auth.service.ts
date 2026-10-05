@@ -38,16 +38,19 @@ export class AuthService {
       platform: dto.platform,
       ipAddress: meta?.ipAddress,
       userAgent: meta?.userAgent,
-    }).then(async (result) => {
-      await this.audit.log({
-        businessId: result.user.businessId,
-        actorUserId: result.user.id,
-        action: 'auth.login',
-        entityType: 'user',
-        entityId: result.user.id,
-        ipAddress: meta?.ipAddress,
-        userAgent: meta?.userAgent,
-      });
+    }).then((result) => {
+      // Audit must not block the login response (was adding ~1–3s DB RTT).
+      void this.audit
+        .log({
+          businessId: result.user.businessId,
+          actorUserId: result.user.id,
+          action: 'auth.login',
+          entityType: 'user',
+          entityId: result.user.id,
+          ipAddress: meta?.ipAddress,
+          userAgent: meta?.userAgent,
+        })
+        .catch(() => undefined);
       const { user, ...tokens } = result;
       return { ...tokens, user };
     });

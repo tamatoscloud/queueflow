@@ -8,11 +8,8 @@ export function cn(...inputs: ClassValue[]) {
 export function formatWait(minutes: number): string {
   if (minutes <= 0) return 'Soon';
   if (minutes < 60) {
-    const rounded =
-      Math.abs(minutes - Math.round(minutes)) < 0.05
-        ? Math.round(minutes)
-        : Math.round(minutes * 10) / 10;
-    return `${rounded} min`;
+    // Guest-facing waits use whole minutes (no "26.7 min").
+    return `${Math.max(1, Math.round(minutes))} min`;
   }
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);

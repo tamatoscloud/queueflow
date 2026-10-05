@@ -9,4 +9,9 @@ describe('PasswordService', () => {
     expect(await service.verify('Password123!', hash)).toBe(true);
     expect(await service.verify('wrong', hash)).toBe(false);
   });
+
+  it('detects higher-cost hashes that should be rehashed', () => {
+    expect(service.needsRehash('$2b$12$abcdefghijklmnopqrstuv')).toBe(true);
+    expect(service.needsRehash('$2b$10$abcdefghijklmnopqrstuv')).toBe(false);
+  });
 });

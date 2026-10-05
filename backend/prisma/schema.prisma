@@ -597,6 +597,7 @@ model User {
   assignedQrCodes    QRCode[]          @relation("QRAssignedUser")
 
   @@index([businessId])
+  @@index([email])
   @@map("users")
 }
 

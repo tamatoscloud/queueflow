@@ -18,6 +18,7 @@ import '../../../shared/widgets/queue_join_qr_sheet.dart';
 import '../../../shared/widgets/staff/call_next_sheet.dart';
 import '../../../shared/widgets/staff/service_mode_helpers.dart';
 import '../../../shared/widgets/staff/staff_empty_states.dart';
+import '../call_next_target.dart';
 
 final queueSnapshotProvider =
     FutureProvider.autoDispose.family<QueueSnapshotModel, String>((ref, queueId) async {
@@ -129,8 +130,9 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
       }
 
       final target = nextUp;
-      if (focusEntry != null && target != null && focusEntry.id != target.id) {
-        if (context.mounted) {
+      if (focusEntry != null &&
+          !canAutoCallFocus(focus: focusEntry, trueNext: target)) {
+        if (context.mounted && target != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -161,7 +163,7 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
         queueId: widget.queueId,
         serviceMode: serviceMode,
         nextEntry: focusEntry ?? target,
-        calling: (focusEntry ?? target) != null,
+        calling: canAutoCallFocus(focus: focusEntry ?? target, trueNext: target),
         onRefresh: _refresh,
       );
     } finally {
@@ -241,19 +243,21 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
           final serviceMode = snapshot.queue.serviceMode;
           final modeInfo = ServiceModeInfo.forMode(serviceMode);
 
-          final called = _filter(
-            snapshot.entries.where((e) => e.status == 'CALLED').toList(),
-          );
-          final held = _filter(
-            snapshot.entries.where((e) => e.status == 'HOLDING').toList(),
-          );
-          final waiting = _filter(
-            snapshot.entries.where((e) => e.status == 'WAITING').toList()
-              ..sort((a, b) => (a.position ?? 999).compareTo(b.position ?? 999)),
-          );
+          // Call order must ignore search filters — otherwise tapping Call on a
+          // filtered guest (e.g. #74) can claim the true next guest (#66).
+          final calledAll = snapshot.entries.where((e) => e.status == 'CALLED').toList();
+          final heldAll = snapshot.entries.where((e) => e.status == 'HOLDING').toList();
+          final waitingAll = waitingEntriesSorted(snapshot.entries);
+          final trueNextUp = trueNextWaiting(snapshot.entries);
 
-          final totalWaiting = waiting.length;
-          final nextUp = waiting.isNotEmpty ? waiting.first : null;
+          final called = _filter(calledAll);
+          final held = _filter(heldAll);
+          final waiting = _filter(waitingAll);
+
+          final totalWaiting = waitingAll.length;
+          final nextUpInView = trueNextUp != null && waiting.any((e) => e.id == trueNextUp.id)
+              ? trueNextUp
+              : null;
 
           if (isWide) {
             return _WideConsoleLayout(
@@ -271,19 +275,20 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
               onCallNext: () => _openCallNextSheet(
                 context,
                 serviceMode,
-                called: called,
-                nextUp: nextUp,
+                called: calledAll,
+                nextUp: trueNextUp,
               ),
               onCallEntry: (entry) => _openCallNextSheet(
                 context,
                 serviceMode,
                 focusEntry: entry,
-                called: called,
-                nextUp: nextUp,
+                called: calledAll,
+                nextUp: trueNextUp,
               ),
               onRefresh: _refresh,
               queueId: widget.queueId,
               ref: ref,
+              trueNextUpId: trueNextUp?.id,
             );
           }
 
@@ -372,17 +377,17 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                         onAddCustomer: () => showWalkIn(context, ref, widget.queueId, _refresh),
                       )
                     else if (waiting.isNotEmpty) ...[
-                      if (nextUp != null) ...[
+                      if (nextUpInView != null) ...[
                         CalmQueueEntryCard(
-                          entry: nextUp,
+                          entry: nextUpInView,
                           serviceMode: serviceMode,
                           isNextUp: true,
                           onCall: () => _openCallNextSheet(
                             context,
                             serviceMode,
-                            focusEntry: nextUp,
-                            called: called,
-                            nextUp: nextUp,
+                            focusEntry: nextUpInView,
+                            called: calledAll,
+                            nextUp: trueNextUp,
                           ),
                         ),
                         if (waiting.length > 1) ...[
@@ -390,8 +395,13 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                           const CalmSectionLabel('WAITING'),
                           const SizedBox(height: AppSpacing.sm),
                         ],
+                      ] else ...[
+                        const CalmSectionLabel('WAITING'),
+                        const SizedBox(height: AppSpacing.sm),
                       ],
-                      ...waiting.skip(nextUp != null ? 1 : 0).map(
+                      ...waiting
+                          .where((e) => nextUpInView == null || e.id != nextUpInView.id)
+                          .map(
                             (e) => Padding(
                               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                               child: CalmQueueEntryCard(
@@ -401,8 +411,8 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                                   context,
                                   serviceMode,
                                   focusEntry: e,
-                                  called: called,
-                                  nextUp: nextUp,
+                                  called: calledAll,
+                                  nextUp: trueNextUp,
                                 ),
                                 onHold: () => entryAction(ref, widget.queueId, e.id, 'hold', _refresh),
                                 onSkip: () => entryAction(ref, widget.queueId, e.id, 'skip', _refresh),
@@ -417,11 +427,11 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: totalWaiting > 0 || called.isNotEmpty
+                child: totalWaiting > 0 || calledAll.isNotEmpty
                     ? CalmQueueStickyAction(
                         waitingCount: totalWaiting,
                         waitingUnit: modeInfo.waitingLabel,
-                        actionLabel: called.isNotEmpty
+                        actionLabel: calledAll.isNotEmpty
                             ? 'Manage called guest'
                             : modeInfo.callNextActionLabel,
                         onPressed: _callSheetOpen
@@ -429,8 +439,8 @@ class _QueueConsoleScreenState extends ConsumerState<QueueConsoleScreen> {
                             : () => _openCallNextSheet(
                                   context,
                                   serviceMode,
-                                  called: called,
-                                  nextUp: nextUp,
+                                  called: calledAll,
+                                  nextUp: trueNextUp,
                                 ),
                       )
                     : CalmQueueStickyAction(
@@ -466,6 +476,7 @@ class _WideConsoleLayout extends StatelessWidget {
     required this.onRefresh,
     required this.queueId,
     required this.ref,
+    this.trueNextUpId,
   });
 
   final QueueSnapshotModel snapshot;
@@ -484,6 +495,7 @@ class _WideConsoleLayout extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final String queueId;
   final WidgetRef ref;
+  final String? trueNextUpId;
 
   QueueEntryModel? get _selected {
     final all = [...called, ...held, ...waiting];
@@ -493,6 +505,11 @@ class _WideConsoleLayout extends StatelessWidget {
       }
     }
     if (called.isNotEmpty) return called.first;
+    if (trueNextUpId != null) {
+      for (final e in waiting) {
+        if (e.id == trueNextUpId) return e;
+      }
+    }
     if (waiting.isNotEmpty) return waiting.first;
     return null;
   }
@@ -502,6 +519,7 @@ class _WideConsoleLayout extends StatelessWidget {
     final modeInfo = ServiceModeInfo.forMode(serviceMode);
     final selected = _selected;
     final listEntries = [...called, ...held, ...waiting];
+    final trueWaitingCount = snapshot.entries.where((e) => e.status == 'WAITING').length;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -517,7 +535,7 @@ class _WideConsoleLayout extends StatelessWidget {
                 CalmQueueConsoleHeader(
                   queueName: snapshot.queue.name,
                   serviceMode: serviceMode,
-                  waitingCount: waiting.length,
+                  waitingCount: trueWaitingCount,
                   liveLabel: liveLabel,
                   waitingUnit: modeInfo.waitingLabel,
                 ),
@@ -548,7 +566,7 @@ class _WideConsoleLayout extends StatelessWidget {
                 else
                   ...listEntries.asMap().entries.map((item) {
                     final e = item.value;
-                    final isNext = waiting.isNotEmpty && e.id == waiting.first.id;
+                    final isNext = trueNextUpId != null && e.id == trueNextUpId;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: CalmQueueEntryCard(
