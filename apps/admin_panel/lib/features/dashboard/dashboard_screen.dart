@@ -52,7 +52,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'QueueFlow Platform',
+                'Quyk Platform',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: AppSpacing.sm),

@@ -1,16 +1,16 @@
 import 'open_external_link.dart';
 
-const salesEmail = 'hello@queueflow.app';
+const salesEmail = 'hello@Quyk.app';
 
 void openDemoRequest() {
-  final subject = Uri.encodeComponent('QueueFlow demo request');
+  final subject = Uri.encodeComponent('Quyk demo request');
   openExternalLink('mailto:$salesEmail?subject=$subject');
 }
 
-void openSalesContact({String subject = 'QueueFlow inquiry'}) {
+void openSalesContact({String subject = 'Quyk inquiry'}) {
   openExternalLink('mailto:$salesEmail?subject=${Uri.encodeComponent(subject)}');
 }
 
 void openGetStarted({String plan = 'Starter'}) {
-  openSalesContact(subject: 'QueueFlow — Get started ($plan)');
+  openSalesContact(subject: 'Quyk — Get started ($plan)');
 }

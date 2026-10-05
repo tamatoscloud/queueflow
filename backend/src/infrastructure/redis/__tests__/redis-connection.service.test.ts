@@ -42,6 +42,9 @@ describe('RedisConnectionService startup health probe', () => {
     instances.length = 0;
     IORedisCtor.mockReset();
     IORedisCtor.mockImplementation(() => createProbeInstance());
+    // CI workflow sets NOTIFICATION_QUEUE_ENABLED=false globally; clear it so
+    // REDIS_URL actually enables the probe under test.
+    vi.stubEnv('NOTIFICATION_QUEUE_ENABLED', 'true');
     vi.stubEnv('REDIS_URL', 'redis://redis.railway.internal:6379');
     vi.stubEnv('REDIS_HEALTH_PROBE_TIMEOUT_MS', '200');
   });

@@ -58,7 +58,8 @@ export class SessionService {
       expiresAt,
     });
 
-    await this.authRepo.updateLastLogin(user.id);
+    // Do not block the login response on lastLogin bookkeeping.
+    void this.authRepo.updateLastLogin(user.id).catch(() => undefined);
     const authUser = toAuthenticatedUser(user, session.id);
     const accessToken = this.tokenService.signAccess({
       sub: authUser.id,

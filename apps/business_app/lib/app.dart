@@ -13,7 +13,7 @@ class BusinessApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'QueueFlow',
+      title: 'Quyk',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light.copyWith(
         scaffoldBackgroundColor: AppColors.calmIvory,

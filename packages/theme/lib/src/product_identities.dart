@@ -72,7 +72,7 @@ class ProductThemeData {
               accent: AppColors.primary,
               accentLight: Color(0xFFEEF2FF),
               gradient: AppGradients.primary,
-              label: 'QueueFlow',
+              label: 'Quyk',
             ),
       };
 }

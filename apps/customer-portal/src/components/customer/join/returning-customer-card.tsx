@@ -8,12 +8,14 @@ type ReturningCustomerCardProps = {
   displayCode: string;
   estimatedWaitMinutes?: number;
   onContinue: () => void;
+  onJoinAsSomeoneElse?: () => void;
 };
 
 export function ReturningCustomerCard({
   displayCode,
   estimatedWaitMinutes,
   onContinue,
+  onJoinAsSomeoneElse,
 }: ReturningCustomerCardProps) {
   return (
     <GlassCard className="animate-fade-in-up border-success/20 bg-success/5">
@@ -41,6 +43,15 @@ export function ReturningCustomerCard({
         Continue tracking
         <ArrowRight className="h-4 w-4" aria-hidden />
       </button>
+      {onJoinAsSomeoneElse ? (
+        <button
+          type="button"
+          onClick={onJoinAsSomeoneElse}
+          className="mt-3 w-full text-center text-sm font-medium text-primary"
+        >
+          Join as someone else
+        </button>
+      ) : null}
     </GlassCard>
   );
 }

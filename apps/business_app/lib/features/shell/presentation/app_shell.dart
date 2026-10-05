@@ -223,7 +223,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       if (d.route == AppRoutes.dashboard) continue;
       if (path.startsWith(d.route)) return d.label;
     }
-    return 'QueueFlow';
+    return 'Quyk';
   }
 }
 

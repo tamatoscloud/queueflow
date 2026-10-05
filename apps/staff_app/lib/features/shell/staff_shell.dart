@@ -10,6 +10,7 @@ import '../../features/auth/presentation/auth_controller.dart';
 import '../../shared/widgets/common_widgets.dart';
 import '../../shared/widgets/offline_banner.dart';
 import '../../shared/widgets/staff/staff_content_width.dart';
+import '../../shared/widgets/staff/staff_realtime_feedback.dart';
 
 class StaffShell extends ConsumerWidget {
   const StaffShell({super.key, required this.child});
@@ -20,7 +21,7 @@ class StaffShell extends ConsumerWidget {
     (icon: Icons.campaign_outlined, label: 'Live Queue', route: StaffRoutes.today),
     (icon: Icons.people_outline, label: 'Guests', route: StaffRoutes.customers),
     (icon: Icons.star_outline, label: 'Reviews', route: StaffRoutes.reviews),
-    (icon: Icons.notifications_outlined, label: 'Alerts', route: StaffRoutes.notifications),
+    (icon: Icons.notifications_outlined, label: 'Messages', route: StaffRoutes.notifications),
     (icon: Icons.person_outline, label: 'Profile', route: StaffRoutes.profile),
   ];
 
@@ -82,13 +83,13 @@ class StaffShell extends ConsumerWidget {
           ),
         ],
       ),
-      // SizedBox.expand keeps OfflineBanner's Expanded child bounded on web;
-      // without it the scaffold can collapse to only the bottom nav.
-      body: OfflineBanner(
-        child: SizedBox.expand(
-          child: ColoredBox(
-            color: AppColors.calmIvory,
-            child: StaffContentWidth.constrain(context, child: child),
+      body: StaffRealtimeFeedback(
+        child: OfflineBanner(
+          child: SizedBox.expand(
+            child: ColoredBox(
+              color: AppColors.calmIvory,
+              child: StaffContentWidth.constrain(context, child: child),
+            ),
           ),
         ),
       ),

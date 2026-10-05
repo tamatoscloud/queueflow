@@ -13,7 +13,7 @@ class StaffApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'QueueFlow Staff',
+      title: 'Quyk Staff',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light.copyWith(
         scaffoldBackgroundColor: AppColors.calmIvory,

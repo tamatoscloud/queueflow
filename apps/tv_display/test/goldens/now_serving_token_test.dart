@@ -19,18 +19,23 @@ void main() {
       const MaterialApp(
         home: Scaffold(
           body: Center(
-            child: NowServingToken(
-              config: config,
-              entry: QueueEntryModel(
-                id: 'e1',
-                displayCode: 'A-007',
-                status: 'CALLED',
+            // Freeze glow/blink tickers so the golden is frame-stable in CI.
+            child: TickerMode(
+              enabled: false,
+              child: NowServingToken(
+                config: config,
+                entry: QueueEntryModel(
+                  id: 'e1',
+                  displayCode: 'A-007',
+                  status: 'CALLED',
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     await expectLater(
       find.byType(NowServingToken),

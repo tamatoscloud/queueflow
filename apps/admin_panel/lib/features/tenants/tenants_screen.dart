@@ -57,7 +57,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
             children: [
               Text('Businesses', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text('Manage QueueFlow restaurants', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.calmWarmGray)),
+              Text('Manage Quyk restaurants', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.calmWarmGray)),
               const SizedBox(height: AppSpacing.md),
               CalmSearchField(
                 controller: _searchCtrl,
@@ -103,7 +103,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
               if (page.items.isEmpty) {
                 return const CalmEmptyState(
                   title: 'No businesses yet',
-                  message: 'Businesses added to QueueFlow will appear here.',
+                  message: 'Businesses added to Quyk will appear here.',
                   icon: Icons.business_outlined,
                 );
               }

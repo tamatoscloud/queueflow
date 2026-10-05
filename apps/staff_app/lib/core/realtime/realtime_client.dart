@@ -275,6 +275,29 @@ final realtimeStatusProvider = StreamProvider<RealtimeStatus>((ref) {
   return client.status;
 });
 
+/// True only when the socket is connected AND a subscribe ack succeeded.
+final realtimeLiveProvider = Provider<bool>((ref) {
+  final client = ref.watch(realtimeClientProvider);
+  final status = ref.watch(realtimeStatusProvider).valueOrNull;
+  final authorized = ref.watch(realtimeAuthorizedProvider).valueOrNull ??
+      client.isSubscriptionAuthorized;
+  return status == RealtimeStatus.connected && authorized;
+});
+
+final realtimeAuthorizedProvider = StreamProvider<bool>((ref) {
+  final client = ref.watch(realtimeClientProvider);
+  // Seed with current value so first frame is not stuck on loading.
+  return Stream<bool>.multi((controller) {
+    controller.add(client.isSubscriptionAuthorized);
+    final sub = client.subscriptionAuthorized.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: controller.close,
+    );
+    controller.onCancel = sub.cancel;
+  });
+});
+
 final realtimeEventsProvider = StreamProvider<RealtimeEnvelope>((ref) {
   final client = ref.watch(realtimeClientProvider);
   return client.events;

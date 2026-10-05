@@ -62,7 +62,7 @@ export async function enableGuestPushNotifications(entryId: string): Promise<{
     return {
       ok: false,
       error:
-        'On iPhone/iPad: tap Share → Add to Home Screen, open QueueFlow from your home screen, then turn on alerts. Or keep this tab open for live updates.',
+        'On iPhone/iPad: tap Share → Add to Home Screen, open Quyk from your home screen, then turn on alerts. Or keep this tab open for live updates.',
     };
   }
 

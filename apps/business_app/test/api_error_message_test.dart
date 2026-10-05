@@ -5,12 +5,12 @@ import 'package:queueflow_network/queueflow_network.dart';
 void main() {
   test('apiExceptionMessage maps noConnection', () {
     const err = ApiException.noConnection();
-    expect(apiExceptionMessage(err), contains('Cannot reach the server'));
+    expect(apiExceptionMessage(err), contains('reach Quyk'));
   });
 
   test('apiExceptionMessage maps unauthorized', () {
     const err = ApiException.unauthorized();
-    expect(apiExceptionMessage(err), contains('Invalid email or password'));
+    expect(apiExceptionMessage(err), contains('email or password'));
   });
 
   test('apiExceptionMessage sanitizes Dio 500 boilerplate', () {

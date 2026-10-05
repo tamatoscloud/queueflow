@@ -117,18 +117,35 @@ class _CallNextSheetState extends ConsumerState<_CallNextSheet> {
   }
 
   Future<void> _runCallNext() async {
+    // Guard re-entrancy (double-tap / initState + button) so we never stack CALLED.
+    if (_calling || _actionBusy || _calledEntry != null) return;
     setState(() {
       _calling = true;
       _errorMessage = null;
       _successMessage = null;
     });
     try {
+      // Defense in depth: if someone is already CALLED, manage them — don't call again.
+      final snapshot = await ref.read(businessApiClientProvider).getQueueSnapshot(widget.queueId);
+      final already = snapshot.currentCalled;
+      if (already != null) {
+        if (!mounted) return;
+        setState(() {
+          _calledEntry = already;
+          _calling = false;
+          _successMessage = 'Guest already called — seat, hold, or call again.';
+        });
+        await widget.onRefresh();
+        return;
+      }
       final entry = await ref.read(businessApiClientProvider).callNext(widget.queueId);
       if (!mounted) return;
       setState(() {
         _calledEntry = entry;
+        // Optimistic only — delivery confirmation lives under Messages.
         _notified = true;
         _calling = false;
+        _successMessage = 'Called — notifying guest…';
       });
       await widget.onRefresh();
     } catch (e) {

@@ -30,7 +30,7 @@ String apiExceptionMessage(Object error) {
   if (error is ApiException) {
     return error.when(
       noConnection: () =>
-          'We can’t reach QueueFlow right now. Check your Wi‑Fi and try again.',
+          'We can’t reach Quyk right now. Check your Wi‑Fi and try again.',
       timeout: () => 'That’s taking longer than usual. Please try again in a moment.',
       unauthorized: () => 'That email or password doesn’t look right.',
       forbidden: () => 'You don’t have permission to do that.',

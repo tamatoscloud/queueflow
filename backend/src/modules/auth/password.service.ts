@@ -1,7 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-const ROUNDS = 12;
+/**
+ * Cost factor for new hashes. Existing hashes keep their embedded cost;
+ * bcrypt.compare still verifies them. Default 10 balances security vs
+ * small Railway CPUs (was 12 — ~4× slower verifies).
+ */
+const ROUNDS = Math.min(
+  15,
+  Math.max(8, Number(process.env.BCRYPT_ROUNDS ?? 10) || 10),
+);
 
 @Injectable()
 export class PasswordService {

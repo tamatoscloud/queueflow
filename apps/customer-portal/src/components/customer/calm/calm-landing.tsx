@@ -51,6 +51,7 @@ export function CalmLanding({ data, queueId }: CalmLandingProps) {
         businessName={data.business.name}
         displayCode={activeSession.displayCode}
         queueId={queueId}
+        onJoinAsSomeoneElse={() => setActiveSession(null)}
       />
     );
   }

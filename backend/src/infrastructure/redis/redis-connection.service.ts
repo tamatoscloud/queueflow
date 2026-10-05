@@ -33,9 +33,9 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
     status: this.config.enabled ? 'down' : 'disabled',
   };
 
-  /** Bounded probe so Redis DNS/connect failure cannot block HTTP startup. */
+  /** Bounded probe so Redis DNS/connect failure cannot block HTTP/health. */
   private readonly healthProbeTimeoutMs = Number(
-    process.env.REDIS_HEALTH_PROBE_TIMEOUT_MS ?? 3000,
+    process.env.REDIS_HEALTH_PROBE_TIMEOUT_MS ?? 1000,
   );
 
   async onModuleInit(): Promise<void> {

@@ -10,7 +10,7 @@ Future<void> showQueueJoinQrSheet(
   BuildContext context, {
   required String queueId,
   required String queueName,
-  String businessName = 'QueueFlow',
+  String businessName = 'Quyk',
 }) {
   final joinUrl = CustomerPortalUrl.joinUrl(queueId);
   return showModalBottomSheet<void>(

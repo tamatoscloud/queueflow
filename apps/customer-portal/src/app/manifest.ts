@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'QueueFlow',
-    short_name: 'QueueFlow',
+    name: 'Quyk',
+    short_name: 'Quyk',
     description: 'Join and track your queue in real time',
     start_url: '/',
     display: 'standalone',

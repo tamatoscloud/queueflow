@@ -34,6 +34,7 @@ export function toCustomerListItem(customer: CustomerWithEntries) {
     totalVisits: customer._count?.queueEntries ?? 0,
     activeStatus: latest?.status ?? null,
     displayCode: latest?.queueToken?.displayCode ?? null,
+    queueId: latest?.queueId ?? null,
     queueName: latest?.queue?.name ?? null,
     entryId: latest?.id ?? null,
   };
@@ -45,6 +46,7 @@ export function toHistoryEntryResponse(
   return {
     entryId: entry.id,
     id: entry.id,
+    queueId: entry.queueId,
     queueName: entry.queue?.name ?? '',
     status: entry.status,
     joinedAt: entry.joinedAt,

@@ -115,7 +115,7 @@ class _AdminCommandPaletteDialogState extends State<_AdminCommandPaletteDialog> 
                     focusNode: _focus,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: 'Search QueueFlow',
+                      hintText: 'Search Quyk',
                       prefixIcon: const Icon(Icons.search, color: AppColors.calmViolet),
                       filled: true,
                       fillColor: AppColors.lightSurface,

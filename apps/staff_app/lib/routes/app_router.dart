@@ -14,6 +14,7 @@ import '../features/queue_console/presentation/queue_console_screen.dart';
 import '../features/reviews/presentation/reviews_screen.dart';
 import '../features/shell/staff_shell.dart';
 import '../features/today/today_screen.dart';
+import '../shared/widgets/staff/staff_realtime_feedback.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authControllerProvider);
@@ -52,11 +53,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/queues/:id/console',
-        builder: (_, state) => QueueConsoleScreen(queueId: state.pathParameters['id']!),
+        builder: (_, state) => StaffRealtimeFeedback(
+          child: QueueConsoleScreen(queueId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/customers/:id',
-        builder: (_, state) => CustomerDetailScreen(customerId: state.pathParameters['id']!),
+        builder: (_, state) => StaffRealtimeFeedback(
+          child: CustomerDetailScreen(customerId: state.pathParameters['id']!),
+        ),
       ),
     ],
   );

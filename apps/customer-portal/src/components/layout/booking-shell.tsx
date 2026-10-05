@@ -16,7 +16,7 @@ export function BookingShell({
 }: BookingShellProps) {
   const waiting = variant === 'waiting';
   const called = tone === 'called' || variant === 'called';
-  const title = waiting ? 'QueueFlow' : (venueName ?? 'QueueFlow');
+  const title = waiting ? 'Quyk' : (venueName ?? 'Quyk');
 
   return (
     <div
@@ -52,7 +52,7 @@ export function BookingShell({
             </p>
             {venueName && !waiting && !called ? (
               <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted">
-                Powered by QueueFlow
+                Powered by Quyk
               </p>
             ) : null}
           </div>
@@ -98,8 +98,8 @@ export function BookingShell({
         }
       >
         <div className="mx-auto flex max-w-md justify-between">
-          <span>{waiting ? 'v1.0.0.1' : 'QueueFlow'}</span>
-          <span>{waiting ? '© 2026 QueueFlow Systems' : '© 2026'}</span>
+          <span>{waiting ? 'v1.0.0.1' : 'Quyk'}</span>
+          <span>{waiting ? '© 2026 Quyk' : '© 2026'}</span>
         </div>
       </footer>
     </div>

@@ -185,7 +185,7 @@ class _StaffShellState extends ConsumerState<StaffShell> {
     for (final d in StaffShell.destinations) {
       if (path.startsWith(d.route)) return d.label;
     }
-    return 'QueueFlow';
+    return 'Quyk';
   }
 }
 

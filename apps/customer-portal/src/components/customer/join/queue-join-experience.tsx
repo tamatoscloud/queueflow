@@ -32,7 +32,7 @@ import {
   takeawayJoinSchema,
   type ModeJoinFormValues,
 } from '@/lib/schemas/forms';
-import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
+import { loadQueueSession, saveQueueSession, clearQueueSession } from '@/lib/storage/session';
 import { buildTrackingFromJoin } from '@/lib/tracking/seed-from-join';
 
 type QueueJoinExperienceProps = {
@@ -117,6 +117,14 @@ export function QueueJoinExperience({ data, queueId }: QueueJoinExperienceProps)
   });
 
   useEffect(() => {
+    const fresh =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('fresh') === '1';
+    if (fresh) {
+      clearQueueSession();
+      setActiveSession(null);
+      return;
+    }
     const session = loadQueueSession();
     if (session?.queueId === queueId) {
       setActiveSession(session);
@@ -184,6 +192,11 @@ export function QueueJoinExperience({ data, queueId }: QueueJoinExperienceProps)
           displayCode={activeSession.displayCode}
           estimatedWaitMinutes={activeTracking?.estimatedWaitMinutes}
           onContinue={() => router.push(`/track/${activeSession.entryId}`)}
+          onJoinAsSomeoneElse={() => {
+            clearQueueSession();
+            setActiveSession(null);
+            router.replace(`/q/${queueId}/join?fresh=1`);
+          }}
         />
       </div>
     );

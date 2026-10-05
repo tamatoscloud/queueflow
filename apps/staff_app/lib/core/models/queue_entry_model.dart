@@ -58,6 +58,24 @@ class QueueEntryModel {
                 : null,
         serviceMode: json['serviceMode'] as String? ?? 'DINE_IN',
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'displayCode': displayCode,
+        'status': status,
+        'partySize': partySize,
+        if (customerName != null) 'customerName': customerName,
+        if (customerPhone != null) 'customerPhone': customerPhone,
+        if (position != null) 'position': position,
+        if (estimatedWaitMinutes != null) 'estimatedWaitMinutes': estimatedWaitMinutes,
+        'priority': priority,
+        'isVip': isVip,
+        if (calledAt != null) 'calledAt': calledAt!.toIso8601String(),
+        if (joinedAt != null) 'joinedAt': joinedAt!.toIso8601String(),
+        if (notes != null) 'notes': notes,
+        if (metadata != null) 'metadata': metadata,
+        'serviceMode': serviceMode,
+      };
 }
 
 int? _asInt(dynamic value) {
