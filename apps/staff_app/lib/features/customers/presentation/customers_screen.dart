@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_widgets/queueflow_widgets.dart';
@@ -12,11 +11,12 @@ import '../../../core/network/business_api_client.dart';
 import '../../../core/routing/staff_routes.dart';
 import '../../../features/queue_console/presentation/queue_console_screen.dart';
 import '../../../shared/widgets/calm/calm_card.dart';
+import '../guest_history_display.dart';
 
 final guestsListProvider =
     FutureProvider.autoDispose.family<List<CustomerModel>, String>((ref, q) async {
   final api = ref.watch(businessApiClientProvider);
-  final query = q.trim();
+  final query = normalizeGuestSearch(q);
   if (query.isEmpty) {
     return api.listCustomers(activeOnly: true);
   }
@@ -45,7 +45,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   }
 
   void _applySearch() {
-    setState(() => _appliedQuery = _search.text.trim());
+    setState(() => _appliedQuery = normalizeGuestSearch(_search.text));
   }
 
   @override
@@ -418,7 +418,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                         _DetailRow(label: 'Ticket', value: '#${latest.displayCode}'),
                       _DetailRow(
                         label: 'Joined',
-                        value: DateFormat.jm().format(latest.joinedAt),
+                        value: formatGuestVisitWhen(latest.joinedAt),
                       ),
                       _DetailRow(label: 'Status', value: latest.status),
                       const SizedBox(height: AppSpacing.md),
@@ -533,14 +533,14 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  h.queueName,
+                                  guestHistoryHeadline(h.queueName, h.displayCode),
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.calmCharcoal,
                                       ),
                                 ),
                                 Text(
-                                  DateFormat.yMMMd().add_jm().format(h.joinedAt),
+                                  formatGuestVisitWhen(h.joinedAt),
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: AppColors.calmWarmGray,
                                       ),
