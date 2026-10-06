@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { NotificationChannel, NotificationProvider } from '@prisma/client';
 import type { NotificationProviderAdapter } from '../domain/notification-provider.interface';
 import type { ProviderSendRequest, ProviderSendResult } from '../domain/notification.types';
+import { buildWhatsAppTemplatePayload } from './whatsapp-template.payload';
 
 @Injectable()
 export class WhatsAppCloudProvider implements NotificationProviderAdapter {
@@ -50,12 +51,22 @@ export class WhatsAppCloudProvider implements NotificationProviderAdapter {
     }
 
     const to = request.toPhone.replace(/\D/g, '');
-    const payload = {
-      messaging_product: 'whatsapp',
+    const built = buildWhatsAppTemplatePayload({
       to,
-      type: 'text',
-      text: { body: request.message.body },
-    };
+      type: request.type,
+      metadata: request.metadata,
+      fallbackBody: request.message.body,
+    });
+    if (!built.ok) {
+      return {
+        provider: NotificationProvider.META_CLOUD_API,
+        status: 'FAILED',
+        errorCode: 'TEMPLATE_NOT_CONFIGURED',
+        errorMessage: built.error,
+        requestPayload: { to, type: request.type },
+      };
+    }
+    const payload = built.payload;
 
     try {
       const res = await fetch(

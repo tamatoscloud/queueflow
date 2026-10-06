@@ -14,6 +14,7 @@ import {
 } from '../../queue-engine/domain/services/wait-estimate-bounds';
 import { RealtimeCredentialService } from '../../infrastructure/realtime/services/realtime-credential.service';
 import { WebPushService } from '../../infrastructure/notifications/services/web-push.service';
+import { resolveGuestNotificationChannels } from '../../infrastructure/notifications/guest-notification-channels';
 import type {
   SubmitFeedbackDto,
   SubscribeWebPushDto,
@@ -102,6 +103,9 @@ export class CustomerPortalService {
         isOpen: queue.status === 'ACTIVE' && queue.isAcceptingEntries,
         generatedAt: new Date(),
       },
+      notificationChannels: resolveGuestNotificationChannels({
+        webPushEnabled: this.webPush.isEnabled(),
+      }),
     };
 
     landingCache.set(queueId, {
@@ -200,6 +204,9 @@ export class CustomerPortalService {
       averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
       snapshotGeneratedAt: new Date(),
       trackingToken: this.realtimeCredentials.issueEntryTrackingToken(entry.id),
+      notificationChannels: resolveGuestNotificationChannels({
+        webPushEnabled: this.webPush.isEnabled(),
+      }),
     };
   }
 

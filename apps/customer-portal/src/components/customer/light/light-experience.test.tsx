@@ -38,7 +38,7 @@ describe('LightWaitingExperience', () => {
     expect(screen.getAllByText(/5 parties ahead/i).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/queue token w-123/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/You are #7 of/i)).toBeInTheDocument();
-    expect(screen.getByText('WhatsApp Updates')).toBeInTheDocument();
+    expect(screen.getByText('Phone updates')).toBeInTheDocument();
   });
 
   it('still shows the waiting hero when few customers ahead', () => {

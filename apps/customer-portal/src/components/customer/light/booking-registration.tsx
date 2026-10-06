@@ -102,6 +102,14 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
   );
   const copy = getServiceModeCopy(mode);
   const headings = headingCopy(mode);
+  const waOn = data.notificationChannels?.whatsapp === true;
+  const smsOn = data.notificationChannels?.sms === true;
+  const notifyOptions = NOTIFICATION_OPTIONS.filter((opt) => {
+    if (opt.value === 'WHATSAPP') return waOn;
+    if (opt.value === 'SMS') return smsOn;
+    return waOn && smsOn;
+  });
+  const defaultPreference = waOn ? 'WHATSAPP' : smsOn ? 'SMS' : 'WHATSAPP';
 
   const schema = useMemo(() => {
     switch (mode) {
@@ -122,7 +130,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
       partySize: mode === 'TAKEAWAY' ? 1 : 2,
       email: '',
       notes: '',
-      notificationPreference: 'WHATSAPP',
+      notificationPreference: defaultPreference,
       orderNumber: '',
       vehicleDescription: '',
       vehicleColor: '',
@@ -314,25 +322,32 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
 
         <div className="space-y-2">
           <p className="text-sm font-medium text-[var(--foreground)]">How should we notify you?</p>
-          <div className="flex flex-wrap gap-2">
-            {NOTIFICATION_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() =>
-                  form.setValue('notificationPreference', opt.value, { shouldValidate: true })
-                }
-                className={cn(
-                  'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
-                  values.notificationPreference === opt.value
-                    ? 'border-[var(--primary)] bg-[#f5f3ff] text-[var(--primary)]'
-                    : 'border-[#e8e3e8] bg-white text-[#6b6870]',
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {notifyOptions.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {notifyOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() =>
+                    form.setValue('notificationPreference', opt.value, { shouldValidate: true })
+                  }
+                  className={cn(
+                    'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
+                    values.notificationPreference === opt.value
+                      ? 'border-[var(--primary)] bg-[#f5f3ff] text-[var(--primary)]'
+                      : 'border-[#e8e3e8] bg-white text-[#6b6870]',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] leading-snug text-[#6b6870]">
+              We&apos;ll update you on this page. Turn on browser alerts after you join — WhatsApp
+              and SMS are not connected yet.
+            </p>
+          )}
         </div>
 
         <LightField label="Email (optional)" icon={Mail} error={form.formState.errors.email?.message}>

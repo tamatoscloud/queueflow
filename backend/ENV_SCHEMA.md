@@ -38,6 +38,17 @@ Strongly-typed contract for `backend/.env*`. Whichever framework is chosen must 
 | `NOTIFICATION_BACKOFF_MS` | int | no (default `5000`) | Initial exponential backoff delay. |
 | `WHATSAPP_ACCESS_TOKEN` | string | no | Meta WhatsApp Cloud API bearer token. |
 | `WHATSAPP_PHONE_NUMBER_ID` | string | no | Meta WhatsApp phone number ID. |
+| `WHATSAPP_TEMPLATE_LANG` | string | no (default `en`) | Language code for approved Meta templates. |
+| `WHATSAPP_TEMPLATE_YOUR_TURN` | string | no | Approved template name for YOUR_TURN (required to send WA in prod). |
+| `WHATSAPP_TEMPLATE_QUEUE_JOINED` | string | no | Approved template name for QUEUE_JOINED. |
+| `WHATSAPP_TEMPLATE_POSITION_UPDATE` | string | no | Approved template name for POSITION_UPDATE. |
+| `WHATSAPP_TEMPLATE_ALMOST_YOUR_TURN` | string | no | Approved template name for ALMOST_YOUR_TURN. |
+| `WHATSAPP_TEMPLATE_QUEUE_CANCELLED` | string | no | Approved template name for QUEUE_CANCELLED. |
+| `WHATSAPP_TEMPLATE_QUEUE_PAUSED` | string | no | Approved template name for QUEUE_PAUSED. |
+| `WHATSAPP_TEMPLATE_QUEUE_RESUMED` | string | no | Approved template name for QUEUE_RESUMED. |
+| `WHATSAPP_TEMPLATE_QUEUE_CLOSED` | string | no | Approved template name for QUEUE_CLOSED. |
+| `WHATSAPP_TEMPLATE_FEEDBACK_REQUEST` | string | no | Approved template name for FEEDBACK_REQUEST. |
+| `WHATSAPP_TEMPLATE_CUSTOM` | string | no | Approved template name for CUSTOM. |
 | `SMS_HTTP_GATEWAY_URL` | string | no | HTTP endpoint for SMS delivery. |
 | `CUSTOMER_PORTAL_URL` | string | no (default `http://localhost:3001`) | Base URL for feedback links in messages. |
 | `NOTIFICATION_RECONCILE_INTERVAL_MS` | int | no (default `60000`) | Re-enqueue PENDING notifications after Redis recovery. |

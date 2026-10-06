@@ -381,9 +381,19 @@ export function LightWaitingExperience({
               <MessageCircle className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-bold text-black">WhatsApp Updates</p>
+              <p className="text-[15px] font-bold text-black">
+                {tracking.notificationChannels?.whatsapp === true
+                  ? 'WhatsApp Updates'
+                  : tracking.notificationChannels?.sms === true
+                    ? 'Text updates'
+                    : 'Phone updates'}
+              </p>
               <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
-                Receive a message at {phoneMasked}.
+                {tracking.notificationChannels?.whatsapp === true
+                  ? `Receive a message at ${phoneMasked}.`
+                  : tracking.notificationChannels?.sms === true
+                    ? `Receive a text at ${phoneMasked}.`
+                    : `We'll alert you on this page and via browser notifications. WhatsApp/SMS aren't connected yet.`}
               </p>
               <button
                 type="button"
