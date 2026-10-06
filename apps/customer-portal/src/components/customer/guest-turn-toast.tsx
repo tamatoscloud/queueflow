@@ -44,37 +44,56 @@ export function GuestTurnToast() {
 
   useEffect(() => {
     if (!detail) return;
-    const t = window.setTimeout(() => setDetail(null), 10_000);
+    const holdMs =
+      detail.kind === 'called' || detail.kind === 'recalled' ? 20_000 : 10_000;
+    const t = window.setTimeout(() => setDetail(null), holdMs);
     return () => window.clearTimeout(t);
   }, [detail]);
 
   if (!detail) return null;
 
+  const urgent = detail.kind === 'called' || detail.kind === 'recalled';
+
   return (
     <div
-      className="fixed inset-x-0 top-3 z-50 flex justify-center px-4"
+      className={cn(
+        'fixed inset-x-0 z-50 flex justify-center px-4',
+        urgent ? 'inset-0 items-center bg-black/50' : 'top-3',
+      )}
       role="alert"
       aria-live="assertive"
     >
       <div
         className={cn(
           'flex w-full max-w-md items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-xl',
+          urgent && 'flex-col items-center px-6 py-6 text-center shadow-2xl ring-4 ring-white/25',
           toneForKind(detail.kind),
         )}
       >
-        <BellRing className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+        <BellRing className={cn('mt-0.5 h-5 w-5 shrink-0', urgent && 'mt-0 h-8 w-8')} aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-bold">{detail.title}</p>
-          {detail.body ? <p className="mt-0.5 text-sm text-white/90">{detail.body}</p> : null}
+          <p className={cn('font-bold', urgent && 'text-2xl')}>{detail.title}</p>
+          {detail.body ? (
+            <p className={cn('mt-0.5 text-sm text-white/90', urgent && 'mt-2 text-base')}>
+              {detail.body}
+            </p>
+          ) : null}
+          {urgent ? (
+            <p className="mt-4 text-sm font-semibold text-white/95">
+              Taking you back to your queue pass…
+            </p>
+          ) : null}
         </div>
-        <button
-          type="button"
-          className="rounded-lg p-1 hover:bg-white/15"
-          aria-label="Dismiss"
-          onClick={() => setDetail(null)}
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {!urgent ? (
+          <button
+            type="button"
+            className="rounded-lg p-1 hover:bg-white/15"
+            aria-label="Dismiss"
+            onClick={() => setDetail(null)}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
     </div>
   );

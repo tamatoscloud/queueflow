@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { BookingShell } from '@/components/layout/booking-shell';
+import { GuestActiveEntryGuard } from '@/components/customer/guest-active-entry-guard';
 import { customerApi } from '@/lib/api/customer-api';
 import { DEFAULT_GUEST_MENU } from '@/lib/demo/guest-menu';
 import { isQueueUuid } from '@/lib/queue-id';
@@ -44,6 +45,7 @@ export default function BusinessMenuPage() {
 
   return (
     <BookingShell variant="waiting" showJazzPill>
+      <GuestActiveEntryGuard returnTo={returnTo} />
       <div className="flex flex-1 flex-col">
         <div className="mb-4 flex items-center gap-3">
           {returnTo ? (
