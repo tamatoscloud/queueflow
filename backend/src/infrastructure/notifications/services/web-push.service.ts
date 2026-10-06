@@ -83,13 +83,18 @@ export class WebPushService implements OnModuleInit {
   async sendToEntry(
     entryId: string,
     notification: { title: string; body: string; tag?: string; url?: string },
-  ): Promise<void> {
-    if (!this.enabled) return;
+  ): Promise<{ attempted: number; delivered: number }> {
+    if (!this.enabled) {
+      return { attempted: 0, delivered: 0 };
+    }
 
     const subs = await this.prisma.webPushSubscription.findMany({
       where: { queueEntryId: entryId },
     });
-    if (subs.length === 0) return;
+    if (subs.length === 0) {
+      this.logger.debug(`No web-push subscriptions for entry ${entryId}`);
+      return { attempted: 0, delivered: 0 };
+    }
 
     const payload = JSON.stringify({
       title: notification.title,
@@ -99,6 +104,14 @@ export class WebPushService implements OnModuleInit {
       entryId,
     });
 
+    // High urgency + short TTL so "you're called" reaches lock screens promptly.
+    const options: webpush.RequestOptions = {
+      TTL: 120,
+      urgency: 'high',
+      topic: `qf-call-${entryId}`.slice(0, 32),
+    };
+
+    let delivered = 0;
     await Promise.all(
       subs.map(async (sub) => {
         try {
@@ -108,7 +121,9 @@ export class WebPushService implements OnModuleInit {
               keys: { p256dh: sub.p256dh, auth: sub.auth },
             },
             payload,
+            options,
           );
+          delivered += 1;
         } catch (err) {
           const statusCode =
             err && typeof err === 'object' && 'statusCode' in err
@@ -118,6 +133,9 @@ export class WebPushService implements OnModuleInit {
             await this.prisma.webPushSubscription.deleteMany({
               where: { id: sub.id },
             });
+            this.logger.warn(
+              `Removed stale web-push subscription for entry ${entryId} (${statusCode})`,
+            );
             return;
           }
           this.logger.warn(
@@ -126,5 +144,10 @@ export class WebPushService implements OnModuleInit {
         }
       }),
     );
+
+    this.logger.log(
+      `Web push entry=${entryId} attempted=${subs.length} delivered=${delivered}`,
+    );
+    return { attempted: subs.length, delivered };
   }
 }

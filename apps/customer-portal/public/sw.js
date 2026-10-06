@@ -1,4 +1,4 @@
-const CACHE = 'queueflow-v2';
+const CACHE = 'queueflow-v3';
 const OFFLINE_URL = '/offline';
 
 self.addEventListener('install', (event) => {
@@ -48,16 +48,25 @@ self.addEventListener('push', (event) => {
       data = { ...data, ...parsed };
     }
   } catch {
-    // keep defaults
+    try {
+      if (event.data) {
+        const text = event.data.text();
+        if (text) data.body = text;
+      }
+    } catch {
+      // keep defaults
+    }
   }
 
+  // Always show a notification for push events (browsers may drop silent pushes).
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       tag: data.tag,
-      data: { url: data.url },
+      data: { url: data.url, entryId: data.entryId },
       renotify: true,
       requireInteraction: true,
+      vibrate: [200, 80, 200, 80, 400],
     }),
   );
 });
@@ -68,8 +77,26 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ('focus' in client && client.url.includes(url)) {
-          return client.focus();
+        if ('focus' in client) {
+          try {
+            const clientUrl = new URL(client.url);
+            const targetUrl = new URL(url, self.location.origin);
+            if (
+              clientUrl.origin === targetUrl.origin &&
+              (clientUrl.pathname === targetUrl.pathname ||
+                clientUrl.pathname.startsWith('/track/') ||
+                clientUrl.pathname.startsWith('/menu/'))
+            ) {
+              return client.focus().then(() => {
+                if ('navigate' in client && typeof client.navigate === 'function') {
+                  return client.navigate(targetUrl.href);
+                }
+                return client;
+              });
+            }
+          } catch {
+            // continue
+          }
         }
       }
       if (self.clients.openWindow) {
