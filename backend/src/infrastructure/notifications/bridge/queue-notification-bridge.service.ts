@@ -127,12 +127,19 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
         typeof payload.message === 'string'
           ? payload.message
           : `Number ${payload.displayCode} · ${payload.queueName}`;
-      void this.webPush.sendToEntry(entryId, {
-        title,
-        body,
-        tag: `queueflow-${event.type}-${entryId}`,
-        url: `/track/${entryId}`,
-      });
+      try {
+        await this.webPush.sendToEntry(entryId, {
+          title,
+          body,
+          tag: `queueflow-${event.type}-${entryId}`,
+          url: `/track/${entryId}`,
+        });
+      } catch (err) {
+        // Never block primary SMS/WA scheduling on browser push failures.
+        this.logger.warn(
+          `Web push bridge failed for ${entryId}: ${String(err)}`,
+        );
+      }
     }
   }
 

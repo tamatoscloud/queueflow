@@ -110,10 +110,29 @@ export function LightWaitingExperience({
       ? "You're next in line — please stay nearby."
       : `${aheadText} · about ${clampedEstimate} min estimated wait`;
 
+  // Permission alone ≠ background push. Re-register when already granted; toggle ON only if subscribed.
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
-    setBrowserNotify(Notification.permission === 'granted');
-  }, []);
+    if (Notification.permission !== 'granted') {
+      setBrowserNotify(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { enableGuestPushNotifications } = await import(
+          '@/lib/notifications/web-push'
+        );
+        const result = await enableGuestPushNotifications(tracking.entry.id);
+        if (!cancelled) setBrowserNotify(result.subscribed);
+      } catch {
+        if (!cancelled) setBrowserNotify(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tracking.entry.id]);
 
   const requestBrowserNotify = async () => {
     if (typeof window === 'undefined') return;
@@ -124,24 +143,17 @@ export function LightWaitingExperience({
     setNotifyBusy(true);
     setNotifyError(null);
     try {
-      const { enableGuestPushNotifications } = await import(
-        '@/lib/notifications/web-push'
-      );
+      const { enableGuestPushNotifications, showGuestLocalNotification } =
+        await import('@/lib/notifications/web-push');
       const result = await enableGuestPushNotifications(tracking.entry.id);
-      const granted =
-        result.ok &&
-        'Notification' in window &&
-        Notification.permission === 'granted';
-      setBrowserNotify(granted);
-      if (granted) {
-        try {
-          new Notification("You're set", {
-            body: "We'll alert you when staff calls your number — even if this tab is in the background.",
-            tag: `queueflow-ready-${tracking.entry.id}`,
-          });
-        } catch {
-          // Some browsers require a gesture beyond permission — toggle still works.
-        }
+      setBrowserNotify(result.subscribed);
+      if (result.subscribed) {
+        await showGuestLocalNotification({
+          title: "You're set",
+          body: "We'll alert you when staff calls your number — even if this tab is in the background.",
+          tag: `queueflow-ready-${tracking.entry.id}`,
+          url: `/track/${tracking.entry.id}`,
+        });
       } else if (result.error) {
         setNotifyError(result.error);
       }

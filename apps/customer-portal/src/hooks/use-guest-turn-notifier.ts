@@ -126,17 +126,17 @@ function fireGuestAlert(
     // ignore
   }
 
-  try {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(alert.title, {
+  // Prefer SW notification (works when tab is backgrounded but SW is alive).
+  void import('@/lib/notifications/web-push')
+    .then(({ showGuestLocalNotification }) =>
+      showGuestLocalNotification({
+        title: alert.title,
         body: alert.body,
         tag: `queueflow-${alert.kind}-${entryId}`,
-      });
-      window.setTimeout(() => n.close(), 12_000);
-    }
-  } catch {
-    // Browser may block notifications without a gesture.
-  }
+        url: `/track/${entryId}`,
+      }),
+    )
+    .catch(() => undefined);
 
   window.dispatchEvent(
     new CustomEvent('queueflow:guest-turn', {
@@ -164,17 +164,9 @@ export function useGuestTurnNotifier({
 }: NotifyOnStatusChangeOptions) {
   const prevStatus = useRef<string | undefined>(undefined);
   const prevCalledAt = useRef<string | null | undefined>(undefined);
-  const permissionAsked = useRef(false);
   const recentAlert = useRef<{ key: string; at: number } | null>(null);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!('Notification' in window) || permissionAsked.current) return;
-    permissionAsked.current = true;
-    if (Notification.permission === 'default') {
-      void Notification.requestPermission().catch(() => undefined);
-    }
-  }, []);
+  // Permission is requested only from the waiting-screen toggle (user gesture).
 
   // Immediate toast from socket envelope (before HTTP refetch finishes).
   useEffect(() => {

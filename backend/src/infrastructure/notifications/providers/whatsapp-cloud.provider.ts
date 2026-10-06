@@ -15,7 +15,23 @@ export class WhatsAppCloudProvider implements NotificationProviderAdapter {
   async send(request: ProviderSendRequest): Promise<ProviderSendResult> {
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
     const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const allowMock =
+      process.env.NOTIFICATION_USE_MOCK === 'true' ||
+      process.env.NODE_ENV !== 'production';
     if (!token || !phoneNumberId) {
+      if (!allowMock) {
+        this.logger.error(
+          'WhatsApp credentials missing in production — refusing mock delivery',
+        );
+        return {
+          provider: NotificationProvider.META_CLOUD_API,
+          status: 'FAILED',
+          errorCode: 'CONFIG_MISSING',
+          errorMessage:
+            'WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID missing (set credentials or NOTIFICATION_USE_MOCK=true for demos)',
+          requestPayload: { to: request.toPhone, mocked: false },
+        };
+      }
       // Demo / unset credentials: don't fail the queue — log and mark delivered.
       this.logger.warn(
         'WhatsApp credentials missing — delivering via mock (set WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID for live sends)',
