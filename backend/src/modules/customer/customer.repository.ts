@@ -4,6 +4,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { ACTIVE_PRISMA_STATUSES } from '../../infrastructure/prisma/mappers/queue-engine.mapper';
 import { paginationSkip } from '../../common/dto/pagination.dto';
 import type { CustomerHistoryQueryDto } from './dto/customer.dto';
+import { parseGuestSearchQuery, queueTokenSearchWhere } from './guest-search';
 
 @Injectable()
 export class CustomerRepository {
@@ -21,35 +22,37 @@ export class CustomerRepository {
     });
   }
 
-  /** Flexible match: exact phone, phone suffix, name contains, or ticket display code. */
+  /** Flexible match: exact phone, phone suffix, name contains, or ticket number/code. */
   async findByBusinessQuery(businessId: string, rawQuery: string) {
-    const q = rawQuery.trim();
-    if (!q) return null;
+    const parsed = parseGuestSearchQuery(rawQuery);
+    if (!parsed.text) return null;
 
-    const digits = q.replace(/\D/g, '');
-    const byToken = await this.prisma.queueEntry.findFirst({
-      where: {
-        deletedAt: null,
-        queue: { businessId },
-        queueToken: { displayCode: { equals: q, mode: 'insensitive' } },
-      },
-      include: { customer: true },
-      orderBy: { joinedAt: 'desc' },
-    });
-    if (byToken?.customer && !byToken.customer.deletedAt) {
-      return byToken.customer;
+    const tokenWhere = queueTokenSearchWhere(rawQuery);
+    if (tokenWhere) {
+      const byToken = await this.prisma.queueEntry.findFirst({
+        where: {
+          deletedAt: null,
+          queue: { businessId },
+          queueToken: tokenWhere,
+        },
+        include: { customer: true },
+        orderBy: { joinedAt: 'desc' },
+      });
+      if (byToken?.customer && !byToken.customer.deletedAt) {
+        return byToken.customer;
+      }
     }
 
     const or: Prisma.CustomerWhereInput[] = [
-      { fullName: { contains: q, mode: 'insensitive' } },
+      { fullName: { contains: parsed.text, mode: 'insensitive' } },
     ];
-    if (digits.length >= 4) {
-      or.push({ phone: { contains: digits } });
-      or.push({ phone: { endsWith: digits.slice(-10) } });
-      if (q.startsWith('+') || digits.length >= 8) {
-        or.push({ phone: q.replace(/\s/g, '') });
-        or.push({ phone: `+${digits}` });
-        or.push({ phone: digits });
+    if (parsed.digits.length >= 4) {
+      or.push({ phone: { contains: parsed.digits } });
+      or.push({ phone: { endsWith: parsed.digits.slice(-10) } });
+      if (parsed.text.startsWith('+') || parsed.digits.length >= 8) {
+        or.push({ phone: parsed.text.replace(/\s/g, '') });
+        or.push({ phone: `+${parsed.digits}` });
+        or.push({ phone: parsed.digits });
       }
     }
 
@@ -67,30 +70,34 @@ export class CustomerRepository {
     pageSize: number;
   }) {
     const { businessId, q, activeOnly, page, pageSize } = params;
-    const digits = q?.replace(/\D/g, '') ?? '';
-    const text = q?.trim() ?? '';
+    const parsed = parseGuestSearchQuery(q ?? '');
+    const tokenWhere = q?.trim() ? queueTokenSearchWhere(q) : null;
+
+    const searchOr: Prisma.CustomerWhereInput[] = parsed.text
+      ? [
+          { fullName: { contains: parsed.text, mode: 'insensitive' } },
+          ...(parsed.digits.length >= 3
+            ? [{ phone: { contains: parsed.digits } }]
+            : []),
+          ...(tokenWhere
+            ? [
+                {
+                  queueEntries: {
+                    some: {
+                      deletedAt: null,
+                      queueToken: tokenWhere,
+                    },
+                  },
+                },
+              ]
+            : []),
+        ]
+      : [];
 
     const customerFilter: Prisma.CustomerWhereInput = {
       businessId,
       deletedAt: null,
-      ...(text
-        ? {
-            OR: [
-              { fullName: { contains: text, mode: 'insensitive' } },
-              ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
-              {
-                queueEntries: {
-                  some: {
-                    deletedAt: null,
-                    queueToken: {
-                      displayCode: { contains: text, mode: 'insensitive' },
-                    },
-                  },
-                },
-              },
-            ],
-          }
-        : {}),
+      ...(searchOr.length ? { OR: searchOr } : {}),
       ...(activeOnly
         ? {
             queueEntries: {
