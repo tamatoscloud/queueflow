@@ -15,14 +15,16 @@ export type ParsedGuestSearch = {
 export function parseGuestSearchQuery(raw: string): ParsedGuestSearch {
   const text = raw.trim().replace(/^#+/, '').trim();
   const digits = text.replace(/\D/g, '');
-  const prefixNum = /^([A-Za-z]{1,4})[- ]?(\d{1,6})$/.exec(text);
+  const prefixMatch = /^([A-Za-z]{1,4})[- ]?(\d{1,6})$/.exec(text);
+  const prefix = prefixMatch?.[1];
+  const prefixDigits = prefixMatch?.[2];
   const numericOnly = /^\d{1,6}$/.test(text);
 
   let tokenNumber: number | null = null;
   if (numericOnly) {
     tokenNumber = Number.parseInt(text, 10);
-  } else if (prefixNum) {
-    tokenNumber = Number.parseInt(prefixNum[2], 10);
+  } else if (prefixDigits) {
+    tokenNumber = Number.parseInt(prefixDigits, 10);
   }
   if (tokenNumber !== null && (!Number.isFinite(tokenNumber) || tokenNumber < 1)) {
     tokenNumber = null;
@@ -31,13 +33,13 @@ export function parseGuestSearchQuery(raw: string): ParsedGuestSearch {
   const variants = new Set<string>();
   if (text) variants.add(text);
 
-  if (prefixNum) {
-    const prefix = prefixNum[1].toUpperCase();
-    const n = Number.parseInt(prefixNum[2], 10);
+  if (prefix && prefixDigits) {
+    const codePrefix = prefix.toUpperCase();
+    const n = Number.parseInt(prefixDigits, 10);
     const padded = String(n).padStart(3, '0');
-    variants.add(`${prefix}-${padded}`);
-    variants.add(`${prefix}-${n}`);
-    variants.add(`${prefix}${padded}`);
+    variants.add(`${codePrefix}-${padded}`);
+    variants.add(`${codePrefix}-${n}`);
+    variants.add(`${codePrefix}${padded}`);
     variants.add(padded);
     variants.add(String(n));
   }

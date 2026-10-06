@@ -41,12 +41,14 @@ describe('queueTokenSearchWhere', () => {
     expect(where?.OR).toEqual(
       expect.arrayContaining([{ tokenNumber: 74 }]),
     );
-    const contains = (where?.OR ?? []).some(
-      (clause) =>
-        'displayCode' in clause &&
-        clause.displayCode !== undefined &&
-        'contains' in clause.displayCode,
-    );
+    const contains = (where?.OR ?? []).some((clause) => {
+      const displayCode = clause.displayCode;
+      return (
+        typeof displayCode === 'object' &&
+        displayCode !== null &&
+        'contains' in displayCode
+      );
+    });
     expect(contains).toBe(false);
   });
 
