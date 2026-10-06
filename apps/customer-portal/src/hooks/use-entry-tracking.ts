@@ -13,8 +13,8 @@ import {
 } from '@/lib/storage/session';
 import { isQueueUuid } from '@/lib/queue-id';
 
-/** Fallback when socket is offline — longer when live socket is primary. */
-export const TRACKING_POLL_MS = 20_000;
+/** Backup HTTP poll while waiting — socket patches are primary. */
+export const TRACKING_POLL_MS = 8_000;
 
 function persistTokenFromTracking(entryId: string, data: EntryTracking): void {
   if (!data.trackingToken) return;

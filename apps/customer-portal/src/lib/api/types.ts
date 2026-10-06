@@ -56,6 +56,12 @@ export interface QueueLanding {
     isOpen: boolean;
     generatedAt: string;
   };
+  /** Backend-reported delivery channels (no secrets). */
+  notificationChannels?: {
+    whatsapp: boolean;
+    sms: boolean;
+    webPush: boolean;
+  };
 }
 
 /** Public customer join — no operational privilege fields. */
@@ -116,6 +122,11 @@ export interface EntryTracking {
   snapshotGeneratedAt: string;
   /** Fresh entry-scoped Socket.IO credential for recovery/reconnect. */
   trackingToken?: string;
+  notificationChannels?: {
+    whatsapp: boolean;
+    sms: boolean;
+    webPush: boolean;
+  };
 }
 
 export interface SubmitFeedbackPayload {

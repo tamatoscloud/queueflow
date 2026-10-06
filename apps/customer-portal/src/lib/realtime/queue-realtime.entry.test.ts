@@ -152,4 +152,60 @@ describe('hybridRealtimeAdapter entry subscription', () => {
     sub.unsubscribe();
     vi.useRealTimers();
   });
+
+  it('keeps a backup HTTP poll after a successful subscribe', async () => {
+    vi.useFakeTimers();
+    emitMock.mockImplementation(ackOk);
+    const fetcher = vi.fn().mockResolvedValue({ id: 'e1' });
+    const onUpdate = vi.fn();
+
+    const { hybridRealtimeAdapter } = await import('@/lib/realtime/queue-realtime');
+    const sub = hybridRealtimeAdapter.subscribeEntryTracking('e1', fetcher, onUpdate, {
+      trackingToken: 'tok-1',
+      intervalMs: 1000,
+    });
+
+    await vi.waitFor(() => expect(emitMock).toHaveBeenCalled());
+    await vi.advanceTimersByTimeAsync(0);
+    const afterSubscribe = fetcher.mock.calls.length;
+    expect(afterSubscribe).toBeGreaterThan(0);
+
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(fetcher.mock.calls.length).toBeGreaterThan(afterSubscribe);
+
+    sub.unsubscribe();
+    vi.useRealTimers();
+  });
+
+  it('refetches HTTP on CustomerCalled even when patching from events', async () => {
+    const handlers = new Map<string, (...args: unknown[]) => void>();
+    onMock.mockImplementation((event: string, fn: (...args: unknown[]) => void) => {
+      handlers.set(event, fn);
+    });
+    emitMock.mockImplementation(ackOk);
+    const fetcher = vi.fn().mockResolvedValue({ id: 'e1' });
+    const onRealtimeEvent = vi.fn();
+
+    const { hybridRealtimeAdapter } = await import('@/lib/realtime/queue-realtime');
+    const sub = hybridRealtimeAdapter.subscribeEntryTracking('e1', fetcher, vi.fn(), {
+      trackingToken: 'tok-1',
+      intervalMs: 60_000,
+      patchFromEvents: true,
+      onRealtimeEvent,
+    });
+
+    await vi.waitFor(() => expect(handlers.has('CustomerCalled')).toBe(true));
+    await vi.waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(0));
+    const before = fetcher.mock.calls.length;
+
+    handlers.get('CustomerCalled')?.({
+      event: 'CustomerCalled',
+      payload: { entryId: 'e1' },
+    });
+
+    await vi.waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(before));
+    expect(onRealtimeEvent).toHaveBeenCalled();
+
+    sub.unsubscribe();
+  });
 });

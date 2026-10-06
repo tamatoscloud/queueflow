@@ -57,7 +57,13 @@ const TRACKING_EVENTS: RealtimeEventName[] = [
 ];
 
 /** Events that still need a full HTTP refresh even when patching. */
-const HTTP_REFRESH_EVENTS = new Set<RealtimeEventName>(['QueueUpdated']);
+const HTTP_REFRESH_EVENTS = new Set<RealtimeEventName>([
+  'QueueUpdated',
+  'CustomerCalled',
+  'CustomerHeld',
+  'CustomerSkipped',
+  'CustomerCompleted',
+]);
 
 interface SubscribeAck {
   ok?: boolean;
@@ -72,7 +78,8 @@ function subscribeEntrySocket<T>(
   options: EntryTrackingSubscribeOptions = {},
 ): QueueRealtimeSubscription {
   const socket = getSharedSocket();
-  const fallbackIntervalMs = options.intervalMs ?? 15_000;
+  const reconcileMs = options.intervalMs ?? 8_000;
+  const disconnectedMs = Math.min(5_000, reconcileMs);
   let active = true;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let currentToken = options.trackingToken ?? null;
@@ -88,10 +95,19 @@ function subscribeEntrySocket<T>(
     }
   };
 
+  const startPoll = (ms: number) => {
+    if (!active) return;
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    pollTimer = setInterval(refresh, ms);
+  };
+
   const startFallback = () => {
-    if (pollTimer || !active) return;
+    if (!active) return;
     void refresh();
-    pollTimer = setInterval(refresh, fallbackIntervalMs);
+    startPoll(disconnectedMs);
   };
 
   const stopFallback = () => {
@@ -199,8 +215,8 @@ function subscribeEntrySocket<T>(
 
       let ok = await emitSubscribe(token);
       if (ok) {
-        stopFallback();
-        // One reconcile after subscribe — then socket patches drive the UI.
+        // Keep a backup poll: socket "connected" ≠ room events arriving.
+        startPoll(reconcileMs);
         void refresh();
         return;
       }
@@ -214,7 +230,7 @@ function subscribeEntrySocket<T>(
           options.onToken?.(recovered);
           ok = await emitSubscribe(recovered);
           if (ok) {
-            stopFallback();
+            startPoll(reconcileMs);
             void refresh();
             return;
           }
