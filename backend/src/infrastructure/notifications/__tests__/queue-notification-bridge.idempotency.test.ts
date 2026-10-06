@@ -17,7 +17,7 @@ describe('QueueNotificationBridgeService idempotency', () => {
     estimateWaitTime: vi.fn(),
   };
   const webPush = {
-    sendToEntry: vi.fn().mockResolvedValue(undefined),
+    sendToEntry: vi.fn().mockResolvedValue({ attempted: 0, delivered: 0 }),
   };
   const eventBus = {
     subscribe: vi.fn().mockReturnValue({ unsubscribe: vi.fn() }),

@@ -15,9 +15,24 @@ export class SmsNotificationProvider implements NotificationProviderAdapter {
   async send(request: ProviderSendRequest): Promise<ProviderSendResult> {
     const provider = (process.env.SMS_PROVIDER ?? 'mock').toLowerCase();
     const url = process.env.SMS_HTTP_GATEWAY_URL;
-    // Without a real gateway, succeed via mock so queue actions still notify
-    // the in-app / audit trail instead of failing forever.
+    const allowMock =
+      process.env.NOTIFICATION_USE_MOCK === 'true' ||
+      process.env.NODE_ENV !== 'production';
+    // Without a real gateway: mock in non-prod / explicit mock mode; fail closed in production.
     if (provider === 'mock' || !url) {
+      if (!allowMock) {
+        this.logger.error(
+          'SMS gateway not configured in production — refusing mock delivery',
+        );
+        return {
+          provider: NotificationProvider.OTHER,
+          status: 'FAILED',
+          errorCode: 'CONFIG_MISSING',
+          errorMessage:
+            'SMS_HTTP_GATEWAY_URL missing (set gateway or NOTIFICATION_USE_MOCK=true for demos)',
+          requestPayload: { to: request.toPhone, mocked: false },
+        };
+      }
       if (!url && provider !== 'mock') {
         this.logger.warn(
           'SMS_HTTP_GATEWAY_URL missing — delivering via mock (set gateway or NOTIFICATION_USE_MOCK=true)',
