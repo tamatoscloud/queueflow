@@ -37,19 +37,6 @@
     <h1>Quyk Admin</h1>
     <p>Loading platform console…</p>
   </div>
-  <script>
-    // Clear stale PWA workers from older deploys so users never get a blank cached shell.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (regs) {
-        regs.forEach(function (reg) { reg.unregister(); });
-      });
-      if (window.caches && caches.keys) {
-        caches.keys().then(function (keys) {
-          keys.forEach(function (key) { caches.delete(key); });
-        });
-      }
-    }
-  </script>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     window.addEventListener('flutter-first-frame', function () {
