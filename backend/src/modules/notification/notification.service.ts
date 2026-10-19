@@ -19,6 +19,23 @@ import type {
 } from './dto/notification.dto';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interfaces';
 
+function deliverySummary(
+  payload: Prisma.JsonValue | null,
+  type: string,
+  channel: string,
+): string {
+  const record =
+    payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : null;
+  const written = record?.message;
+  if (typeof written === 'string' && written.trim()) return written.trim();
+  const label = type.replaceAll('_', ' ').toLowerCase();
+  const code = typeof record?.displayCode === 'string' ? record.displayCode : null;
+  const queue = typeof record?.queueName === 'string' ? record.queueName : null;
+  return [code, label, queue, channel.toLowerCase()].filter(Boolean).join(' · ');
+}
+
 @Injectable()
 export class NotificationService {
   constructor(
@@ -57,18 +74,28 @@ export class NotificationService {
       ...(query.queueEntryId ? { queueEntryId: query.queueEntryId } : {}),
       ...(query.status ? { status: query.status } : {}),
     };
-    const [totalItems, data] = await this.prisma.$transaction([
+    const [totalItems, rows] = await this.prisma.$transaction([
       this.prisma.notification.count({ where }),
       this.prisma.notification.findMany({
         where,
         include: {
-          logs: { orderBy: { createdAt: 'desc' }, take: 5 },
+          customer: { select: { phone: true, fullName: true } },
         },
         skip: paginationSkip(page, pageSize),
         take: pageSize,
         orderBy: { createdAt: query.sortOrder ?? 'desc' },
       }),
     ]);
+    const data = rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      channel: row.channel,
+      createdAt: row.createdAt,
+      recipientPhone: row.customer.phone,
+      recipientName: row.customer.fullName,
+      message: deliverySummary(row.payload, row.type, row.channel),
+    }));
     return { data, meta: paginatedMeta(page, pageSize, totalItems) };
   }
 
