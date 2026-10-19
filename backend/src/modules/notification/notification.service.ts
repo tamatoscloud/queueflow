@@ -92,8 +92,8 @@ export class NotificationService {
       status: row.status,
       channel: row.channel,
       createdAt: row.createdAt,
-      recipientPhone: row.customer.phone,
-      recipientName: row.customer.fullName,
+      recipientPhone: row.customer?.phone ?? null,
+      recipientName: row.customer?.fullName ?? null,
       message: deliverySummary(row.payload, row.type, row.channel),
     }));
     return { data, meta: paginatedMeta(page, pageSize, totalItems) };
