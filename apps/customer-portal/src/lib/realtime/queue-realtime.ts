@@ -84,15 +84,24 @@ function subscribeEntrySocket<T>(
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let currentToken = options.trackingToken ?? null;
   let subscribeInFlight = false;
+  let refreshGen = 0;
 
   const refresh = async () => {
     if (!active) return;
+    const gen = ++refreshGen;
     try {
       const data = await fetcher();
+      // A newer fetch or a newer socket patch started after this request.
+      if (!active || gen !== refreshGen) return;
       onUpdate(data);
     } catch {
       // UI handles errors via query layer
     }
+  };
+
+  const onWake = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    void refresh();
   };
 
   const startPoll = (ms: number) => {
@@ -254,6 +263,12 @@ function subscribeEntrySocket<T>(
   wireEvents();
   socket.on('connect', onConnect);
   socket.on('disconnect', onDisconnect);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onWake);
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', onWake);
+  }
 
   if (socket.connected) {
     void joinRoom();
@@ -265,10 +280,17 @@ function subscribeEntrySocket<T>(
   return {
     unsubscribe: () => {
       active = false;
+      refreshGen += 1;
       stopFallback();
       unwireEvents();
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onWake);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pageshow', onWake);
+      }
       socket.emit(RealtimeSubscribe.Unsubscribe, {
         room: `entry:${entryId}`,
       });

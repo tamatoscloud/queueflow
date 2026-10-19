@@ -17,6 +17,7 @@ import '../../core/network/business_api_client.dart';
 import '../../core/providers/branches_provider.dart';
 import '../../core/realtime/realtime_client.dart';
 import '../../core/realtime/realtime_sync.dart';
+import '../../core/realtime/refresh_gate.dart';
 import '../../core/routing/staff_routes.dart';
 import '../../core/session/session_providers.dart';
 import '../../features/auth/presentation/auth_controller.dart';
@@ -71,24 +72,41 @@ final todayRealtimeProvider = Provider.autoDispose.family<void, String?>((
   final businessId = user?.businessId;
   if (businessId == null) return;
   final client = ref.watch(realtimeClientProvider);
+  final followUp = RefreshFollowUp();
   var disposed = false;
   ref.onDispose(() => disposed = true);
+
+  bool inFlight(AsyncValue<dynamic> value) => value.isLoading || value.isRefreshing;
+
   void scheduleRefresh([RealtimeEnvelope? event]) {
     if (disposed) return;
-    // Skip if queues are already loading — invalidating mid-flight restarts slow fetches.
     final queues = ref.read(todayQueuesProvider);
-    if (queues.isLoading) return;
-    // ETA-only events shouldn't refetch the whole queue list.
+    final qid = preferredQueueId;
+    final snap = qid != null && qid.isNotEmpty
+        ? ref.read(todayQueueSnapshotProvider(qid))
+        : null;
+    final busy = inFlight(queues) || (snap != null && inFlight(snap));
+    // Invalidating mid-flight restarts a slow fetch. Queue one follow-up instead.
+    if (!followUp.begin(busy: busy)) return;
     if (event?.event != 'EstimatedWaitChanged') {
       ref.invalidate(todayQueuesProvider);
     }
-    final qid = preferredQueueId;
-    if (qid != null && qid.isNotEmpty) {
-      final snap = ref.read(todayQueueSnapshotProvider(qid));
-      if (!snap.isLoading) {
-        ref.invalidate(todayQueueSnapshotProvider(qid));
-      }
+    if (snap != null && qid != null && !inFlight(snap)) {
+      ref.invalidate(todayQueueSnapshotProvider(qid));
     }
+  }
+
+  void onSettled(AsyncValue<dynamic>? prev, AsyncValue<dynamic> next) {
+    if (disposed || prev == null) return;
+    if (inFlight(prev) && !inFlight(next) && followUp.take()) {
+      scheduleRefresh();
+    }
+  }
+
+  ref.listen(todayQueuesProvider, onSettled);
+  final qid = preferredQueueId;
+  if (qid != null && qid.isNotEmpty) {
+    ref.listen(todayQueueSnapshotProvider(qid), onSettled);
   }
 
   bindRealtimeRefresh(

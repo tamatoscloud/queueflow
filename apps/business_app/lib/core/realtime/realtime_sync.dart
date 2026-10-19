@@ -1,13 +1,13 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'realtime_client.dart';
 
-/// Binds Socket.IO events + HTTP polling fallback.
+/// Binds Socket.IO events + HTTP polling.
 ///
-/// Polling stays active until subscription authorization succeeds (ack ok:true).
-/// Socket connect alone does NOT stop polling.
+/// A successful room subscription slows polling. It does not stop it.
 void bindRealtimeRefresh({
   required Ref ref,
   required RealtimeClient client,
@@ -16,15 +16,22 @@ void bindRealtimeRefresh({
   Duration pollInterval = const Duration(seconds: 10),
 }) {
   Timer? pollTimer;
+  Duration? pollEvery;
+  final disconnectedEvery = Duration(
+    milliseconds: math.min(5000, pollInterval.inMilliseconds),
+  );
 
-  void startPolling() {
-    if (pollTimer != null) return;
-    pollTimer = Timer.periodic(pollInterval, (_) => onRefresh());
+  void startPolling(Duration interval) {
+    if (pollTimer != null && pollEvery == interval) return;
+    pollTimer?.cancel();
+    pollEvery = interval;
+    pollTimer = Timer.periodic(interval, (_) => onRefresh());
   }
 
   void stopPolling() {
     pollTimer?.cancel();
     pollTimer = null;
+    pollEvery = null;
   }
 
   Future<bool> subscribe() => onSubscribe();
@@ -33,15 +40,15 @@ void bindRealtimeRefresh({
 
   Future.microtask(() async {
     await client.connect();
-    startPolling();
+    startPolling(disconnectedEvery);
   });
 
   final eventSub = client.events.listen((_) => onRefresh());
   final authSub = client.subscriptionAuthorized.listen((authorized) {
     if (authorized) {
-      stopPolling();
+      startPolling(pollInterval);
     } else {
-      startPolling();
+      startPolling(disconnectedEvery);
     }
   });
   final statusSub = client.status.listen((status) {
@@ -49,7 +56,7 @@ void bindRealtimeRefresh({
       case RealtimeStatus.connecting:
       case RealtimeStatus.reconnecting:
       case RealtimeStatus.disconnected:
-        startPolling();
+        startPolling(disconnectedEvery);
       case RealtimeStatus.connected:
         break;
     }
