@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Inter-based type scale — premium SaaS hierarchy.
+/// Inter on mobile. Web uses the engine font so the first screen does not
+/// wait on fonts.gstatic.com.
 abstract final class AppTypography {
-  static String get fontFamily => GoogleFonts.inter().fontFamily!;
+  static String? get fontFamily => kIsWeb ? null : GoogleFonts.inter().fontFamily;
 
   static TextTheme textTheme(Color onSurface, {Color? muted}) {
     final mutedColor = muted ?? onSurface.withValues(alpha: 0.55);
@@ -32,6 +34,15 @@ abstract final class AppTypography {
     Color color, [
     double letterSpacing = 0,
   ]) {
+    if (kIsWeb) {
+      return TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: 1.4,
+      );
+    }
     return GoogleFonts.inter(
       fontSize: size,
       fontWeight: weight,

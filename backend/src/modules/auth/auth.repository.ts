@@ -15,6 +15,7 @@ export class AuthRepository {
 
   findUserByEmail(email: string): Promise<UserWithAuth | null> {
     return this.prisma.user.findFirst({
+      relationLoadStrategy: 'join',
       where: { email: email.toLowerCase(), deletedAt: null },
       include: {
         userRoles: {
@@ -33,6 +34,7 @@ export class AuthRepository {
 
   findUserById(id: string): Promise<UserWithAuth | null> {
     return this.prisma.user.findFirst({
+      relationLoadStrategy: 'join',
       where: { id, deletedAt: null },
       include: {
         userRoles: {

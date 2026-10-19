@@ -27,7 +27,9 @@
 //     docs/DATABASE_DESIGN.md for "partial unique index" for the full list.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // Lets login load roles and permissions in one SQL round trip.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
