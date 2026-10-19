@@ -208,4 +208,78 @@ describe('hybridRealtimeAdapter entry subscription', () => {
 
     sub.unsubscribe();
   });
+
+  it('ignores an older tracking response after a newer fetch starts', async () => {
+    const handlers = new Map<string, (...args: unknown[]) => void>();
+    onMock.mockImplementation((event: string, fn: (...args: unknown[]) => void) => {
+      handlers.set(event, fn);
+    });
+    emitMock.mockImplementation(ackOk);
+
+    let resolveFirst: (value: { status: string }) => void = () => {};
+    let resolveSecond: (value: { status: string }) => void = () => {};
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ status: string }>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ status: string }>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    const onUpdate = vi.fn();
+
+    const { hybridRealtimeAdapter } = await import('@/lib/realtime/queue-realtime');
+    const sub = hybridRealtimeAdapter.subscribeEntryTracking('e1', fetcher, onUpdate, {
+      trackingToken: 'tok-1',
+      intervalMs: 60_000,
+      patchFromEvents: true,
+    });
+
+    await vi.waitFor(() => expect(handlers.has('CustomerCalled')).toBe(true));
+    await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+
+    handlers.get('CustomerCalled')?.({
+      event: 'CustomerCalled',
+      payload: { entryId: 'e1' },
+    });
+    await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+
+    resolveSecond({ status: 'CALLED' });
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ status: 'CALLED' }));
+
+    resolveFirst({ status: 'WAITING' });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onUpdate).not.toHaveBeenCalledWith({ status: 'WAITING' });
+
+    sub.unsubscribe();
+  });
+
+  it('refetches when the page becomes visible', async () => {
+    emitMock.mockImplementation(ackOk);
+    const fetcher = vi.fn().mockResolvedValue({ id: 'e1' });
+
+    const { hybridRealtimeAdapter } = await import('@/lib/realtime/queue-realtime');
+    const sub = hybridRealtimeAdapter.subscribeEntryTracking('e1', fetcher, vi.fn(), {
+      trackingToken: 'tok-1',
+      intervalMs: 60_000,
+    });
+
+    await vi.waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(0));
+    const before = fetcher.mock.calls.length;
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    await vi.waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThan(before));
+    sub.unsubscribe();
+  });
 });

@@ -1,13 +1,15 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'realtime_client.dart';
+import 'refresh_gate.dart';
 
-/// Binds Socket.IO events + HTTP polling fallback.
+/// Binds Socket.IO events + HTTP polling.
 ///
-/// Polling stays active until subscription authorization succeeds (ack ok:true).
-/// Socket connect alone does NOT stop polling.
+/// A successful room subscription slows polling. It does not stop it.
+/// Socket connect alone does not stop polling.
 void bindRealtimeRefresh({
   required Ref ref,
   required RealtimeClient client,
@@ -19,14 +21,18 @@ void bindRealtimeRefresh({
 }) {
   Timer? pollTimer;
   Timer? coalesceTimer;
+  Duration? pollEvery;
   RealtimeEnvelope? pendingEvent;
   var disposed = false;
+  final disconnectedEvery = Duration(
+    milliseconds: math.min(5000, pollInterval.inMilliseconds),
+  );
 
   void scheduleRefresh([RealtimeEnvelope? event]) {
     if (disposed) return;
-    if (event != null) pendingEvent = event;
+    pendingEvent = preferPendingEvent(pendingEvent, event);
     coalesceTimer?.cancel();
-    final waitOnly = pendingEvent?.event == 'EstimatedWaitChanged';
+    final waitOnly = isWaitOnlyEvent(pendingEvent?.event);
     final delay = waitOnly
         ? (coalesce.inMilliseconds < 1200
             ? const Duration(milliseconds: 1200)
@@ -41,14 +47,17 @@ void bindRealtimeRefresh({
     });
   }
 
-  void startPolling() {
-    if (pollTimer != null) return;
-    pollTimer = Timer.periodic(pollInterval, (_) => scheduleRefresh());
+  void startPolling(Duration interval) {
+    if (pollTimer != null && pollEvery == interval) return;
+    pollTimer?.cancel();
+    pollEvery = interval;
+    pollTimer = Timer.periodic(interval, (_) => scheduleRefresh());
   }
 
   void stopPolling() {
     pollTimer?.cancel();
     pollTimer = null;
+    pollEvery = null;
   }
 
   Future<bool> subscribe() => onSubscribe();
@@ -59,7 +68,7 @@ void bindRealtimeRefresh({
   // already have a fresh fetch in flight (Today / console open).
   Future.microtask(() {
     if (disposed) return;
-    startPolling();
+    startPolling(disconnectedEvery);
     if (refreshOnBind) scheduleRefresh();
   });
   unawaited(client.connect());
@@ -67,9 +76,9 @@ void bindRealtimeRefresh({
   final eventSub = client.events.listen(scheduleRefresh);
   final authSub = client.subscriptionAuthorized.listen((authorized) {
     if (authorized) {
-      stopPolling();
+      startPolling(pollInterval);
     } else {
-      startPolling();
+      startPolling(disconnectedEvery);
     }
   });
   final statusSub = client.status.listen((status) {
@@ -77,7 +86,7 @@ void bindRealtimeRefresh({
       case RealtimeStatus.connecting:
       case RealtimeStatus.reconnecting:
       case RealtimeStatus.disconnected:
-        startPolling();
+        startPolling(disconnectedEvery);
       case RealtimeStatus.connected:
         break;
     }

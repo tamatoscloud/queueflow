@@ -10,6 +10,7 @@ import '../../../core/network/business_api_client.dart';
 import '../../../core/providers/queues_provider.dart';
 import '../../../core/realtime/realtime_client.dart';
 import '../../../core/realtime/realtime_sync.dart';
+import '../../../core/realtime/refresh_gate.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
 import '../../../shared/widgets/calm/calm_queue_console.dart';
 import '../../../shared/widgets/calm/calm_queue_entry_card.dart';
@@ -40,18 +41,30 @@ final queueConsoleRealtimeBindingProvider =
   if (businessId == null) return;
 
   final client = ref.watch(realtimeClientProvider);
+  final followUp = RefreshFollowUp();
   var disposed = false;
   ref.onDispose(() => disposed = true);
+
+  bool inFlight(AsyncValue<dynamic> value) => value.isLoading || value.isRefreshing;
+
+  void refreshSnapshot() {
+    if (disposed) return;
+    final current = ref.read(queueSnapshotProvider(queueId));
+    if (!followUp.begin(busy: inFlight(current))) return;
+    ref.invalidate(queueSnapshotProvider(queueId));
+  }
+
+  ref.listen(queueSnapshotProvider(queueId), (prev, next) {
+    if (disposed || prev == null) return;
+    if (inFlight(prev) && !inFlight(next) && followUp.take()) {
+      refreshSnapshot();
+    }
+  });
+
   bindRealtimeRefresh(
     ref: ref,
     client: client,
-    onRefresh: (_) {
-      if (disposed) return;
-      // Don't restart an in-flight snapshot — that made console feel hung.
-      final current = ref.read(queueSnapshotProvider(queueId));
-      if (current.isLoading) return;
-      ref.invalidate(queueSnapshotProvider(queueId));
-    },
+    onRefresh: (_) => refreshSnapshot(),
     onSubscribe: () async {
       await client.connect();
       return client.subscribeQueueDetail(queueId);
