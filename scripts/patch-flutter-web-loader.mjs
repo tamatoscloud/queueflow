@@ -1,3 +1,7 @@
+// Run this after `flutter build web` and before `vercel deploy`.
+// Flutter git projects on Vercel must ignore builds with:
+// node -e "process.exit(1)"
+// A bare `exit 1` still published an empty site.
 // Flutter waits up to 4s for the service worker before loading the app.
 // A short timeout still installs the worker, but the first open does not sit on it.
 // Also starts the engine download from <head> so it overlaps flutter_bootstrap.js.
