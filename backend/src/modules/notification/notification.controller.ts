@@ -9,7 +9,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import {
+  RequireAnyPermission,
+  RequirePermissions,
+} from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/roles-permissions';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/auth.interfaces';
@@ -28,7 +31,7 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
-  @RequirePermissions(Permission.NOTIFICATIONS_VIEW)
+  @RequireAnyPermission(Permission.NOTIFICATIONS_VIEW, Permission.QUEUE_OPERATE)
   @ApiOperation({ summary: 'Notification history' })
   list(
     @Query() query: ListNotificationQueryDto,

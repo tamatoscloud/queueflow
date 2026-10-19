@@ -80,7 +80,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: PERMISSIONS.filter((p) => p.category !== 'PLATFORM').map((p) => p.key),
   MANAGER: ['branch:manage', 'staff:invite', 'staff:manage_roles', 'queue:manage', 'queue:operate', 'customer:view', 'reports:view', 'settings:manage', 'notifications:view'],
   RECEPTIONIST: ['queue:operate', 'customer:view', 'notifications:view'],
-  STAFF: ['queue:operate', 'customer:view'],
+  STAFF: ['queue:operate', 'customer:view', 'notifications:view'],
   VIEWER: ['reports:view', 'customer:view', 'notifications:view'],
   PLATFORM_ADMIN: ['platform:manage_tenants'],
 };

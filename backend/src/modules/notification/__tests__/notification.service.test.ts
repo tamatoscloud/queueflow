@@ -33,7 +33,17 @@ describe('NotificationService tenant isolation', () => {
 
   it('filters list by the actor businessId', async () => {
     const count = vi.fn().mockResolvedValue(1);
-    const findMany = vi.fn().mockResolvedValue([{ id: 'n1' }]);
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 'n1',
+        type: 'YOUR_TURN',
+        status: 'FAILED',
+        channel: 'WHATSAPP',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        payload: { message: 'Your turn' },
+        customer: { phone: '+923001112233', fullName: 'Ayesha' },
+      },
+    ]);
     const prisma = {
       $transaction: vi.fn().mockImplementation(async (ops: Array<Promise<unknown>>) =>
         Promise.all(ops),
@@ -42,12 +52,17 @@ describe('NotificationService tenant isolation', () => {
     };
     const service = new NotificationService(prisma as never, {} as never, {} as never);
 
-    await service.list({ page: 1, pageSize: 20 }, actor());
+    const result = await service.list({ page: 1, pageSize: 20 }, actor());
     expect(count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ businessId: 'biz-a' }),
       }),
     );
+    expect(result.data[0]).toMatchObject({
+      id: 'n1',
+      recipientPhone: '+923001112233',
+      message: 'Your turn',
+    });
   });
 
   it('requires platform admin to pass a businessId', async () => {

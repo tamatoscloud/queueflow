@@ -76,6 +76,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     Permission.CUSTOMER_VIEW,
     Permission.NOTIFICATIONS_VIEW,
   ],
-  [SystemRole.STAFF]: [Permission.QUEUE_OPERATE, Permission.CUSTOMER_VIEW],
+  [SystemRole.STAFF]: [
+    Permission.QUEUE_OPERATE,
+    Permission.CUSTOMER_VIEW,
+    Permission.NOTIFICATIONS_VIEW,
+  ],
   [SystemRole.VIEWER]: [Permission.REPORTS_VIEW, Permission.CUSTOMER_VIEW, Permission.NOTIFICATIONS_VIEW],
 };
