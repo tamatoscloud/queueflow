@@ -1,6 +1,6 @@
 // Run this after `flutter build web` and before `vercel deploy`.
-// Flutter git projects on Vercel ignore builds with the command `false`
-// so an empty Git upload cannot replace the live site.
+// Flutter git projects on Vercel skip the build when the ignore command
+// exits 0 (`true`). An exit code of 1 still publishes an empty site.
 // Flutter waits up to 4s for the service worker before loading the app.
 // A short timeout still installs the worker, but the first open does not sit on it.
 // Also starts the engine download from <head> so it overlaps flutter_bootstrap.js.
