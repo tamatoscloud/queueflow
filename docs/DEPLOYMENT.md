@@ -53,7 +53,7 @@ Copy [`config/production.env.example`](../config/production.env.example) and inj
 ### Hosting options
 
 - **Railway / Render / Fly.io** — run `node dist/main.js` with `npm run start:prod`
-- **Notification worker** — separate process: `npm run worker:notifications`
+- **Notification worker** — runs inside the API process (`NotificationWorker`, started on boot when the queue is enabled); no separate service is needed
 
 ### Health check
 
@@ -61,6 +61,30 @@ Copy [`config/production.env.example`](../config/production.env.example) and inj
 - **Detailed ops check:** `GET /api/v1/health` (DB + Redis + Supabase + queue; may be `degraded`)
 
 See [`LATENCY_BUDGET.md`](LATENCY_BUDGET.md) for p95 targets.
+
+### Speed: put the API and database in one region
+
+Every staff action and guest poll makes one or more database round trips, and transactions (join, call next) make several in a row. The API now logs the measured round trip at boot:
+
+```
+Database round trip: 180 ms (median of 3) — high for a co-located database; check that the API and database regions match
+```
+
+Anything above ~20 ms means the API and Supabase sit in different regions. Move them together, as close to your guests as you can (for Pakistan-based venues, Railway `asia-southeast1` with Supabase `ap-southeast-1`, Singapore). Then:
+
+- Point `DATABASE_URL` at Supabase's **transaction pooler** (port `6543`) with `?pgbouncer=true&connection_limit=10`, and keep the session/direct URL for migrations.
+- Turn off Railway App Sleeping for the API service, so the first request of the day doesn't pay a cold start.
+- Read `Server-Timing: app;dur=…` in browser devtools: it is server time only, so a slow request with a small `app` value is network distance, not code.
+
+### Proxy and scaling settings
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `TRUST_PROXY_HOPS` | `1` | Proxies in front of the API (Railway edge = 1). Required for per-client rate limits. |
+| `THROTTLE_STORAGE` | `memory` | `redis` shares rate-limit counters across replicas (needs `REDIS_URL`). |
+| `SOCKET_IO_REDIS_ADAPTER` | unset | `true` relays Socket.IO rooms through Redis so the API can run more than one replica (needs `REDIS_URL`). |
+
+Run a single API replica unless both Redis options are on.
 
 ## Customer Portal (Next.js)
 

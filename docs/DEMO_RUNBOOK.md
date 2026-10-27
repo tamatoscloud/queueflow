@@ -534,4 +534,4 @@ Then start customer portal and Flutter apps as above.
 
 ---
 
-*Related technical docs: [DEMO_RESTAURANT.md](./DEMO_RESTAURANT.md), [PHASE_2F_SERVICE_MODE_E2E.md](./PHASE_2F_SERVICE_MODE_E2E.md)*
+*Related technical docs: [DEMO_RESTAURANT.md](DEMO_RESTAURANT.md), [PHASE_2F_SERVICE_MODE_E2E.md](archive/PHASE_2F_SERVICE_MODE_E2E.md)*

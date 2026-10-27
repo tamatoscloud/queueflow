@@ -8,10 +8,12 @@ Multi-tenant **Digital Queue Management SaaS**. Businesses run queues at branche
 |-----|------|-------|-------|
 | **Backend API** | `backend/` | NestJS, Prisma, Queue Engine | All clients |
 | **Customer Portal** | `apps/customer-portal/` | Next.js 15, TanStack Query | Customers (QR → join → track) |
-| **Business App** | `apps/business_app/` | Flutter (web/mobile) | Staff, managers, owners |
+| **Business App** | `apps/business_app/` | Flutter (web/mobile) | Owners and managers |
+| **Staff App** | `apps/staff_app/` | Flutter (web) | Front-desk staff — fast queue console |
 | **TV Display** | `apps/tv_display/` | Flutter Web | Lobby queue boards |
 | **Admin Panel** | `apps/admin_panel/` | Flutter Web | Platform operators |
 | **Marketing Website** | `apps/marketing_website/` | Flutter Web | Public (scaffold) |
+| Customer App (unused) | `apps/customer_app/` | Flutter | Empty shell kept pending a product decision; guests use the portal |
 
 See [`PROJECT.md`](PROJECT.md) for the full customer journey.
 
@@ -21,7 +23,7 @@ See [`PROJECT.md`](PROJECT.md) for the full customer journey.
 packages/          # Shared Dart packages (core, network, theme, ui, …)
 apps/              # Flutter + Next.js applications
 backend/           # NestJS REST API + Socket.IO + notification workers
-docs/              # Architecture, API, deployment, environment
+docs/              # Architecture, API, deployment, environment (dated reports in docs/archive/)
 config/            # Environment templates (no secrets)
 ```
 

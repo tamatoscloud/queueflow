@@ -143,22 +143,27 @@ jobs:
       - name: Tests
         run: npm test
 
+      # E2E runs against a non-production environment configured in repo
+      # variables (Settings → Secrets and variables → Actions → Variables).
+      # It is skipped until E2E_BASE_URL is set, so PRs never send test
+      # traffic to production or fail because production is down.
       - name: Install Playwright Chromium
+        if: ${{ vars.E2E_BASE_URL != '' }}
         run: npx playwright install --with-deps chromium
 
-      - name: E2E Browse Menu (prod demo API)
+      - name: E2E Browse Menu
+        if: ${{ vars.E2E_BASE_URL != '' }}
         run: npx playwright test e2e/browse-menu.spec.ts
         env:
-          BASE_URL: https://queueflow-six-beta.vercel.app
-          API_BASE_URL: https://queueflow-backend-production.up.railway.app/api/v1
-          DINE_IN_QUEUE_ID: 5354156e-0e46-41a1-ab49-8c6dd9ac80f7
-          TAKEAWAY_QUEUE_ID: 763167b4-7222-4970-ad13-c3cd34811feb
-          DRIVE_IN_QUEUE_ID: 94f4d0c7-d458-431f-b27c-6995c223ffde
+          BASE_URL: ${{ vars.E2E_BASE_URL }}
+          API_BASE_URL: ${{ vars.E2E_API_BASE_URL }}
+          DINE_IN_QUEUE_ID: ${{ vars.E2E_DINE_IN_QUEUE_ID }}
+          TAKEAWAY_QUEUE_ID: ${{ vars.E2E_TAKEAWAY_QUEUE_ID }}
+          DRIVE_IN_QUEUE_ID: ${{ vars.E2E_DRIVE_IN_QUEUE_ID }}
 
       - name: Production build
-        # Retry: next/font Google fetch occasionally fails in Actions.
-        run: |
-          npm run build || (sleep 5 && npm run build) || (sleep 10 && npm run build)
+        # Fonts are vendored in src/app/fonts, so the build needs no network.
+        run: npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: https://api.example.com/api/v1
           NEXT_PUBLIC_WS_BASE_URL: https://api.example.com

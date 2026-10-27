@@ -74,7 +74,7 @@ subscribe:business-dashboard | subscribe:queue-detail
 Invalidate Riverpod providers → REST refresh
 ```
 
-See [`docs/REALTIME.md`](../../docs/REALTIME.md) for server-side event mapping.
+See [`docs/REALTIME.md`](../../../docs/REALTIME.md) for server-side event mapping.
 
 ## Navigation
 

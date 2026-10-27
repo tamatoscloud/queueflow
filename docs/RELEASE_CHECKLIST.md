@@ -24,7 +24,7 @@ Use this checklist before every staging or production release.
 - [ ] `REDIS_URL` uses `rediss://` (TLS) in staging/production
 - [ ] `NOTIFICATION_QUEUE_ENABLED=true`
 - [ ] `NOTIFICATION_USE_MOCK=false` in production
-- [ ] Notification worker process running (`npm run worker:notifications`)
+- [ ] Notification worker started (API boot log shows `NotificationWorker bound to notification queue`)
 - [ ] Queue depth acceptable via admin health dashboard
 
 ## Notification providers
