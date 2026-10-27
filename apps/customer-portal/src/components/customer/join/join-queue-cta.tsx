@@ -36,7 +36,7 @@ export function JoinQueueCTA({
     >
       <Button
         type="submit"
-        variant="gradient"
+        variant="default"
         size="lg"
         disabled={disabled || isSubmitting}
         className="h-14 w-full rounded-2xl text-base font-bold shadow-glow"

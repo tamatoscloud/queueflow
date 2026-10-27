@@ -65,7 +65,7 @@ export function RestaurantLanding({ data, queueId }: { data: QueueLanding; queue
         {heroUrl ? (
           <Image src={heroUrl} alt="" fill className="object-cover" priority sizes="100vw" unoptimized={!isOptimizableImage(heroUrl)} />
         ) : (
-          <div className="h-full bg-gradient-to-br from-primary to-accent-purple" />
+          <div className="h-full bg-gradient-to-br from-primary to-q-green-muted" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4">
@@ -103,7 +103,7 @@ export function RestaurantLanding({ data, queueId }: { data: QueueLanding; queue
       {/* Resume or join */}
       {activeSession ? (
         <Button
-          variant="gradient"
+          variant="default"
           size="lg"
           className="h-14 w-full rounded-2xl text-base font-bold shadow-glow active:scale-[0.98]"
           onClick={() => router.push(`/track/${activeSession.entryId}`)}

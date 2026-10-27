@@ -21,7 +21,7 @@ export function CalmEnded({ variant, queueId, serviceMode, reason }: CalmEndedPr
     <div className="flex flex-1 flex-col items-center gap-6 py-8 text-center">
       <CalmHeading>{ended.title}</CalmHeading>
       <CalmCard className="w-full">
-        <p className="text-sm leading-relaxed text-[#6b6870]">{reason ?? ended.description}</p>
+        <p className="text-sm leading-relaxed text-q-muted">{reason ?? ended.description}</p>
       </CalmCard>
 
       {queueId ? (

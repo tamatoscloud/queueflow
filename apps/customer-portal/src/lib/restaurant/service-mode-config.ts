@@ -12,6 +12,8 @@ export type ServiceModeCopy = {
   walletTitle: string;
   almostTitle: string;
   readyTitle: string;
+  /** Small lime eyebrow above the ready title on the queue pass. */
+  readyEyebrow: string;
   readyDescription: (branchName: string) => string;
   readyHoldMessage: string;
   completedTitle: string;
@@ -53,7 +55,8 @@ const DINE_IN_COPY: ServiceModeCopy = {
   walletTitle: 'Your place',
   almostTitle: 'Almost your turn',
   readyTitle: "It's your turn!",
-  readyDescription: (branch) => `Please head to the counter at ${branch}.`,
+  readyEyebrow: 'Your table is almost ready',
+  readyDescription: (branch) => `Please head to the host stand at ${branch}.`,
   readyHoldMessage: 'Please come now — we will hold your place briefly.',
   completedTitle: "You're all set!",
   completedSubtitle: 'Thanks for visiting. Enjoy your meal.',
@@ -112,6 +115,7 @@ const TAKEAWAY_COPY: ServiceModeCopy = {
   walletTitle: 'Pickup status',
   almostTitle: 'Almost ready',
   readyTitle: 'Your order is ready!',
+  readyEyebrow: "It's your turn",
   readyDescription: () => 'Please collect your order at the counter.',
   readyHoldMessage: 'We will hold your order for a few minutes.',
   completedTitle: 'Thanks for your order',
@@ -171,6 +175,7 @@ const DRIVE_IN_COPY: ServiceModeCopy = {
   walletTitle: 'Your place in line',
   almostTitle: "You're almost next",
   readyTitle: "We're coming to your car!",
+  readyEyebrow: "It's your turn",
   readyDescription: () => 'Please remain in your vehicle. A team member is on the way.',
   readyHoldMessage: 'We will wait a few minutes at your vehicle.',
   completedTitle: 'Thanks for visiting',

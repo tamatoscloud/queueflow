@@ -6,30 +6,16 @@ import { ServiceWorkerRegistration } from '@/components/layout/service-worker-re
 import { QueryProvider } from '@/providers/query-provider';
 import './globals.css';
 
-// Fonts are vendored in ./fonts (Latin subsets, SIL OFL) instead of being
-// fetched from Google at build time: builds no longer fail when
-// fonts.googleapis.com is unreachable, and the Geist file is a 34 KB variable
-// subset covering every weight in one request.
-const geistSans = localFont({
-  src: './fonts/geist-latin-var.woff2',
-  variable: '--font-geist-sans',
+// Quyk redesign typeface: Hanken Grotesk (variable, Latin subset, SIL OFL),
+// vendored in ./fonts so builds never fetch fonts. One file covers every
+// weight; headings and body share it, as in the Figma design.
+const quykSans = localFont({
+  src: './fonts/hanken-grotesk-latin-wght-normal.woff2',
+  variable: '--font-quyk',
   weight: '100 900',
   display: 'swap',
   fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
   adjustFontFallback: 'Arial',
-});
-
-// Display face is only used for headings; don't block the first paint on it.
-const playfair = localFont({
-  src: [
-    { path: './fonts/playfair-display-latin-600-normal.woff2', weight: '600', style: 'normal' },
-    { path: './fonts/playfair-display-latin-700-normal.woff2', weight: '700', style: 'normal' },
-  ],
-  variable: '--font-display',
-  display: 'swap',
-  preload: false,
-  fallback: ['Georgia', 'Times New Roman', 'serif'],
-  adjustFontFallback: 'Times New Roman',
 });
 
 export const metadata: Metadata = {
@@ -50,14 +36,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#6366F1',
+  themeColor: '#003D32',
   width: 'device-width',
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${playfair.variable} h-full`}>
+    <html lang="en" className={`${quykSans.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans text-foreground antialiased">
         <QueryProvider>
           <SentryInit />

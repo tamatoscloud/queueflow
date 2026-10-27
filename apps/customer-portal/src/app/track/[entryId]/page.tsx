@@ -103,7 +103,7 @@ export default function TrackQueuePage() {
 
   if (data.entry.status === 'HOLDING') {
     return (
-      <BookingShell variant="waiting" showJazzPill>
+      <BookingShell variant="waiting" venueName={venueName} showJazzPill>
         <GuestTurnToast />
         <LightWaitingExperience tracking={data} connection={connection} />
       </BookingShell>
@@ -128,7 +128,7 @@ export default function TrackQueuePage() {
   }
 
   return (
-    <BookingShell variant="waiting" showJazzPill>
+    <BookingShell variant="waiting" venueName={venueName} showJazzPill>
       <GuestTurnToast />
       {showWelcome ? (
         <CalmWelcomeBanner copy={copy} onDismiss={() => setShowWelcome(false)} />

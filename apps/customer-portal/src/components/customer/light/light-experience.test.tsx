@@ -6,7 +6,7 @@ import { getServiceModeCopy } from '@/lib/restaurant/service-mode-config';
 import { makeTracking } from '@/testing/tracking-fixture';
 
 describe('LightWaitingExperience', () => {
-  it('renders queue waiting state with timer and venue details', () => {
+  it('renders the Quyk waiting screen with timer and actions', () => {
     render(
       <LightWaitingExperience
         tracking={makeTracking({ estimatedWaitMinutes: 18, customersAhead: 3, position: 4 })}
@@ -14,11 +14,14 @@ describe('LightWaitingExperience', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /You are in the Queue/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Black Stone Café' })).toBeInTheDocument();
-    expect(screen.getByText('Browse Menu')).toBeInTheDocument();
-    expect(screen.getByText('Browser Notifications')).toBeInTheDocument();
-    expect(screen.getByText(/min left|Any moment/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /You're in the queue/i })).toBeInTheDocument();
+    expect(screen.getByText('Waiting Line')).toBeInTheDocument();
+    expect(screen.getByText('03')).toBeInTheDocument();
+    expect(screen.getByText('Browse menu')).toBeInTheDocument();
+    expect(screen.getByText('Browser notifications')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Browser notifications' })).toBeInTheDocument();
+    expect(screen.getByText(/mins? left|Any moment/i)).toBeInTheDocument();
+    expect(screen.getByText('Auto-updating live')).toBeInTheDocument();
   });
 
   it('shows people ahead and token context', () => {
@@ -34,43 +37,46 @@ describe('LightWaitingExperience', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Bella Vista' })).toBeInTheDocument();
     expect(screen.getAllByText(/5 parties ahead/i).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/queue token w-123/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/You are #7 of/i)).toBeInTheDocument();
+    expect(screen.getByText(/You're #7 of/i)).toBeInTheDocument();
     expect(screen.getByText('Phone updates')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit number' })).toBeInTheDocument();
   });
 
-  it('still shows the waiting hero when few customers ahead', () => {
+  it('says next in line when no one is ahead', () => {
     render(
       <LightWaitingExperience
-        tracking={makeTracking({ customersAhead: 2, estimatedWaitMinutes: 8 })}
+        tracking={makeTracking({ customersAhead: 0, position: 1, estimatedWaitMinutes: 2 })}
         connection="connected"
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /You are in the Queue/i })).toBeInTheDocument();
-    expect(screen.getByText(/notify you when your turn approaches/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/2 parties ahead/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/You're next in line/i)).toBeInTheDocument();
+    expect(screen.getByText(/Any moment now/i)).toBeInTheDocument();
   });
 });
 
 describe('LightReadyExperience', () => {
-  it('renders called state with countdown and hold message', () => {
+  it('renders the queue pass with number, party and hold timer', () => {
     render(
       <LightReadyExperience
         displayCode="W-123"
         calledAt={new Date().toISOString()}
-        branchName="Bahadurabad, Karachi"
-        businessName="Black Stone Café"
-        partySize={2}
+        branchName="Bella Vista Downtown"
+        businessName="Bella Vista"
+        partySize={4}
         position={1}
         copy={getServiceModeCopy('DINE_IN')}
       />,
     );
 
     expect(screen.getByRole('heading', { name: /It's your turn/i })).toBeInTheDocument();
-    expect(screen.getByText(/Please come now/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your table is almost ready/i)).toBeInTheDocument();
+    expect(screen.getByText(/host stand at Bella Vista Downtown/i)).toBeInTheDocument();
     expect(screen.getByText('W-123')).toBeInTheDocument();
+    expect(screen.getByText('Party of 4')).toBeInTheDocument();
+    expect(screen.getByText(/Hold expires in 1:5\d|Hold expires in 2:00/)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Hold time remaining' })).toBeInTheDocument();
   });
 });

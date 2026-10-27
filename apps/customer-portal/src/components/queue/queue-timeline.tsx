@@ -53,7 +53,7 @@ export function QueueTimeline({
                   'flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300',
                   isComplete && 'border-success bg-success text-white',
                   isActive &&
-                    'border-primary bg-gradient-to-br from-primary to-accent-purple text-white shadow-glow scale-110',
+                    'border-primary bg-gradient-to-br from-primary to-q-green-muted text-white shadow-glow scale-110',
                   isPending && 'border-border bg-surface text-muted',
                 )}
               >

@@ -24,7 +24,7 @@ export function AlmostYourTurn({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-white to-accent-purple/10 p-5 text-center shadow-sm',
+        'rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-white to-q-green-muted/10 p-5 text-center shadow-sm',
         className,
       )}
       role="status"

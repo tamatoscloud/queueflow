@@ -77,7 +77,7 @@ export function PremiumEmpty({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 py-12 text-center animate-fade-in-up">
-      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 to-accent-purple/20">
+      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 to-q-green-muted/20">
         <Icon className="h-10 w-10 text-primary" aria-hidden />
       </div>
       <div>
@@ -90,7 +90,7 @@ export function PremiumEmpty({
         </Button>
       ) : null}
       {action ? (
-        <Button variant="gradient" size="lg" className="rounded-2xl" asChild>
+        <Button variant="default" size="lg" className="rounded-2xl" asChild>
           <Link href={action.href}>{action.label}</Link>
         </Button>
       ) : null}
@@ -118,7 +118,7 @@ export function PremiumError({
       </p>
       <div className="mt-6 flex flex-col gap-2">
         {onRetry ? (
-          <Button variant="gradient" className="w-full rounded-2xl" onClick={onRetry}>
+          <Button variant="default" className="w-full rounded-2xl" onClick={onRetry}>
             Try again
           </Button>
         ) : null}

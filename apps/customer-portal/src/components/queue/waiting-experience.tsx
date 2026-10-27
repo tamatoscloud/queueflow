@@ -217,7 +217,7 @@ export function WaitingExperience({
             {POPULAR_DISHES.map((d) => (
               <div
                 key={d.name}
-                className="shrink-0 rounded-xl bg-gradient-to-r from-primary/10 to-accent-purple/10 px-3 py-2 text-xs font-semibold"
+                className="shrink-0 rounded-xl bg-gradient-to-r from-primary/10 to-q-green-muted/10 px-3 py-2 text-xs font-semibold"
               >
                 {d.name}
               </div>

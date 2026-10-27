@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Bell, Hash, Lock, Mail, User } from 'lucide-react';
+import { Bell, Car, Hash, Lock, Mail, Phone, User } from 'lucide-react';
 import type { QueueLanding, ServiceMode } from '@/lib/api/types';
 import { customerApi } from '@/lib/api/customer-api';
 import { ApiClientError } from '@/lib/api/client';
@@ -28,12 +28,12 @@ import { buildTrackingFromJoin } from '@/lib/tracking/seed-from-join';
 import { queryKeys } from '@/lib/api/query-keys';
 import { useQueryClient } from '@tanstack/react-query';
 import { CalmReturningCustomer } from '@/components/customer/calm/calm-returning-customer';
-import { CalmButton, CalmCard } from '@/components/customer/calm/primitives';
 import {
   LightField,
   LightInput,
   LightPartySelect,
 } from '@/components/customer/light/light-fields';
+import { QuykButton, QuykCard, QuykNotice, QuykPanel, QuykPill } from '@/components/quyk/ui';
 import { cn } from '@/lib/utils';
 
 type BookingRegistrationProps = {
@@ -78,15 +78,71 @@ function modeLabel(mode: ServiceMode): string {
   }
 }
 
-function summaryContext(mode: ServiceMode, values: ModeJoinFormValues): string {
+function summaryFacts(
+  mode: ServiceMode,
+  values: ModeJoinFormValues,
+): { label: string; value: string } {
   switch (mode) {
     case 'TAKEAWAY':
-      return `Order #${values.orderNumber}`;
+      return { label: 'Order', value: `#${values.orderNumber}` };
     case 'DRIVE_IN':
-      return values.vehicleDescription || 'Your vehicle';
+      return { label: 'Vehicle', value: values.vehicleDescription || 'Your vehicle' };
     default:
-      return `Party of ${values.partySize}`;
+      return {
+        label: 'Party',
+        value: `${values.partySize} ${values.partySize === 1 ? 'person' : 'people'}`,
+      };
   }
+}
+
+function NotifyChoice({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: 'WHATSAPP' | 'SMS' | 'BOTH'; label: string }[];
+  value: string;
+  onChange: (v: 'WHATSAPP' | 'SMS' | 'BOTH') => void;
+}) {
+  if (options.length === 0) {
+    return (
+      <QuykNotice icon={Bell} title="How should we notify you?">
+        We&apos;ll update you on this page. Turn on browser alerts after you join — WhatsApp and
+        SMS are not connected yet.
+      </QuykNotice>
+    );
+  }
+  return (
+    <QuykNotice icon={Bell} title="How should we notify you?">
+      <div className="mt-2 flex flex-wrap gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            aria-pressed={value === opt.value}
+            className={cn(
+              'rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+              value === opt.value
+                ? 'bg-q-green text-q-lime'
+                : 'border border-q-field bg-white text-q-green',
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </QuykNotice>
+  );
+}
+
+function PrivacyLine() {
+  return (
+    <p className="flex items-center justify-center gap-1.5 text-[12px] text-q-subtle">
+      <Lock className="h-3 w-3" aria-hidden />
+      We&apos;ll never share your details.
+    </p>
+  );
 }
 
 export function BookingRegistration({ data, queueId }: BookingRegistrationProps) {
@@ -211,8 +267,8 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
   if (!canJoin) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 py-12 text-center">
-        <h1 className="font-display text-2xl font-bold">We&apos;re not taking guests right now</h1>
-        <p className="text-sm text-[#6b6870]">
+        <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-q-green">We&apos;re not taking guests right now</h1>
+        <p className="text-[14px] text-q-muted">
           {data.business.name} isn&apos;t accepting new guests right now. Please check back soon.
         </p>
       </div>
@@ -230,31 +286,102 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
     );
   }
 
+  const notifyChoice = (
+    <NotifyChoice
+      options={notifyOptions}
+      value={values.notificationPreference}
+      onChange={(v) => form.setValue('notificationPreference', v, { shouldValidate: true })}
+    />
+  );
+
+  const errorBox = submitError ? (
+    <p className="rounded-[16px] bg-danger-light px-4 py-3 text-[14px] text-[#9a3412]" role="alert">
+      {submitError}
+    </p>
+  ) : null;
+
+  // Figma screen 5: review before joining.
+  if (showSummary && canShowSummary) {
+    const facts = summaryFacts(mode, values);
+    const rows = [
+      { label: 'Name', value: values.fullName },
+      { label: 'Mobile', value: values.phone },
+      ...(values.email?.trim() ? [{ label: 'Email', value: values.email.trim() }] : []),
+    ];
+    return (
+      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col gap-4 pb-4">
+        <div>
+          <h1 className="text-[32px] font-semibold leading-tight tracking-[-0.03em] text-q-green">
+            Check your details
+          </h1>
+          <p className="mt-1.5 text-[14px] leading-snug text-q-muted">
+            Make sure your number is right — this is how we find you.
+          </p>
+        </div>
+
+        <QuykPanel>
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-[20px] font-semibold text-white">{data.business.name}</p>
+            <QuykPill tone="lime">{modeLabel(mode)}</QuykPill>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/15 pt-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
+                {facts.label}
+              </p>
+              <p className="mt-1 text-[17px] font-semibold text-white">{facts.value}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">
+                Estimated wait
+              </p>
+              <p className="mt-1 text-[17px] font-semibold text-q-lime">
+                {formatWaitMinutes(data.live.estimatedWaitMinutes, copy)}
+              </p>
+            </div>
+          </div>
+        </QuykPanel>
+
+        <QuykCard className="px-4">
+          <dl className="divide-y divide-q-line">
+            {rows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between gap-4 py-3.5">
+                <dt className="text-[14px] text-q-muted">{row.label}</dt>
+                <dd className="truncate text-[15px] font-semibold text-q-ink">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </QuykCard>
+
+        {notifyChoice}
+        {errorBox}
+
+        <QuykButton type="submit" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? 'Joining…' : 'Join the queue'}
+        </QuykButton>
+        <QuykButton
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={() => setShowSummary(false)}
+        >
+          Edit details
+        </QuykButton>
+        <PrivacyLine />
+      </form>
+    );
+  }
+
+  // Figma screens 3–4: details form.
   return (
-    <div className="flex flex-1 flex-col gap-6 pb-4">
-      <div className="text-center">
-        <h1 className="font-display text-3xl font-bold leading-tight text-[var(--foreground)]">
-          {headings.title.replace('!', '')}
-          {headings.title.includes('!') ? <span className="text-[var(--primary)]">!</span> : null}
+    <div className="flex flex-1 flex-col gap-5 pb-4">
+      <div>
+        <h1 className="text-[32px] font-semibold leading-tight tracking-[-0.03em] text-q-green">
+          {headings.title}
         </h1>
-        <p className="mt-2 text-sm text-[#6b6870]">{headings.subtitle}</p>
+        <p className="mt-1.5 text-[14px] leading-snug text-q-muted">{headings.subtitle}</p>
       </div>
 
-      {showSummary && canShowSummary ? (
-        <CalmCard highlighted className="text-center">
-          <p className="font-display text-lg font-bold text-[var(--foreground)]">{data.business.name}</p>
-          <p className="mt-1 text-sm text-[#6b6870]">{modeLabel(mode)}</p>
-          <p className="mt-3 text-base font-semibold text-[var(--foreground)]">
-            {summaryContext(mode, values)}
-          </p>
-          <p className="mt-4 text-sm text-[#6b6870]">Estimated wait</p>
-          <p className="font-display text-2xl font-bold text-[var(--primary)]">
-            {formatWaitMinutes(data.live.estimatedWaitMinutes, copy)}
-          </p>
-        </CalmCard>
-      ) : null}
-
-      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col gap-5">
+      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col gap-4">
         {mode === 'DINE_IN' ? (
           <LightPartySelect
             value={form.watch('partySize')}
@@ -267,6 +394,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           <LightField
             label="What's your order number?"
             icon={Hash}
+            htmlFor="orderNumber"
             error={form.formState.errors.orderNumber?.message}
           >
             <LightInput
@@ -282,7 +410,8 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           <>
             <LightField
               label="Vehicle"
-              icon={User}
+              icon={Car}
+              htmlFor="vehicleDescription"
               error={form.formState.errors.vehicleDescription?.message}
             >
               <LightInput
@@ -291,7 +420,7 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
                 {...form.register('vehicleDescription')}
               />
             </LightField>
-            <LightField label="License plate (optional)" icon={Hash}>
+            <LightField label="License plate (optional)" icon={Hash} htmlFor="vehiclePlate">
               <LightInput
                 id="vehiclePlate"
                 placeholder="e.g. ABC-123"
@@ -301,7 +430,12 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           </>
         ) : null}
 
-        <LightField label="Your name" icon={User} error={form.formState.errors.fullName?.message}>
+        <LightField
+          label="Your name"
+          icon={User}
+          htmlFor="fullName"
+          error={form.formState.errors.fullName?.message}
+        >
           <LightInput
             id="fullName"
             placeholder="E.g. John Smith"
@@ -310,7 +444,12 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           />
         </LightField>
 
-        <LightField label="Phone number" icon={Hash} error={form.formState.errors.phone?.message}>
+        <LightField
+          label="Phone number"
+          icon={Phone}
+          htmlFor="phone"
+          error={form.formState.errors.phone?.message}
+        >
           <LightInput
             id="phone"
             type="tel"
@@ -320,37 +459,14 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           />
         </LightField>
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-[var(--foreground)]">How should we notify you?</p>
-          {notifyOptions.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {notifyOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() =>
-                    form.setValue('notificationPreference', opt.value, { shouldValidate: true })
-                  }
-                  className={cn(
-                    'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
-                    values.notificationPreference === opt.value
-                      ? 'border-[var(--primary)] bg-[#f5f3ff] text-[var(--primary)]'
-                      : 'border-[#e8e3e8] bg-white text-[#6b6870]',
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13px] leading-snug text-[#6b6870]">
-              We&apos;ll update you on this page. Turn on browser alerts after you join — WhatsApp
-              and SMS are not connected yet.
-            </p>
-          )}
-        </div>
+        {notifyChoice}
 
-        <LightField label="Email (optional)" icon={Mail} error={form.formState.errors.email?.message}>
+        <LightField
+          label="Email (optional)"
+          icon={Mail}
+          htmlFor="email"
+          error={form.formState.errors.email?.message}
+        >
           <LightInput
             id="email"
             type="email"
@@ -360,35 +476,12 @@ export function BookingRegistration({ data, queueId }: BookingRegistrationProps)
           />
         </LightField>
 
-        {submitError ? (
-          <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
-            {submitError}
-          </p>
-        ) : null}
+        {errorBox}
 
-        <CalmButton type="submit" disabled={form.formState.isSubmitting || !canShowSummary}>
-          <Bell className="h-4 w-4" aria-hidden />
-          {form.formState.isSubmitting
-            ? 'Joining…'
-            : showSummary
-              ? 'Join the queue'
-              : 'Continue'}
-        </CalmButton>
-
-        {showSummary ? (
-          <button
-            type="button"
-            onClick={() => setShowSummary(false)}
-            className="text-center text-sm font-medium text-[var(--primary)]"
-          >
-            Edit details
-          </button>
-        ) : null}
-
-        <p className="flex items-center justify-center gap-1.5 text-xs text-[#6b6870]">
-          <Lock className="h-3 w-3" aria-hidden />
-          We&apos;ll never share your details.
-        </p>
+        <QuykButton type="submit" disabled={form.formState.isSubmitting || !canShowSummary}>
+          Continue
+        </QuykButton>
+        <PrivacyLine />
       </form>
     </div>
   );

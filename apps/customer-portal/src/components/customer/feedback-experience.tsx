@@ -65,7 +65,7 @@ export function FeedbackExperience({ entryId }: { entryId: string }) {
           <p className="text-sm font-semibold">10% off your next visit</p>
           <p className="mt-1 text-xs text-muted">Show this screen on your next visit (demo coupon)</p>
         </GlassCard>
-        <Button variant="gradient" className="w-full rounded-2xl" asChild>
+        <Button variant="default" className="w-full rounded-2xl" asChild>
           <Link href="/">Done</Link>
         </Button>
       </div>
@@ -145,7 +145,7 @@ export function FeedbackExperience({ entryId }: { entryId: string }) {
 
       <Button
         type="submit"
-        variant="gradient"
+        variant="default"
         size="lg"
         className="h-14 rounded-2xl"
         disabled={submitting}

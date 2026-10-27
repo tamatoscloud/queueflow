@@ -1,165 +1,114 @@
 @import "tailwindcss";
 
-/* ─── Quyk Design Tokens ─── */
+/* ─── Quyk Design Tokens (Figma "Quyk Redesign User") ─── */
 :root {
-  /* Brand */
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --secondary: #06b6d4;
-  --accent: #ec4899;
-  --accent-purple: #a855f7;
+  /* Quyk palette */
+  --q-green: #003d32;
+  --q-green-panel: #0b5444;
+  --q-green-muted: #3b6b5d;
+  --q-lime: #e4ff2c;
+  --q-lime-soft: #f1ffa6;
+  --q-lime-tint: #f8ffd6;
+  --q-cream: #f3f7ea;
+  --q-line: #e5ecd8;
+  --q-field-border: #d6dfcf;
+  --q-ink: #0f1f1a;
+  --q-muted: #5e6b66;
+  --q-subtle: #8a958f;
+
+  /* Brand (legacy names map onto the Quyk palette) */
+  --primary: var(--q-green);
+  --primary-light: var(--q-green-muted);
+  --primary-dark: var(--q-green);
+  --secondary: var(--q-green-panel);
+  --accent: var(--q-lime);
+  --accent-purple: var(--q-green-muted);
 
   /* Semantic */
-  --success: #10b981;
-  --success-light: #d1fae5;
-  --warning: #f59e0b;
-  --warning-light: #fef3c7;
-  --danger: #ef4444;
-  --danger-light: #fee2e2;
-  --info: #3b82f6;
-  --info-light: #dbeafe;
+  --success: #2f7d4f;
+  --success-light: #e3f3d9;
+  --warning: #b7791f;
+  --warning-light: #fdf3d7;
+  --danger: #c2410c;
+  --danger-light: #fde8df;
+  --info: var(--q-green-muted);
+  --info-light: var(--q-lime-tint);
 
-  /* Neutrals */
-  --neutral-50: #f8fafc;
-  --neutral-100: #f1f5f9;
-  --neutral-200: #e2e8f0;
-  --neutral-300: #cbd5e1;
-  --neutral-400: #94a3b8;
-  --neutral-500: #64748b;
-  --neutral-600: #475569;
-  --neutral-700: #334155;
-  --neutral-800: #1e293b;
-  --neutral-900: #0f172a;
+  /* Neutrals (warm green-grey) */
+  --neutral-50: var(--q-cream);
+  --neutral-100: #eaf0df;
+  --neutral-200: var(--q-line);
+  --neutral-300: var(--q-field-border);
+  --neutral-400: var(--q-subtle);
+  --neutral-500: var(--q-muted);
+  --neutral-600: #4b5a54;
+  --neutral-700: #34443e;
+  --neutral-800: #1f2e29;
+  --neutral-900: var(--q-ink);
 
   /* Surfaces */
-  --background: var(--neutral-50);
-  --foreground: var(--neutral-900);
+  --background: var(--q-cream);
+  --foreground: var(--q-ink);
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --muted: var(--neutral-500);
-  --border: var(--neutral-200);
+  --muted: var(--q-muted);
+  --border: var(--q-line);
 
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
-  --gradient-mesh: radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 100%, rgba(6, 182, 212, 0.06) 0%, transparent 50%);
+  /* Flat brand: no gradient meshes in the redesign */
+  --gradient-primary: linear-gradient(0deg, var(--q-green), var(--q-green));
+  --gradient-secondary: linear-gradient(0deg, var(--q-green-panel), var(--q-green-panel));
+  --gradient-mesh: none;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04);
-  --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 61, 50, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 61, 50, 0.06), 0 1px 4px rgba(0, 61, 50, 0.03);
+  --shadow-lg: 0 8px 32px rgba(0, 61, 50, 0.1), 0 2px 8px rgba(0, 61, 50, 0.04);
+  --shadow-glow: 0 0 24px rgba(228, 255, 44, 0.35);
 
   /* Radius */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
   --radius-full: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0d12;
-    --foreground: #f1f5f9;
-    --surface: #151821;
-    --surface-elevated: #1c2030;
-    --muted: #94a3b8;
-    --border: #2a3042;
-    --gradient-mesh: radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 40%),
-      #0b0d12;
-  }
-}
-
 .font-display {
-  font-family: var(--font-display), Georgia, 'Times New Roman', serif;
+  font-family: var(--font-quyk), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
-/* Customer ticket experience — always light, ignores OS dark mode */
-.booking-light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --surface: #ffffff;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  background: #f8fafc;
-  color: #0f172a;
-}
-
-/* Post-join waiting screen — screenshot match */
+/* Guest experience: Quyk cream theme, always light */
+.booking-light,
 .booking-waiting {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: var(--q-cream);
+  --foreground: var(--q-ink);
   --surface: #ffffff;
-  --muted: #6b7280;
-  --border: #ececf0;
-  --primary: #9b8cff;
-  --primary-light: #b4a9ff;
-  --primary-dark: #7c6cf0;
-  --card-lilac: #f3f0ff;
-  --timer-peach: #f3d9c4;
-  --timer-ring: #ebe6ff;
-  background: #ffffff;
-  color: #0a0a0a;
+  --muted: var(--q-muted);
+  --border: var(--q-line);
+  background: var(--q-cream);
+  color: var(--q-ink);
 }
 
-.booking-waiting .text-primary {
-  color: #9b8cff;
-}
-
-.booking-waiting .bg-primary {
-  background-color: #9b8cff;
-}
-
-.booking-waiting .border-primary {
-  border-color: #9b8cff;
-}
-
-.booking-light .text-primary {
-  color: #6366f1;
-}
-
-.booking-light .bg-primary {
-  background-color: #6366f1;
-}
-
-.booking-light .border-primary {
-  border-color: #6366f1;
+/* Dark Quyk screens: venue QR poster, "It's your turn" pass */
+.booking-dark {
+  --background: var(--q-green);
+  --foreground: #ffffff;
+  --surface: #ffffff;
+  --muted: rgba(255, 255, 255, 0.78);
+  --border: rgba(255, 255, 255, 0.12);
+  background: var(--q-green);
+  color: #ffffff;
 }
 
 /* Queue status pills (customer journey) */
-.status-waiting {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-.status-called {
-  background: #4f46e5;
-  color: #ffffff;
-}
-.status-completed {
-  background: #d1fae5;
-  color: #047857;
-}
-.status-cancelled {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-.status-live {
-  background: #d1fae5;
-  color: #047857;
-}
-.status-updating {
-  background: #f1f5f9;
-  color: #64748b;
-}
+.status-waiting { background: var(--q-lime-tint); color: var(--q-green); }
+.status-called { background: var(--q-lime); color: var(--q-green); }
+.status-completed { background: var(--success-light); color: #1f5a36; }
+.status-cancelled { background: var(--danger-light); color: #9a3412; }
+.status-live { background: var(--q-lime); color: var(--q-green); }
+.status-updating { background: var(--neutral-100); color: var(--q-muted); }
 
 @media (prefers-reduced-motion: reduce) {
   .booking-light *,
@@ -167,7 +116,10 @@
   .booking-light *::after,
   .booking-waiting *,
   .booking-waiting *::before,
-  .booking-waiting *::after {
+  .booking-waiting *::after,
+  .booking-dark *,
+  .booking-dark *::before,
+  .booking-dark *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -194,7 +146,19 @@
   --color-surface-elevated: var(--surface-elevated);
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-quyk);
+  --color-q-green: var(--q-green);
+  --color-q-green-panel: var(--q-green-panel);
+  --color-q-green-muted: var(--q-green-muted);
+  --color-q-lime: var(--q-lime);
+  --color-q-lime-soft: var(--q-lime-soft);
+  --color-q-lime-tint: var(--q-lime-tint);
+  --color-q-cream: var(--q-cream);
+  --color-q-line: var(--q-line);
+  --color-q-field: var(--q-field-border);
+  --color-q-ink: var(--q-ink);
+  --color-q-muted: var(--q-muted);
+  --color-q-subtle: var(--q-subtle);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -231,8 +195,8 @@ body {
 
 /* Pulse glow for live indicators */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(228, 255, 44, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(228, 255, 44, 0); }
 }
 
 .animate-pulse-glow {
@@ -242,7 +206,7 @@ body {
 /* Token display glow */
 @keyframes token-glow {
   0%, 100% { box-shadow: var(--shadow-glow); }
-  50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+  50% { box-shadow: 0 0 40px rgba(228, 255, 44, 0.5); }
 }
 
 .animate-token-glow {
@@ -338,12 +302,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-@media (prefers-color-scheme: dark) {
-  .glass {
-    background: rgba(21, 24, 33, 0.8);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-}
 
 /* Micro-interactions */
 button:active:not(:disabled),
@@ -358,4 +316,37 @@ button:active:not(:disabled),
 
 .animate-slide-in {
   animation: slide-in-right 0.3s ease-out forwards;
+}
+
+/* Quyk mark recoloured with CSS so one asset serves light and dark tiles */
+.quyk-mark {
+  -webkit-mask: url('/brand/quyk-mark.png') center / contain no-repeat;
+  mask: url('/brand/quyk-mark.png') center / contain no-repeat;
+  background-color: currentColor;
+}
+
+/* Equaliser bars on the music pill */
+@keyframes quyk-eq {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1); }
+}
+.animate-quyk-eq {
+  animation: quyk-eq 0.9s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+/* "It's your turn" overlay card */
+@keyframes quyk-pop {
+  0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-quyk-pop {
+  animation: quyk-pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-quyk-eq,
+  .animate-quyk-pop {
+    animation: none;
+  }
 }

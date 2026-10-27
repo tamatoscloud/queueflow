@@ -23,7 +23,7 @@ export function TokenDisplay({
   return (
     <div
       className={cn(
-        'animate-token-glow rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent-purple/5 px-6 py-10 text-center',
+        'animate-token-glow rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-q-green-muted/5 px-6 py-10 text-center',
         className,
       )}
       aria-label={`Queue token ${code}`}

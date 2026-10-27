@@ -36,7 +36,7 @@ export function QueueJoinHero({ data, className }: QueueJoinHeroProps) {
         {heroUrl ? (
           <Image src={heroUrl} alt="" fill className="object-cover" priority sizes="100vw" unoptimized={!isOptimizableImage(heroUrl)} />
         ) : (
-          <div className="h-full bg-gradient-to-br from-primary/30 via-secondary/20 to-accent-purple/30" />
+          <div className="h-full bg-gradient-to-br from-primary/30 via-secondary/20 to-q-green-muted/30" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
         <div className="absolute bottom-3 left-3 right-3">

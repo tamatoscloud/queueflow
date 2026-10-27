@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageCircle, Pencil, RefreshCw } from 'lucide-react';
+import { Bell, ConciergeBell, Phone } from 'lucide-react';
+import { QuykIconBubble, QuykPill } from '@/components/quyk/ui';
 import type { EntryTracking } from '@/lib/api/types';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
 import { customerApi } from '@/lib/api/customer-api';
@@ -50,18 +51,21 @@ function normalizePhoneInput(raw: string): string {
 function InfoTile({
   label,
   value,
+  ariaLabel,
   className,
 }: {
   label: string;
   value: string;
+  ariaLabel?: string;
   className?: string;
 }) {
   return (
-    <div className={cn('rounded-2xl bg-[#f3f0ff] px-3.5 py-3', className)}>
-      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b8b96]">
-        {label}
-      </p>
-      <p className="mt-1 text-[17px] font-bold uppercase leading-tight tracking-wide text-black">
+    <div className={cn('rounded-[16px] border border-q-line bg-white px-3.5 py-3', className)}>
+      <p className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.04em] text-q-subtle">{label}</p>
+      <p
+        className="mt-1 truncate text-[17px] font-bold uppercase leading-tight text-q-green"
+        aria-label={ariaLabel}
+      >
         {value}
       </p>
     </div>
@@ -103,12 +107,7 @@ export function LightWaitingExperience({
   const guestName = (session?.fullName ?? 'Guest').trim() || 'Guest';
   const party = pad2(tracking.entry.partySize);
   const queueTotal = Math.max(position, customersAhead + 1);
-  const branchLine = [tracking.branch.name].filter(Boolean).join(', ');
   const aheadText = formatAhead(customersAhead, copy);
-  const waitWhy =
-    customersAhead <= 0
-      ? "You're next in line — please stay nearby."
-      : `${aheadText} · about ${clampedEstimate} min estimated wait`;
 
   // Permission alone ≠ background push. Re-register when already granted; toggle ON only if subscribed.
   useEffect(() => {
@@ -212,238 +211,182 @@ export function LightWaitingExperience({
     return 'Auto-updating every few seconds';
   }, [connection]);
 
+  const aheadPadded = pad2(customersAhead);
+  const aheadCaption =
+    customersAhead <= 0
+      ? "You're next in line"
+      : `${aheadText}${customersAhead > 0 ? ' of you' : ''}`;
+  const etaLine =
+    customersAhead <= 0
+      ? 'Please stay nearby.'
+      : `About ${clampedEstimate} ${clampedEstimate === 1 ? 'min' : 'mins'} estimated wait.`;
+
   return (
-    <div className={cn('flex flex-1 flex-col', className)}>
-      <section className="border-b border-[#ececf0] pb-6 text-center">
-        <h1 className="font-display text-[32px] font-bold leading-tight tracking-tight text-black">
-          You are in the Queue
-          <span className="text-[#9b8cff]">!</span>
+    <div className={cn('flex flex-1 flex-col gap-4', className)}>
+      <div>
+        <h1 className="text-[30px] font-semibold leading-tight tracking-[-0.03em] text-q-green">
+          You&apos;re in the queue
         </h1>
-        <p className="mt-2 text-[13px] leading-snug text-[#6b7280]">
-          We&apos;ll notify you when your turn approaches.
+        <p className="mt-1.5 text-[14px] leading-snug text-q-muted">
+          Keep this page open — we&apos;ll flip it when it&apos;s your turn.
         </p>
+      </div>
 
-        <div
-          className="mx-auto mt-6 max-w-sm rounded-3xl bg-[#f3f0ff] px-5 py-6"
-          aria-live="polite"
-        >
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8b8b96]">
-            Waiting line
-          </p>
-          <p className="mt-2 font-display text-[56px] font-bold leading-none tracking-tight text-black tabular-nums">
-            {customersAhead}
-          </p>
-          <p className="mt-2 text-[15px] font-semibold text-[#4b5563]">
-            {aheadText}
-            {customersAhead > 0 ? ' of you' : ''}
-          </p>
-          <p className="mt-3 text-[13px] leading-snug text-[#6b7280]">{waitWhy}</p>
+      <section
+        className="rounded-[26px] bg-q-green px-5 pb-6 pt-4 text-center text-white"
+        aria-live="polite"
+      >
+        <div className="flex justify-end">
+          <QuykPill tone="lime">Waiting Line</QuykPill>
         </div>
-
-        <div className="relative mx-auto mt-6 w-[280px]">
-          <WaitTimerCircle progress={progress} className="relative" />
-        </div>
-
-        <p
-          className="mt-4 font-display text-[36px] font-bold leading-none tracking-tight text-black"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {countdown.finished || customersAhead <= 0 ? (
-            <span className="text-[24px]">Any moment</span>
-          ) : (
-            <>
-              <span className="text-[15px] font-medium text-[#6b7280]">About </span>
-              <span className="tabular-nums">{minsLeft}</span>
-              <span className="ml-1.5 align-baseline text-[15px] font-medium text-[#6b7280]">
-                min left
-              </span>
-            </>
-          )}
+        <p className="mt-1 text-[44px] font-bold leading-none tracking-[-0.02em] text-q-lime tabular-nums">
+          {aheadPadded}
         </p>
-        <p className="mt-2 text-[12px] text-[#9ca3af]">
-          Updates as people ahead of you are served
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-q-lime">
+          {aheadCaption}
         </p>
+        <p className="mt-1 text-[14px] text-white/80">{etaLine}</p>
+
+        <WaitTimerCircle progress={progress} className="mx-auto mt-5" />
+
+        <p className="mt-5 text-[22px] font-semibold text-white" aria-live="polite" aria-atomic="true">
+          {countdown.finished || customersAhead <= 0
+            ? 'Any moment now'
+            : `${minsLeft} ${minsLeft === 1 ? 'min' : 'mins'} left`}
+        </p>
+        <p className="mt-1 text-[13px] text-white/75">Updates as people ahead of you are served.</p>
       </section>
 
-      <section className="border-b border-[#ececf0] py-6">
-        <h2 className="font-display text-[26px] font-bold leading-tight text-black">
-          {tracking.business.name}
-        </h2>
-        {branchLine ? (
-          <p className="mt-1 text-[13px] text-[#6b7280]">{branchLine}</p>
-        ) : null}
+      <div className="grid grid-cols-[1.35fr_1fr] gap-2.5">
+        <InfoTile label="Name" value={guestName} />
+        <InfoTile label="Party size" value={party} />
+      </div>
+      <div className="grid grid-cols-3 gap-2.5">
+        <InfoTile label="Ahead of you" value={String(customersAhead)} />
+        <InfoTile label="In line" value={String(queueTotal)} />
+        <InfoTile
+          label={copy.tokenLabel}
+          value={tracking.entry.displayCode}
+          ariaLabel={`Queue token ${tracking.entry.displayCode}`}
+        />
+      </div>
+      <p className="text-center text-[12px] leading-snug text-q-muted">
+        You&apos;re #{position} of {queueTotal} in line. Show{' '}
+        <span className="font-bold text-q-ink">{tracking.entry.displayCode}</span> when the host
+        calls you.
+      </p>
 
-        <div className="mt-4 grid grid-cols-[1.4fr_0.85fr] gap-2.5">
-          <InfoTile label="Name" value={guestName} />
-          <InfoTile label="Party Size" value={party} />
-        </div>
-        <div className="mt-2.5 grid grid-cols-3 gap-2.5">
-          <InfoTile
-            label="Ahead of you"
-            value={String(customersAhead)}
-          />
-          <InfoTile label="In line" value={String(queueTotal)} />
-          <div className="rounded-2xl bg-[#f3f0ff] px-3.5 py-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b8b96]">
-              {copy.tokenLabel}
-            </p>
-            <p
-              className="mt-1 text-[17px] font-bold uppercase leading-tight tracking-wide text-black"
-              aria-label={`Queue token ${tracking.entry.displayCode}`}
+      <button
+        type="button"
+        onClick={() => {
+          const returnPath = `/track/${tracking.entry.id}`;
+          const qs = new URLSearchParams({ return: returnPath, name: tracking.business.name });
+          router.push(`/menu/${tracking.business.id}?${qs.toString()}`);
+        }}
+        className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-q-lime text-[16px] font-semibold text-q-green transition-opacity hover:opacity-95"
+      >
+        <ConciergeBell className="h-5 w-5" aria-hidden />
+        Browse menu
+      </button>
+
+      <div className="flex gap-3 rounded-[20px] border border-q-line bg-white px-4 py-4">
+        <QuykIconBubble icon={Bell} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[15px] font-semibold text-q-ink">Browser notifications</p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={browserNotify}
+              aria-busy={notifyBusy}
+              aria-label="Browser notifications"
+              disabled={notifyBusy}
+              onClick={toggleNotify}
+              className={cn(
+                'relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60',
+                browserNotify ? 'bg-q-green' : 'bg-[#e3eadb]',
+              )}
             >
-              {tracking.entry.displayCode}
-            </p>
+              <span
+                className={cn(
+                  'absolute left-0.5 top-0.5 h-6 w-6 rounded-full shadow transition-transform',
+                  browserNotify ? 'translate-x-5 bg-q-lime' : 'bg-white',
+                )}
+              />
+            </button>
           </div>
+          <p className="mt-1 text-[13px] leading-snug text-q-muted">
+            Get an alert when staff call you. On iPhone, add this page to your Home Screen first.
+          </p>
+          {notifyError ? (
+            <p className="mt-2 text-[12px] leading-snug text-[#7a4b0c]">{notifyError}</p>
+          ) : null}
         </div>
-        <p className="mt-3 text-center text-[12px] leading-snug text-[#6b7280]">
-          You are #{position} of {queueTotal} in line. Show{' '}
-          <span
-            className="font-semibold text-black"
-            aria-label={`Queue token ${tracking.entry.displayCode}`}
-          >
-            {tracking.entry.displayCode}
-          </span>{' '}
-          when staff calls you.
-        </p>
+      </div>
 
+      <div className="rounded-[20px] bg-q-lime-tint px-4 py-4">
+        <p className="flex items-center gap-2 text-[15px] font-semibold text-q-ink">
+          <Phone className="h-4 w-4 text-q-green" aria-hidden />
+          {tracking.notificationChannels?.whatsapp === true
+            ? 'WhatsApp updates'
+            : tracking.notificationChannels?.sms === true
+              ? 'Text updates'
+              : 'Phone updates'}
+        </p>
+        <p className="mt-1 text-[13px] leading-snug text-q-muted">
+          {tracking.notificationChannels?.whatsapp === true
+            ? `We'll message you at ${phoneMasked}.`
+            : tracking.notificationChannels?.sms === true
+              ? `We'll text you at ${phoneMasked}.`
+              : "We'll update you on this page and with browser notifications. WhatsApp and SMS aren't connected yet."}
+        </p>
         <button
           type="button"
-          onClick={() => {
-            const returnPath = `/track/${tracking.entry.id}`;
-            const qs = new URLSearchParams({
-              return: returnPath,
-              name: tracking.business.name,
-            });
-            router.push(`/menu/${tracking.business.id}?${qs.toString()}`);
-          }}
-          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#9b8cff] text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(155,140,255,0.35)] transition-opacity hover:opacity-95 active:scale-[0.98]"
+          onClick={openEditPhone}
+          className="mt-2 text-[13px] font-semibold text-q-green underline underline-offset-2"
         >
-          Browse Menu
+          Edit number
         </button>
-      </section>
+      </div>
 
-      <section className="space-y-3 py-6">
-        <div className="rounded-2xl bg-[#f3f0ff] p-4">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#9b8cff] text-white">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M10 19a2 2 0 0 0 4 0"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-bold text-black">Browser Notifications</p>
-              <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
-                Alert you when staff calls. On iPhone: Add to Home Screen first. Live updates
-                still work while this page is open.
-              </p>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={browserNotify}
-                aria-busy={notifyBusy}
-                disabled={notifyBusy}
-                onClick={toggleNotify}
-                className={cn(
-                  'relative mt-3 h-7 w-12 rounded-full transition-colors disabled:opacity-60',
-                  browserNotify ? 'bg-[#9b8cff]' : 'bg-[#d4d0e8]',
-                )}
-              >
-                <span
-                  className={cn(
-                    'absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform',
-                    browserNotify && 'translate-x-5',
-                  )}
-                />
-              </button>
-              {notifyError ? (
-                <p className="mt-2 text-[11px] leading-snug text-[#b45309]">{notifyError}</p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-[#f3f0ff] p-4">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#9b8cff] text-white">
-              <MessageCircle className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-bold text-black">
-                {tracking.notificationChannels?.whatsapp === true
-                  ? 'WhatsApp Updates'
-                  : tracking.notificationChannels?.sms === true
-                    ? 'Text updates'
-                    : 'Phone updates'}
-              </p>
-              <p className="mt-0.5 text-[12px] leading-snug text-[#6b7280]">
-                {tracking.notificationChannels?.whatsapp === true
-                  ? `Receive a message at ${phoneMasked}.`
-                  : tracking.notificationChannels?.sms === true
-                    ? `Receive a text at ${phoneMasked}.`
-                    : `We'll alert you on this page and via browser notifications. WhatsApp/SMS aren't connected yet.`}
-              </p>
-              <button
-                type="button"
-                onClick={openEditPhone}
-                className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#9b8cff]"
-              >
-                <Pencil className="h-3 w-3" aria-hidden />
-                Edit Number
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-[#9ca3af]">
-          <RefreshCw className="h-3 w-3" aria-hidden />
-          {pollHint}
-        </p>
-      </section>
+      <p className="flex items-center justify-center gap-2 text-[12px] text-q-subtle">
+        <span
+          className={cn(
+            'h-1.5 w-1.5 rounded-full',
+            connection === 'connected' ? 'bg-q-green' : 'bg-q-subtle',
+          )}
+          aria-hidden
+        />
+        {pollHint}
+      </p>
 
       {editOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-q-green/50 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-phone-title"
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <h3 id="edit-phone-title" className="text-lg font-bold text-black">
-              Update WhatsApp number
+          <div className="w-full max-w-md rounded-[24px] bg-white p-5 shadow-xl">
+            <h3 id="edit-phone-title" className="text-[18px] font-semibold text-q-green">
+              Update your number
             </h3>
-            <p className="mt-1 text-sm text-[#6b7280]">
-              Use country code. Example: +923001234567
-            </p>
+            <p className="mt-1 text-[14px] text-q-muted">Use country code. Example: +923001234567</p>
             <input
               type="tel"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
               autoFocus
-              className="mt-4 w-full rounded-xl border border-[#e5e7eb] px-3 py-3 text-base outline-none ring-[#9b8cff] focus:ring-2"
+              className="mt-4 h-[52px] w-full rounded-[14px] border border-q-field px-4 text-[16px] outline-none focus:border-q-green focus:shadow-[0_0_0_3px_var(--q-lime)]"
               placeholder="+923001234567"
             />
-            {phoneError ? (
-              <p className="mt-2 text-sm text-red-600">{phoneError}</p>
-            ) : null}
+            {phoneError ? <p className="mt-2 text-[13px] text-[#9a3412]">{phoneError}</p> : null}
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
                 disabled={phoneBusy}
                 onClick={() => setEditOpen(false)}
-                className="flex-1 rounded-full border border-[#e5e7eb] py-3 text-sm font-semibold"
+                className="h-12 flex-1 rounded-full border-[1.5px] border-q-green text-[15px] font-semibold text-q-green"
               >
                 Cancel
               </button>
@@ -451,7 +394,7 @@ export function LightWaitingExperience({
                 type="button"
                 disabled={phoneBusy}
                 onClick={() => void savePhone()}
-                className="flex-1 rounded-full bg-[#9b8cff] py-3 text-sm font-semibold text-white disabled:opacity-60"
+                className="h-12 flex-1 rounded-full bg-q-green text-[15px] font-semibold text-q-lime disabled:opacity-60"
               >
                 {phoneBusy ? 'Saving…' : 'Save'}
               </button>

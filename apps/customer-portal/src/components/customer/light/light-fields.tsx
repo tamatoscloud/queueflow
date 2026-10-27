@@ -1,29 +1,32 @@
 'use client';
 
-import { User, Users, Hash, Mail, Bell, Lock, Check } from 'lucide-react';
+import { forwardRef } from 'react';
+import { Check, Minus, Plus, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
-import { cn } from '@/lib/utils';
+import { QuykFieldLabel, QuykInput } from '@/components/quyk/ui';
 
 export function LightField({
   label,
-  icon: Icon,
+  icon,
+  htmlFor,
   error,
   children,
 }: {
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
+  htmlFor?: string;
   error?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
-        <Icon className="h-4 w-4 text-primary" aria-hidden />
-        <span>{label}</span>
-      </div>
+      <QuykFieldLabel icon={icon} htmlFor={htmlFor}>
+        {label}
+      </QuykFieldLabel>
       {children}
       {error ? (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-[13px] text-[#9a3412]" role="alert">
           {error}
         </p>
       ) : null}
@@ -31,33 +34,25 @@ export function LightField({
   );
 }
 
-export function LightInput({
-  className,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      className={cn(
-        'h-12 w-full rounded-full border border-neutral-200 bg-white px-5 text-base text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-primary focus:ring-2 focus:ring-primary/20',
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+export const LightInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function LightInput(props, ref) {
+    return <QuykInput ref={ref} {...props} />;
+  },
+);
 
 export function LightVenueField({ venueName }: { venueName: string }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-neutral-700">Venue</p>
-      <div className="flex h-12 items-center justify-between rounded-full border border-neutral-200 bg-neutral-50 px-5">
-        <span className="text-base font-medium text-neutral-900">{venueName}</span>
-        <Check className="h-5 w-5 text-neutral-900" aria-hidden />
+      <p className="text-[14px] font-semibold text-q-ink">Venue</p>
+      <div className="flex h-[52px] items-center justify-between rounded-[14px] border border-q-field bg-q-cream px-4">
+        <span className="text-[16px] font-medium text-q-ink">{venueName}</span>
+        <Check className="h-5 w-5 text-q-green" aria-hidden />
       </div>
     </div>
   );
 }
 
+/** Figma "How many people?" card: grey minus, big count, lime plus. */
 export function LightPartySelect({
   value,
   onChange,
@@ -68,18 +63,25 @@ export function LightPartySelect({
   error?: string;
 }) {
   return (
-    <LightField label="How many people?" icon={Users} error={error}>
-      <div className="flex items-center justify-center gap-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+    <div className="rounded-[22px] border border-q-line bg-white px-4 pb-4 pt-3.5">
+      <p className="flex items-center gap-2 text-[14px] font-semibold text-q-ink">
+        <Users className="h-4 w-4 text-q-green" aria-hidden />
+        How many people?
+      </p>
+      <div className="mt-3 flex items-center justify-between">
         <button
           type="button"
           aria-label="Decrease party size"
           disabled={value <= 1}
           onClick={() => onChange(Math.max(1, value - 1))}
-          className="flex h-14 w-14 items-center justify-center rounded-xl bg-neutral-100 text-2xl font-bold text-foreground disabled:opacity-40"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e3eadb] text-q-green transition-opacity disabled:opacity-40"
         >
-          −
+          <Minus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
         </button>
-        <span className="min-w-[3rem] text-center font-display text-4xl font-bold tabular-nums text-foreground">
+        <span
+          className="min-w-[3rem] text-center text-[34px] font-bold leading-none tabular-nums text-q-green"
+          aria-live="polite"
+        >
           {value}
         </span>
         <button
@@ -87,17 +89,18 @@ export function LightPartySelect({
           aria-label="Increase party size"
           disabled={value >= 20}
           onClick={() => onChange(Math.min(20, value + 1))}
-          className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white disabled:opacity-40"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-q-lime text-q-green transition-opacity disabled:opacity-40"
         >
-          +
+          <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
         </button>
       </div>
-    </LightField>
+      {error ? (
+        <p className="mt-2 text-[13px] text-[#9a3412]" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
-}
-
-export function LightFormIcons() {
-  return { User, Users, Hash, Mail, Bell, Lock };
 }
 
 export type LightRegister = UseFormRegister<{

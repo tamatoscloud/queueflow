@@ -40,7 +40,7 @@ export function CalmDigitalPass({
 
   return (
     <CalmCard highlighted className={cn('text-center', className)} aria-label="Your queue pass">
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b6870]">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-q-muted">
         {restaurantName}
       </p>
       <p className="mt-3 font-display text-4xl font-bold tracking-tight text-[#8b7cf8]">
@@ -49,11 +49,11 @@ export function CalmDigitalPass({
       {contextLine ? (
         <p className="mt-2 text-sm font-medium text-[#17151a]">{contextLine}</p>
       ) : showParty ? (
-        <p className="mt-2 text-sm text-[#6b6870]">Party of {partySize}</p>
+        <p className="mt-2 text-sm text-q-muted">Party of {partySize}</p>
       ) : null}
       <div className="mt-4 flex items-center justify-center gap-4 text-sm">
         <span className="font-semibold text-[#17151a]">{aheadText}</span>
-        <span className="text-[#6b6870]">·</span>
+        <span className="text-q-muted">·</span>
         <span className="font-semibold text-[#17151a]">{waitText}</span>
       </div>
       <div className="mt-4 flex justify-center">

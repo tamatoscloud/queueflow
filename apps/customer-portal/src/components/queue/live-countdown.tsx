@@ -41,7 +41,7 @@ export function LiveCountdown({
       </p>
       <div className="mx-auto mt-4 h-2 w-full max-w-xs overflow-hidden rounded-full bg-neutral-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-accent-purple transition-all duration-1000 ease-linear"
+          className="h-full rounded-full bg-gradient-to-r from-primary to-q-green-muted transition-all duration-1000 ease-linear"
           style={{ width: `${progress}%` }}
         />
       </div>
