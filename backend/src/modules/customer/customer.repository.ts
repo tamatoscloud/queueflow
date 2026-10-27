@@ -110,7 +110,9 @@ export class CustomerRepository {
         : {}),
     };
 
-    const [totalItems, customers] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, customers] = await Promise.all([
       this.prisma.customer.count({ where: customerFilter }),
       this.prisma.customer.findMany({
         where: customerFilter,
@@ -156,7 +158,9 @@ export class CustomerRepository {
       customerId,
       deletedAt: null,
     };
-    const [totalItems, entries] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, entries] = await Promise.all([
       this.prisma.queueEntry.count({ where }),
       this.prisma.queueEntry.findMany({
         where,

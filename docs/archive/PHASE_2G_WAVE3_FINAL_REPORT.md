@@ -3,7 +3,7 @@
 Implementation date: 2026-08-03  
 Scope: Demo runbook, E2E tests, demo reset, cross-app audit, UX polish
 
-Prior work: [PHASE_2G_WAVE2_IMPLEMENTATION.md](./PHASE_2G_WAVE2_IMPLEMENTATION.md)
+Prior work: [PHASE_2G_WAVE2_IMPLEMENTATION.md](PHASE_2G_WAVE2_IMPLEMENTATION.md)
 
 ---
 
@@ -126,7 +126,7 @@ No new overflow issues introduced in Wave 3 changes.
 | Temporary failure | Polling fallback; "Updating automatically" on TV |
 | Call next | `CustomerCalled` event → ready screen |
 
-Architecture unchanged; verification steps in [DEMO_RUNBOOK.md](./DEMO_RUNBOOK.md).
+Architecture unchanged; verification steps in [DEMO_RUNBOOK.md](../DEMO_RUNBOOK.md).
 
 ---
 
@@ -243,4 +243,4 @@ cd ../apps/customer-portal
 DEMO_STAFF_PASSWORD="your-password" npm run test:e2e
 ```
 
-Presenter guide: **[docs/DEMO_RUNBOOK.md](./DEMO_RUNBOOK.md)**
+Presenter guide: **[docs/DEMO_RUNBOOK.md](../DEMO_RUNBOOK.md)**

@@ -22,10 +22,15 @@ export class CustomerPortalController {
   }
 
   @Get('entries/:entryId/tracking')
-  @Header('Cache-Control', 'private, max-age=2, stale-while-revalidate=8')
-  @ApiOperation({ summary: 'Live entry tracking context (public)' })
-  tracking(@Param('entryId', ParseUUIDPipe) entryId: string) {
-    return this.portal.getEntryTracking(entryId);
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({
+    summary: 'Live entry tracking context (public; send x-tracking-token to refresh it)',
+  })
+  tracking(
+    @Param('entryId', ParseUUIDPipe) entryId: string,
+    @Headers('x-tracking-token') trackingToken?: string,
+  ) {
+    return this.portal.getEntryTracking(entryId, trackingToken);
   }
 
   @Patch('entries/:entryId/contact')

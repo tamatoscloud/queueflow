@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { RedisIoAdapter } from './infrastructure/realtime/redis-io.adapter';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -23,12 +25,24 @@ import { corsOriginDelegate } from './common/http/cors.util';
 import { getAppEnvironment } from './config/env.validation';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
-  app.useWebSocketAdapter(new IoAdapter(app));
   const logger = new Logger('Bootstrap');
   const env = getAppEnvironment();
+
+  // Railway (and most PaaS) terminate TLS at an edge proxy. Without this,
+  // req.ip is the proxy's address and every client shares one rate-limit
+  // bucket. TRUST_PROXY_HOPS = number of proxies in front of the app.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
+  if (RedisIoAdapter.isEnabled()) {
+    const redisAdapter = new RedisIoAdapter(app);
+    await redisAdapter.connect();
+    app.useWebSocketAdapter(redisAdapter);
+  } else {
+    app.useWebSocketAdapter(new IoAdapter(app));
+  }
 
   app.use(
     helmet({
@@ -46,7 +60,7 @@ async function bootstrap() {
     origin: corsOriginDelegate,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'x-tracking-token'],
   });
 
   app.useGlobalPipes(

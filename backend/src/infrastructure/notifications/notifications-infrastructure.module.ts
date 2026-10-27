@@ -23,6 +23,7 @@ import { NotificationDispatcher } from './services/notification-dispatcher.servi
 import { NotificationDispatchService } from './services/notification-dispatch.service';
 import { NotificationWorker } from './worker/notification.worker';
 import { WebPushService } from './services/web-push.service';
+import { RealtimeCredentialService } from '../realtime/services/realtime-credential.service';
 
 const providerAdapters = [
   MockNotificationProvider,
@@ -69,6 +70,9 @@ const providerAdapters = [
     NotificationWorker,
     QueueNotificationBridgeService,
     WebPushService,
+    // Stateless JWT signer (JwtService comes from the global AuthModule); used to
+    // put the guest's tracking token into push and feedback links.
+    RealtimeCredentialService,
   ],
   exports: [
     NotificationDispatchService,

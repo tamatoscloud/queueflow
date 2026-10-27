@@ -55,7 +55,7 @@ export class RealtimeSubscriptionAuthorizer {
 
     const queue = await this.prisma.queue.findFirst({
       where: { id: queueId, deletedAt: null },
-      select: { id: true, businessId: true },
+      select: { id: true, businessId: true, branchId: true },
     });
     if (!queue) {
       throw new NotFoundException('Queue not found');
@@ -65,6 +65,13 @@ export class RealtimeSubscriptionAuthorizer {
 
     if (!user.isPlatformAdmin && user.businessId !== queue.businessId) {
       throw new UnauthorizedException('Business access denied');
+    }
+    if (
+      !user.isPlatformAdmin &&
+      user.branchIds &&
+      !user.branchIds.includes(queue.branchId)
+    ) {
+      throw new UnauthorizedException('Branch access denied');
     }
 
     return queue;

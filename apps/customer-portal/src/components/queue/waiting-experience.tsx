@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { isOptimizableImage } from '@/lib/images';
 import { HelpCircle, Sparkles, UtensilsCrossed, X } from 'lucide-react';
 import type { EntryStatus } from '@/lib/api/types';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
@@ -74,6 +75,7 @@ export function WaitingExperience({
             className="object-cover"
             priority
             sizes="(max-width: 768px) 100vw, 480px"
+            unoptimized={!isOptimizableImage(heroImageUrl)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4 flex items-end gap-3">
@@ -84,6 +86,7 @@ export function WaitingExperience({
                 width={48}
                 height={48}
                 className="rounded-xl border-2 border-white/30 shadow-lg"
+                unoptimized={!isOptimizableImage(logoUrl)}
               />
             ) : null}
             <div>

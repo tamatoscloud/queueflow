@@ -69,6 +69,17 @@ export function validateEnvironment(): void {
     }
   }
 
+  if (env !== 'development') {
+    // Warn rather than fail so an existing deployment never refuses to boot;
+    // rotate to 32+ random characters at the next maintenance window.
+    for (const key of ['JWT_SECRET', 'REFRESH_TOKEN_SECRET']) {
+      const value = process.env[key];
+      if (value && value.length < 32) {
+        console.warn(`[env] ${key} is shorter than 32 characters — rotate it to a longer random secret`);
+      }
+    }
+  }
+
   if (errors.length > 0) {
     throw new Error(
       `Environment validation failed (${env}):\n${errors.map((e) => `  - ${e}`).join('\n')}`,

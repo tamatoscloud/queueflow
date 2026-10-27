@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { isOptimizableImage } from '@/lib/images';
 import { ChevronLeft, ChevronRight, Clock, MapPin, Phone, Sparkles, Radio } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -62,7 +63,7 @@ export function RestaurantLanding({ data, queueId }: { data: QueueLanding; queue
       {/* Hero */}
       <div className="relative -mx-4 h-56 overflow-hidden rounded-b-[2rem] sm:mx-0 sm:rounded-3xl">
         {heroUrl ? (
-          <Image src={heroUrl} alt="" fill className="object-cover" priority sizes="100vw" />
+          <Image src={heroUrl} alt="" fill className="object-cover" priority sizes="100vw" unoptimized={!isOptimizableImage(heroUrl)} />
         ) : (
           <div className="h-full bg-gradient-to-br from-primary to-accent-purple" />
         )}

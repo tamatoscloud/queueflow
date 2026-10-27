@@ -11,6 +11,16 @@ type RealtimeCredentialPayload = {
   sub: string;
 };
 
+/** Appends `#t=<tracking token>` so guest links carry their own credential. */
+export function withTrackingFragment(
+  url: string,
+  credentials: Pick<RealtimeCredentialService, 'issueEntryTrackingToken'>,
+  entryId: string,
+): string {
+  const base = url.split('#')[0];
+  return `${base}#t=${encodeURIComponent(credentials.issueEntryTrackingToken(entryId))}`;
+}
+
 @Injectable()
 export class RealtimeCredentialService {
   private readonly entryTrackingTtlSeconds: number;

@@ -184,18 +184,25 @@ export class QueueOperationsService {
     queueId: string,
     actor?: Pick<AuthenticatedUser, 'permissions' | 'isPlatformAdmin'>,
   ) {
-    if (canSeePrivateSnapshot(actor)) {
-      await this.tenantScope.requireQueue(queueId);
-    }
-    const snapshot = await this.engine
-      .getLiveQueueSnapshot(queueId)
-      .then((s) => this.snapshotEnrichment.enrich(s));
-    return canSeePrivateSnapshot(actor) ? snapshot : toPublicQueueSnapshot(snapshot);
+    const isPrivate = canSeePrivateSnapshot(actor);
+    // Tenant check and snapshot read overlap (one DB round trip instead of
+    // two on the staff console's hottest call); nothing is returned unless
+    // the tenant check passes.
+    const [, snapshot] = await Promise.all([
+      isPrivate ? this.tenantScope.requireQueue(queueId) : Promise.resolve(null),
+      this.engine
+        .getLiveQueueSnapshot(queueId)
+        .then((s) => this.snapshotEnrichment.enrich(s)),
+    ]);
+    return isPrivate ? snapshot : toPublicQueueSnapshot(snapshot);
   }
 
   async metrics(queueId: string) {
-    await this.tenantScope.requireQueue(queueId);
-    return this.engine.calculateQueueMetrics(queueId);
+    const [, metrics] = await Promise.all([
+      this.tenantScope.requireQueue(queueId),
+      this.engine.calculateQueueMetrics(queueId),
+    ]);
+    return metrics;
   }
 
   estimateWait(entryId: string) {

@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import { getTrackingTokenForEntry } from '@/lib/storage/session';
 import type {
   EntryTracking,
   JoinQueuePayload,
@@ -18,8 +19,16 @@ export const customerApi = {
       body: JSON.stringify(payload),
     }),
 
-  getEntryTracking: (entryId: string) =>
-    apiFetch<EntryTracking>(`/customer-portal/entries/${entryId}/tracking`),
+  /**
+   * Sends the tab's tracking token (if any) so the API returns a refreshed
+   * one; without it the response is read-only (no `trackingToken`).
+   */
+  getEntryTracking: (entryId: string) => {
+    const token = getTrackingTokenForEntry(entryId);
+    return apiFetch<EntryTracking>(`/customer-portal/entries/${entryId}/tracking`, {
+      headers: token ? { 'x-tracking-token': token } : undefined,
+    });
+  },
 
   updateEntryContact: (
     entryId: string,
@@ -32,7 +41,10 @@ export const customerApi = {
       notificationPreference: string;
     }>(`/customer-portal/entries/${entryId}/contact`, {
       method: 'PATCH',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        trackingToken: payload.trackingToken ?? getTrackingTokenForEntry(entryId),
+      }),
     }),
 
   getBusinessMenu: (businessId: string) =>
@@ -51,12 +63,18 @@ export const customerApi = {
   }) =>
     apiFetch<{ ok: true }>('/customer-portal/push/subscribe', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        trackingToken: payload.trackingToken ?? getTrackingTokenForEntry(payload.entryId),
+      }),
     }),
 
   submitFeedback: (payload: SubmitFeedbackPayload) =>
     apiFetch<unknown>('/customer-portal/feedback', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        trackingToken: payload.trackingToken ?? getTrackingTokenForEntry(payload.queueEntryId),
+      }),
     }),
 };

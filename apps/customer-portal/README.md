@@ -31,7 +31,7 @@ Opens at **http://localhost:3001** (backend API expected at http://localhost:300
 | `/completed/[entryId]` | Thank you |
 | `/feedback/[entryId]` | Rating & feedback |
 
-See [docs/PAGES.md](./docs/PAGES.md) and [docs/COMPONENTS.md](./docs/COMPONENTS.md).
+See [docs/PAGES.md](docs/PAGES.md) and [docs/COMPONENTS.md](docs/COMPONENTS.md).
 
 ## Scripts
 

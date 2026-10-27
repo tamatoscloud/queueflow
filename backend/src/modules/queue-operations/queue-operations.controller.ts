@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
@@ -34,6 +35,9 @@ export class QueueOperationsController {
   ) {}
 
   @Public()
+  // Tighter than the global 120/min: blocks scripted queue flooding while
+  // leaving room for many guests joining from one venue Wi-Fi (shared IP).
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('queues/:queueId/join')
   @ApiOperation({ summary: 'Join queue (QR landing)' })
   join(

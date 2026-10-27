@@ -3,7 +3,7 @@
 Implementation date: 2026-08-03  
 Scope: Business Owner App, Super Admin App, reports honesty, accessibility
 
-Prior work: [PHASE_2G_WAVE1_IMPLEMENTATION.md](./PHASE_2G_WAVE1_IMPLEMENTATION.md)
+Prior work: [PHASE_2G_WAVE1_IMPLEMENTATION.md](PHASE_2G_WAVE1_IMPLEMENTATION.md)
 
 ---
 

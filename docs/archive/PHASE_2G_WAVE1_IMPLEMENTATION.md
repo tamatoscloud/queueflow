@@ -3,7 +3,7 @@
 Implementation date: 2026-08-03  
 Scope: Wave 1 only (customer trust/copy, completed experience, staff Today UX, TV error visibility, marketing CTAs/claims)
 
-Reference audit: [PHASE_2G_UX_AUDIT.md](./PHASE_2G_UX_AUDIT.md)
+Reference audit: [PHASE_2G_UX_AUDIT.md](PHASE_2G_UX_AUDIT.md)
 
 ---
 

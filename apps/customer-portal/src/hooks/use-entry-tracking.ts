@@ -8,7 +8,7 @@ import { queryKeys } from '@/lib/api/query-keys';
 import { queueRealtime } from '@/lib/realtime/queue-realtime';
 import type { RealtimeEnvelope } from '@/lib/realtime/socket-events';
 import {
-  loadQueueSession,
+  getTrackingTokenForEntry,
   saveTrackingTokenForEntry,
 } from '@/lib/storage/session';
 import { isQueueUuid } from '@/lib/queue-id';
@@ -132,9 +132,8 @@ export function useEntryTracking(entryId: string) {
 
   useEffect(() => {
     if (!enabled) return;
-    const session = loadQueueSession();
-    const initialToken =
-      session?.entryId === entryId ? session.trackingToken : undefined;
+    // Links from push/WhatsApp carry the token in `#t=`; adopt it first.
+    const initialToken = getTrackingTokenForEntry(entryId);
 
     const sub = queueRealtime.subscribeEntryTracking(
       entryId,
