@@ -3,6 +3,7 @@ import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../../core/models/notification_model.dart';
 import '../../../shared/widgets/quyk/quyk_widgets.dart';
+import '../../../theme/quyk_staff_theme.dart';
 
 /// "Your turn", "Queue joined", … for a notification type.
 String guestMessageEventLabel(String type) {
@@ -261,11 +262,12 @@ class _MessagesTable extends StatelessWidget {
                     onPressed: () => onViewQueue!(n),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 34),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       foregroundColor: QuykColors.green,
                       side: const BorderSide(color: QuykColors.field),
                       shape: const StadiumBorder(),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      textStyle: const TextStyle(fontFamily: quykFontFamily, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                     child: const Text('View queue'),
                   ),

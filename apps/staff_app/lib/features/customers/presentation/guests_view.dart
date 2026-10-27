@@ -4,6 +4,7 @@ import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../../core/models/customer_model.dart';
 import '../../../shared/widgets/quyk/quyk_widgets.dart';
+import '../../../theme/quyk_staff_theme.dart';
 
 /// Guests tab filter (Figma: All · Waiting · Called).
 enum GuestFilter { all, waiting, called }
@@ -124,7 +125,7 @@ class GuestsView extends StatelessWidget {
                 [
                   Row(
                     children: [
-                      QuykAvatar(name: _name(visible[i]), size: 34, lime: i == 0),
+                      QuykAvatar(name: _name(visible[i]), size: 42, lime: i == 0),
                       const SizedBox(width: 12),
                       Flexible(child: QuykCellText(_name(visible[i]), strong: true)),
                     ],
@@ -195,7 +196,7 @@ class _SearchBar extends StatelessWidget {
               onPressed: onSearch,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(110, 44),
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                textStyle: const TextStyle(fontFamily: quykFontFamily, fontSize: 14, fontWeight: FontWeight.w700),
               ),
               child: const Text('Search'),
             ),

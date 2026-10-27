@@ -61,7 +61,7 @@ Future<void> _render(
         branchPicker: const QuykBranchPill(label: 'All branches'),
         onSignOut: () {},
         child: Align(
-          alignment: Alignment.topCenter,
+          alignment: Alignment.topLeft,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: quykContentMaxWidth),
             child: SizedBox.expand(child: child),
@@ -172,12 +172,20 @@ final _messages = <NotificationModel>[
   _msg('6', 'A-107', 'QUEUE_JOINED', 'Dine-In Waiting List', 'WHATSAPP', '03060600308'),
 ];
 
+void _noop() {}
+
 Widget _liveBoard() {
   return ListView(
     padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
     children: const [
       LiveQueueBoard(
         waitingCount: 3,
+        onCallNext: _noop,
+        onHold: _noop,
+        onSkip: _noop,
+        onMove: _noop,
+        onWalkIn: _noop,
+        onFullList: _noop,
         callLabel: 'Call next guest',
         hero: LiveBoardGuest(
           displayCode: 'A-108',

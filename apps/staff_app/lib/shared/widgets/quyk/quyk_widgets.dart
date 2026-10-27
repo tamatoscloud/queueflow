@@ -394,7 +394,7 @@ class QuykTable extends StatelessWidget {
             InkWell(
               onTap: onRowTap == null ? null : () => onRowTap!(r),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
                 child: _cells(rows[r]),
               ),
             ),
@@ -420,9 +420,9 @@ class QuykCellText extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        fontSize: 13,
+        fontSize: 13.5,
         fontWeight: strong ? FontWeight.w700 : FontWeight.w400,
-        color: green ? QuykColors.green : (strong ? QuykColors.ink : QuykColors.muted),
+        color: green ? QuykColors.green : QuykColors.ink,
       ),
     );
   }

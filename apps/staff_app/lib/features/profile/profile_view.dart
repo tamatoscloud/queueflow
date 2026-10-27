@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../shared/widgets/quyk/quyk_widgets.dart';
+import '../../theme/quyk_staff_theme.dart';
 
 /// Presentational Profile page (Figma "Quyk Redesign Staff", Profile).
 class ProfileView extends StatelessWidget {
@@ -80,7 +81,7 @@ class ProfileView extends StatelessWidget {
                     foregroundColor: QuykColors.green,
                     side: const BorderSide(color: QuykColors.green, width: 1.4),
                     shape: const StadiumBorder(),
-                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    textStyle: const TextStyle(fontFamily: quykFontFamily, fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   child: const Text('Sign out'),
                 ),

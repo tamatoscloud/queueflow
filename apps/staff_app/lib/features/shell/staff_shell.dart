@@ -84,7 +84,7 @@ class StaffShell extends ConsumerWidget {
           child: ColoredBox(
             color: QuykColors.cream,
             child: Align(
-              alignment: Alignment.topCenter,
+              alignment: Alignment.topLeft,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: quykContentMaxWidth),
                 child: SizedBox.expand(child: child),

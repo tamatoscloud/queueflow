@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../shared/widgets/quyk/quyk_widgets.dart';
+import '../../theme/quyk_staff_theme.dart';
 
 /// Guest shown in the "Who's next" hero card.
 class LiveBoardGuest {
@@ -256,11 +257,12 @@ class _HeroCard extends StatelessWidget {
               Row(
                 children: [
                   QuykPill(label: badge, fontSize: 12),
-                  const Spacer(),
+                  const SizedBox(width: 12),
                   if (lineLabel != null)
-                    Flexible(
+                    Expanded(
                       child: Text(
                         lineLabel!,
+                        textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -356,6 +358,7 @@ class _HeroCard extends StatelessWidget {
                     disabledBackgroundColor: QuykColors.lime.withValues(alpha: 0.45),
                     disabledForegroundColor: QuykColors.green.withValues(alpha: 0.6),
                     textStyle: TextStyle(
+                      fontFamily: quykFontFamily,
                       fontSize: large ? 17 : 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -430,7 +433,7 @@ class _GhostButton extends StatelessWidget {
           backgroundColor: QuykColors.green,
           side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontFamily: quykFontFamily, fontSize: 15, fontWeight: FontWeight.w600),
         ),
         child: Text(label),
       ),
