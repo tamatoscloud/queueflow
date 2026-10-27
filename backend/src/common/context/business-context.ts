@@ -57,6 +57,21 @@ export class BusinessContext {
     }
   }
 
+  /**
+   * Ensures a branch-scoped actor (manager/staff assigned to specific branches)
+   * may act on a resource in `resourceBranchId`. `branchIds === null` means
+   * every branch in the business (owners, platform admins, unassigned staff).
+   */
+  assertBranchAccess(resourceBranchId: string | null | undefined): void {
+    if (this.isPlatformAdmin() || !resourceBranchId) {
+      return;
+    }
+    const allowed = this.branchIds;
+    if (allowed && !allowed.includes(resourceBranchId)) {
+      throw new ForbiddenException('BRANCH_ACCESS_DENIED');
+    }
+  }
+
   /** Resolves effective businessId for queries (platform admin may pass override). */
   resolveBusinessId(override?: string): string {
     if (override) {

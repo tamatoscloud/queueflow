@@ -25,10 +25,11 @@ import { HealthModule } from './common/health/health.module';
 import { RestaurantModule } from './modules/restaurant/restaurant.module';
 import { HealthController } from './health.controller';
 import { RootController } from './root.controller';
+import { buildThrottlerOptions } from './common/http/throttler.config';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot(buildThrottlerOptions()),
     PrismaModule,
     AuditModule,
     RedisModule,

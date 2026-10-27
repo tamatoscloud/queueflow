@@ -40,6 +40,7 @@ export class TenantScopeService {
       throw new NotFoundException(`Queue ${queueId} not found`);
     }
     this.businessContext.assertTenantAccess(row.businessId);
+    this.businessContext.assertBranchAccess(row.branchId);
     return row;
   }
 
@@ -51,6 +52,7 @@ export class TenantScopeService {
       throw new NotFoundException(`Queue entry ${entryId} not found`);
     }
     this.businessContext.assertTenantAccess(row.businessId);
+    this.businessContext.assertBranchAccess(row.branchId);
     return row;
   }
 
@@ -62,6 +64,7 @@ export class TenantScopeService {
       throw new NotFoundException(`Branch ${branchId} not found`);
     }
     this.businessContext.assertTenantAccess(row.businessId);
+    this.businessContext.assertBranchAccess(row.id);
     return row;
   }
 
@@ -84,6 +87,7 @@ export class TenantScopeService {
       throw new NotFoundException('Feedback not found');
     }
     this.businessContext.assertTenantAccess(row.businessId);
+    this.businessContext.assertBranchAccess(row.branchId);
     return row;
   }
 }
