@@ -199,7 +199,9 @@ export class PlatformAdminService {
           }
         : {}),
     };
-    const [totalItems, users] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, users] = await Promise.all([
       this.prisma.user.count({ where }),
       this.prisma.user.findMany({
         where,
@@ -339,7 +341,9 @@ export class PlatformAdminService {
           }
         : {}),
     };
-    const [totalItems, data] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, data] = await Promise.all([
       this.prisma.auditLog.count({ where }),
       this.prisma.auditLog.findMany({
         where,

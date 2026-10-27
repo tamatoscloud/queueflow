@@ -29,7 +29,9 @@ export class FeedbackService {
       ...(businessId ? { businessId } : {}),
       ...(query.branchId ? { branchId: query.branchId } : {}),
     };
-    const [totalItems, rows] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, rows] = await Promise.all([
       this.prisma.feedback.count({ where }),
       this.prisma.feedback.findMany({
         where,

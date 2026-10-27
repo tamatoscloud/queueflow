@@ -28,10 +28,16 @@ export class LoggingInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: () => {
+          const durationMs = Date.now() - started;
+          // Lets browser devtools split server time from network time.
+          if (!res.headersSent) {
+            res.setHeader('Server-Timing', `app;dur=${durationMs}`);
+            res.setHeader('Timing-Allow-Origin', '*');
+          }
           writeStructuredLog('info', 'http_request_completed', {
             ...baseFields,
             statusCode: res.statusCode,
-            durationMs: Date.now() - started,
+            durationMs,
           });
         },
         error: (err: Error) => {

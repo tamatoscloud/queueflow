@@ -77,7 +77,9 @@ export class BusinessRepository {
     };
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
-    const [totalItems, rows] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, rows] = await Promise.all([
       this.prisma.business.count({ where }),
       this.prisma.business.findMany({
         where,

@@ -1,27 +1,35 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Playfair_Display } from 'next/font/google';
+import localFont from 'next/font/local';
 import { SentryInit } from '@/components/observability/sentry-init';
 import { OfflineBanner } from '@/components/layout/offline-banner';
 import { ServiceWorkerRegistration } from '@/components/layout/service-worker-registration';
 import { QueryProvider } from '@/providers/query-provider';
 import './globals.css';
 
-const geistSans = Geist({
+// Fonts are vendored in ./fonts (Latin subsets, SIL OFL) instead of being
+// fetched from Google at build time: builds no longer fail when
+// fonts.googleapis.com is unreachable, and the Geist file is a 34 KB variable
+// subset covering every weight in one request.
+const geistSans = localFont({
+  src: './fonts/geist-latin-var.woff2',
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  weight: '100 900',
   display: 'swap',
   fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
-  adjustFontFallback: true,
+  adjustFontFallback: 'Arial',
 });
 
-const playfair = Playfair_Display({
+// Display face is only used for headings; don't block the first paint on it.
+const playfair = localFont({
+  src: [
+    { path: './fonts/playfair-display-latin-600-normal.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/playfair-display-latin-700-normal.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-display',
-  subsets: ['latin'],
-  weight: ['600', '700'],
   display: 'swap',
-  // Avoid null loader crashes in CI when fonts.googleapis.com is flaky.
+  preload: false,
   fallback: ['Georgia', 'Times New Roman', 'serif'],
-  adjustFontFallback: true,
+  adjustFontFallback: 'Times New Roman',
 });
 
 export const metadata: Metadata = {

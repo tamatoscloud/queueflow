@@ -74,7 +74,9 @@ export class NotificationService {
       ...(query.queueEntryId ? { queueEntryId: query.queueEntryId } : {}),
       ...(query.status ? { status: query.status } : {}),
     };
-    const [totalItems, rows] = await this.prisma.$transaction([
+    // Independent reads run in parallel: a batched $transaction costs
+    // BEGIN + each query + COMMIT as sequential DB round trips.
+    const [totalItems, rows] = await Promise.all([
       this.prisma.notification.count({ where }),
       this.prisma.notification.findMany({
         where,
