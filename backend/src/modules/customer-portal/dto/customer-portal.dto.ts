@@ -29,6 +29,14 @@ export class SubmitFeedbackDto {
   @IsString()
   @MaxLength(2000)
   comment?: string;
+
+  @ApiProperty({
+    description: 'Tracking token issued at join; required to act for the guest',
+  })
+  @IsOptional() // missing token → 403 from the service, not a generic 400
+  @IsString()
+  @MaxLength(512)
+  trackingToken?: string;
 }
 
 export class UpdateEntryContactDto {
@@ -42,10 +50,10 @@ export class UpdateEntryContactDto {
   })
   phone!: string;
 
-  @ApiPropertyOptional({
-    description: 'Optional Socket.IO tracking token issued at join/tracking',
+  @ApiProperty({
+    description: 'Tracking token issued at join; required to act for the guest',
   })
-  @IsOptional()
+  @IsOptional() // missing token → 403 from the service, not a generic 400
   @IsString()
   @MaxLength(512)
   trackingToken?: string;
@@ -74,8 +82,10 @@ export class SubscribeWebPushDto {
   @ValidateNested()
   keys!: WebPushKeysDto;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({
+    description: 'Tracking token issued at join; required to act for the guest',
+  })
+  @IsOptional() // missing token → 403 from the service, not a generic 400
   @IsString()
   @MaxLength(512)
   trackingToken?: string;

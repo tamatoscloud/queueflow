@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -115,7 +116,25 @@ export class CustomerPortalService {
     return payload;
   }
 
-  async getEntryTracking(entryId: string) {
+  /**
+   * Guest write actions must prove they hold the entry's tracking token.
+   * The entry id alone travels in shareable `/track/:id` links, so it is not
+   * enough to change where alerts go or to speak for the guest.
+   */
+  private assertEntryToken(entryId: string, token: string | undefined): void {
+    if (!token || !this.realtimeCredentials.verifyEntryTrackingToken(token, entryId)) {
+      throw new ForbiddenException(
+        'This link cannot change this booking. Open it from the device you joined with.',
+      );
+    }
+  }
+
+  /**
+   * @param presentedToken tracking token the caller already holds (header
+   *   `x-tracking-token`). A fresh token is returned only when it is valid, so a
+   *   bare entry id yields read-only tracking.
+   */
+  async getEntryTracking(entryId: string, presentedToken?: string) {
     const entry = await this.prisma.queueEntry.findFirst({
       where: { id: entryId, deletedAt: null },
       include: {
@@ -203,7 +222,11 @@ export class CustomerPortalService {
       estimatedWaitMinutes,
       averageServiceTimeMinutes: SERVICE_SLOT_MINUTES,
       snapshotGeneratedAt: new Date(),
-      trackingToken: this.realtimeCredentials.issueEntryTrackingToken(entry.id),
+      trackingToken:
+        presentedToken &&
+        this.realtimeCredentials.verifyEntryTrackingToken(presentedToken, entry.id)
+          ? this.realtimeCredentials.issueEntryTrackingToken(entry.id)
+          : undefined,
       notificationChannels: resolveGuestNotificationChannels({
         webPushEnabled: this.webPush.isEnabled(),
       }),
@@ -220,6 +243,7 @@ export class CustomerPortalService {
     if (!entry) {
       throw new NotFoundException('Queue entry not found');
     }
+    this.assertEntryToken(entryId, dto.trackingToken);
 
     const editable = ['WAITING', 'CALLED', 'HOLDING', 'SKIPPED'].includes(
       entry.status,
@@ -228,16 +252,6 @@ export class CustomerPortalService {
       throw new BadRequestException(
         'Phone can only be updated while you are still in the queue',
       );
-    }
-
-    if (dto.trackingToken) {
-      const ok = this.realtimeCredentials.verifyEntryTrackingToken(
-        dto.trackingToken,
-        entryId,
-      );
-      if (!ok) {
-        throw new BadRequestException('Invalid tracking token');
-      }
     }
 
     let phone: string;
@@ -299,6 +313,7 @@ export class CustomerPortalService {
     if (!entry) {
       throw new NotFoundException('Queue entry not found');
     }
+    this.assertEntryToken(entry.id, dto.trackingToken);
     if (entry.status !== 'COMPLETED') {
       throw new BadRequestException('Feedback is only available after service is completed');
     }
@@ -363,15 +378,7 @@ export class CustomerPortalService {
     if (!this.webPush.isEnabled()) {
       throw new ServiceUnavailableException('Web push is not configured');
     }
-    if (dto.trackingToken) {
-      const ok = this.realtimeCredentials.verifyEntryTrackingToken(
-        dto.trackingToken,
-        dto.entryId,
-      );
-      if (!ok) {
-        throw new BadRequestException('Invalid tracking token');
-      }
-    }
+    this.assertEntryToken(dto.entryId, dto.trackingToken);
     try {
       return await this.webPush.upsertSubscription({
         entryId: dto.entryId,

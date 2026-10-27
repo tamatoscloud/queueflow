@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import type { DomainEvent } from '../../../queue-engine';
 import { QueueEngineService } from '../../../queue-engine';
@@ -17,6 +17,10 @@ import {
 import { NotificationDispatchService } from '../services/notification-dispatch.service';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { WebPushService } from '../services/web-push.service';
+import {
+  RealtimeCredentialService,
+  withTrackingFragment,
+} from '../../realtime/services/realtime-credential.service';
 
 @Injectable()
 export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDestroy {
@@ -30,6 +34,7 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
     private readonly repository: NotificationRepository,
     private readonly engine: QueueEngineService,
     private readonly webPush: WebPushService,
+    @Optional() private readonly credentials?: RealtimeCredentialService,
   ) {}
 
   onModuleInit(): void {
@@ -132,7 +137,11 @@ export class QueueNotificationBridgeService implements OnModuleInit, OnModuleDes
           title,
           body,
           tag: `queueflow-${event.type}-${entryId}`,
-          url: `/track/${entryId}`,
+          // Push goes only to this guest's subscribed browser; a new tab opened
+          // from it has empty sessionStorage, so the link carries the token.
+          url: this.credentials
+            ? withTrackingFragment(`/track/${entryId}`, this.credentials, entryId)
+            : `/track/${entryId}`,
         });
       } catch (err) {
         // Never block primary SMS/WA scheduling on browser push failures.

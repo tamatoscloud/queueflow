@@ -61,3 +61,30 @@ export function saveTrackingTokenForEntry(
     phone: existing?.phone,
   });
 }
+
+/**
+ * Guest links sent by push, WhatsApp or SMS carry the tracking token in the
+ * URL fragment (`#t=…`). Fragments never reach servers or Referer headers.
+ * Store it for this entry and strip it from the address bar so it isn't
+ * copied along when the guest shares the page.
+ */
+export function captureTrackingTokenFromUrl(entryId: string): void {
+  if (typeof window === 'undefined') return;
+  const hash = window.location.hash;
+  if (!hash.startsWith('#')) return;
+  const params = new URLSearchParams(hash.slice(1));
+  const token = params.get('t');
+  if (!token) return;
+  saveTrackingTokenForEntry(entryId, token);
+  params.delete('t');
+  const rest = params.toString();
+  const clean = `${window.location.pathname}${window.location.search}${rest ? `#${rest}` : ''}`;
+  window.history.replaceState(window.history.state, '', clean);
+}
+
+/** Tracking token this tab holds for `entryId`, if any. */
+export function getTrackingTokenForEntry(entryId: string): string | undefined {
+  captureTrackingTokenFromUrl(entryId);
+  const session = loadQueueSession();
+  return session?.entryId === entryId ? session.trackingToken : undefined;
+}

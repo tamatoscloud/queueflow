@@ -1,4 +1,8 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  RealtimeCredentialService,
+  withTrackingFragment,
+} from '../../realtime/services/realtime-credential.service';
 import { NotificationStatus } from '@prisma/client';
 import type { CreateNotificationInput, ScheduleNotificationBase } from '../domain/notification.types';
 import {
@@ -15,6 +19,7 @@ export class NotificationDispatchService {
   constructor(
     private readonly repository: NotificationRepository,
     @Inject(NOTIFICATION_QUEUE) private readonly queue: NotificationQueuePort,
+    @Optional() private readonly credentials?: RealtimeCredentialService,
   ) {}
 
   async schedule(input: CreateNotificationInput): Promise<string[]> {
@@ -113,9 +118,15 @@ export class NotificationDispatchService {
     return { ...base, ...extras };
   }
 
+  /**
+   * Feedback link sent to the guest's own phone. The tracking token rides in
+   * the URL fragment (`#t=`), which browsers never send to servers or put in
+   * Referer headers, so only the guest's link can submit feedback.
+   */
   feedbackUrl(entryId: string): string {
     const base = process.env.CUSTOMER_PORTAL_URL ?? 'http://localhost:3001';
-    return `${base.replace(/\/$/, '')}/feedback/${entryId}`;
+    const url = `${base.replace(/\/$/, '')}/feedback/${entryId}`;
+    return this.credentials ? withTrackingFragment(url, this.credentials, entryId) : url;
   }
 
   /** Re-enqueue notifications left PENDING after a Redis outage. */

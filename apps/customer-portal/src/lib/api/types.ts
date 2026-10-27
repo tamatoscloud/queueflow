@@ -133,6 +133,8 @@ export interface SubmitFeedbackPayload {
   queueEntryId: string;
   rating: number;
   comment?: string;
+  /** Defaults to the tab's token for this entry (session or `#t=` link). */
+  trackingToken?: string;
 }
 
 export interface GuestMenuItem {
