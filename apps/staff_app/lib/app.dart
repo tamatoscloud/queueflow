@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import 'routes/app_router.dart';
+import 'theme/quyk_staff_theme.dart';
 
 class StaffApp extends ConsumerWidget {
   const StaffApp({super.key});
@@ -15,13 +16,7 @@ class StaffApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Quyk Staff',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light.copyWith(
-        scaffoldBackgroundColor: AppColors.calmIvory,
-        extensions: [
-          ...AppTheme.light.extensions.values,
-          const ProductTheme(identity: ProductIdentity.staff),
-        ],
-      ),
+      theme: buildQuykStaffTheme(),
       darkTheme: AppTheme.dark.copyWith(
         extensions: [
           ...AppTheme.dark.extensions.values,

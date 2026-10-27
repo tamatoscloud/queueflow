@@ -82,6 +82,13 @@ export class NotificationService {
         where,
         include: {
           customer: { select: { phone: true, fullName: true } },
+          queueEntry: {
+            select: {
+              queueId: true,
+              queue: { select: { name: true } },
+              queueToken: { select: { displayCode: true } },
+            },
+          },
         },
         skip: paginationSkip(page, pageSize),
         take: pageSize,
@@ -96,6 +103,10 @@ export class NotificationService {
       createdAt: row.createdAt,
       recipientPhone: row.customer?.phone ?? null,
       recipientName: row.customer?.fullName ?? null,
+      // Ticket + line so staff can see which guest an alert was for.
+      displayCode: row.queueEntry?.queueToken?.displayCode ?? null,
+      queueId: row.queueEntry?.queueId ?? null,
+      queueName: row.queueEntry?.queue?.name ?? null,
       message: deliverySummary(row.payload, row.type, row.channel),
     }));
     return { data, meta: paginatedMeta(page, pageSize, totalItems) };

@@ -12,6 +12,7 @@ import '../../../core/routing/staff_routes.dart';
 import '../../../features/queue_console/presentation/queue_console_screen.dart';
 import '../../../shared/widgets/calm/calm_card.dart';
 import '../guest_history_display.dart';
+import 'guests_view.dart';
 
 final guestsListProvider =
     FutureProvider.autoDispose.family<List<CustomerModel>, String>((ref, q) async {
@@ -37,6 +38,7 @@ class CustomersScreen extends ConsumerStatefulWidget {
 class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   final _search = TextEditingController();
   String _appliedQuery = '';
+  GuestFilter _filter = GuestFilter.all;
 
   @override
   void dispose() {
@@ -52,163 +54,31 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(guestsListProvider(_appliedQuery));
 
-    return ColoredBox(
-      color: AppColors.calmIvory,
-      child: RefreshIndicator(
-        color: AppColors.primary,
-        backgroundColor: Colors.white,
-        onRefresh: () async {
-          ref.invalidate(guestsListProvider(_appliedQuery));
-          await ref.read(guestsListProvider(_appliedQuery).future);
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            Text(
-              'Guests',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.calmCharcoal,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _appliedQuery.isEmpty
-                  ? 'People currently waiting or called'
-                  : 'Results for “$_appliedQuery”',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.calmWarmGray,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            CalmCard(
-              backgroundColor: Colors.white,
-              child: TextField(
-                controller: _search,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.calmCharcoal,
-                    ),
-                cursorColor: AppColors.primary,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: 'Search name, phone or ticket #',
-                  hintStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.calmWarmGray,
-                      ),
-                  filled: true,
-                  fillColor: AppColors.calmLilac.withValues(alpha: 0.35),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.calmBorder),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.arrow_forward, color: AppColors.calmCharcoal),
-                    onPressed: _applySearch,
-                  ),
-                ),
-                onSubmitted: (_) => _applySearch(),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            async.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              ),
-              error: (_, __) => PageError(
-                message: "We couldn't load guests. Pull to retry.",
-                onRetry: () => ref.invalidate(guestsListProvider(_appliedQuery)),
-              ),
-              data: (guests) {
-                if (guests.isEmpty) {
-                  return EmptyStateView(
-                    title: _appliedQuery.isEmpty ? 'No guests in line' : 'No matches',
-                    message: _appliedQuery.isEmpty
-                        ? 'When someone joins the queue, they will show up here.'
-                        : 'Try another name, phone number, or ticket code.',
-                    icon: Icons.person_search_outlined,
-                  );
-                }
-                return Column(
-                  children: [
-                    for (final guest in guests) ...[
-                      _GuestCard(guest: guest),
-                      const SizedBox(height: AppSpacing.sm),
-                    ],
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuestCard extends StatelessWidget {
-  const _GuestCard({required this.guest});
-  final CustomerModel guest;
-
-  @override
-  Widget build(BuildContext context) {
-    final subtitle = [
-      if (guest.displayCode != null && guest.displayCode!.isNotEmpty) '#${guest.displayCode}',
-      guest.phone,
-      if (guest.queueName != null && guest.queueName!.isNotEmpty) guest.queueName!,
-    ].where((s) => s.isNotEmpty).join(' · ');
-
-    return CalmCard(
+    return RefreshIndicator(
+      color: QuykColors.green,
       backgroundColor: Colors.white,
-      onTap: () => context.push(StaffRoutes.customerDetail(guest.id)),
-      child: Row(
-        children: [
-          AppAvatar(name: guest.fullName, size: 48),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  guest.fullName.isEmpty ? 'Guest' : guest.fullName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.calmCharcoal,
-                      ),
-                ),
-                if (subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.calmWarmGray,
-                        ),
-                  ),
-              ],
-            ),
-          ),
-          if (guest.activeStatus != null && guest.activeStatus!.isNotEmpty)
-            StatusBadge(status: guest.activeStatus!),
-          const Icon(Icons.chevron_right, color: AppColors.calmWarmGray),
-        ],
+      onRefresh: () async {
+        ref.invalidate(guestsListProvider(_appliedQuery));
+        await ref.read(guestsListProvider(_appliedQuery).future);
+      },
+      child: GuestsView(
+        searchController: _search,
+        onSearch: _applySearch,
+        filter: _filter,
+        onFilter: (f) => setState(() => _filter = f),
+        query: _appliedQuery,
+        guests: async.valueOrNull ?? const <CustomerModel>[],
+        loading: async.isLoading && !async.hasValue,
+        errorMessage: async.hasError && !async.hasValue
+            ? "We couldn't load guests. Pull to retry."
+            : null,
+        onRetry: () => ref.invalidate(guestsListProvider(_appliedQuery)),
+        onOpenGuest: (g) => context.push(StaffRoutes.customerDetail(g.id)),
       ),
     );
   }
 }
+
 
 final customerDetailProvider = FutureProvider.autoDispose
     .family<(CustomerModel, List<CustomerHistoryEntry>), String>((ref, id) async {

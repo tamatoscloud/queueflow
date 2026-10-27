@@ -1,0 +1,76 @@
+name: Staff UI previews
+
+# Renders the staff app screens (test_preview/) to PNGs and publishes them on
+# the `previews/staff` branch so design changes can be reviewed against Figma.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["feat/quyk-staff-*"]
+    paths:
+      - "apps/staff_app/**"
+      - "packages/theme/**"
+      - ".github/workflows/staff-preview.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: staff-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.38.5"
+          cache: true
+
+      - name: Bootstrap workspace
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Generate code
+        run: |
+          set -euo pipefail
+          melos exec -c 1 --scope="queueflow_core" --scope="queueflow_models" --scope="queueflow_network" -- "dart run build_runner build --delete-conflicting-outputs"
+          cd apps/staff_app
+          dart run build_runner build --delete-conflicting-outputs \
+            --build-filter="package:staff_app/features/auth/data/models/auth_user.dart" \
+            --build-filter="package:staff_app/features/auth/data/models/auth_user.freezed.dart" \
+            --build-filter="package:staff_app/features/auth/data/models/auth_user.g.dart"
+
+      - name: Prepare env assets
+        working-directory: apps/staff_app
+        run: for env in dev staging production; do cp ".env.$env.example" ".env.$env"; done
+
+      - name: Analyze
+        working-directory: apps/staff_app
+        run: flutter analyze --fatal-infos > analyze.txt 2>&1 || (cat analyze.txt; exit 1)
+
+      - name: Render previews
+        working-directory: apps/staff_app
+        run: flutter test test_preview --update-goldens
+
+      - name: Publish to previews/staff
+        if: always()
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/previews"
+          mkdir -p "$out"
+          cp apps/staff_app/test_preview/goldens/*.png "$out/" 2>/dev/null || true
+          cp apps/staff_app/analyze.txt "$out/" 2>/dev/null || true
+          echo "${{ github.sha }}" > "$out/SOURCE_SHA"
+          cd "$out"
+          git init -q -b previews/staff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Staff previews for ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:previews/staff
