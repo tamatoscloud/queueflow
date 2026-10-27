@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { isOptimizableImage } from '@/lib/images';
 import { Clock, Phone } from 'lucide-react';
 import type { QueueLanding } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ export function QueueClosedState({ data }: QueueClosedStateProps) {
     <div className="flex flex-1 flex-col gap-6 animate-fade-in-up text-center">
       <div className="relative mx-auto h-40 w-full max-w-sm overflow-hidden rounded-2xl shadow-md">
         {heroUrl ? (
-          <Image src={heroUrl} alt="" fill className="object-cover" sizes="400px" />
+          <Image src={heroUrl} alt="" fill className="object-cover" sizes="400px" unoptimized={!isOptimizableImage(heroUrl)} />
         ) : (
           <div className="h-full bg-gradient-to-br from-neutral-200 to-neutral-300" />
         )}

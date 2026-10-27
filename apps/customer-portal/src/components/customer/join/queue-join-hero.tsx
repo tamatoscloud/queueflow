@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { isOptimizableImage } from '@/lib/images';
 import type { QueueLanding } from '@/lib/api/types';
 import { RatingStars } from '@/components/customer/premium-states';
 import { BusyMeter } from '@/components/customer/busy-meter';
@@ -33,7 +34,7 @@ export function QueueJoinHero({ data, className }: QueueJoinHeroProps) {
     <section className={cn('animate-fade-in-up', className)}>
       <div className="relative mb-4 h-36 overflow-hidden rounded-2xl shadow-md">
         {heroUrl ? (
-          <Image src={heroUrl} alt="" fill className="object-cover" priority sizes="100vw" />
+          <Image src={heroUrl} alt="" fill className="object-cover" priority sizes="100vw" unoptimized={!isOptimizableImage(heroUrl)} />
         ) : (
           <div className="h-full bg-gradient-to-br from-primary/30 via-secondary/20 to-accent-purple/30" />
         )}
