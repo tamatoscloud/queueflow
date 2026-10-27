@@ -1,11 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { BookingShell } from '@/components/layout/booking-shell';
 import { GuestActiveEntryGuard } from '@/components/customer/guest-active-entry-guard';
 import { customerApi } from '@/lib/api/customer-api';
 import { DEFAULT_GUEST_MENU } from '@/lib/demo/guest-menu';
@@ -21,12 +20,22 @@ function formatPrice(price: string): string {
   return `$${trimmed}`;
 }
 
+/** Tag colours from the Figma menu. */
+function menuTagClass(tag: string): string {
+  const t = tag.toLowerCase();
+  if (t === 'popular') return 'bg-q-lime text-q-green';
+  if (t === "chef's pick" || t === 'signature') return 'bg-q-green text-q-lime';
+  if (t === 'spicy') return 'bg-[#fdebd8] text-[#7a3412]';
+  return 'bg-q-lime-tint text-q-green';
+}
+
 export default function BusinessMenuPage() {
   const { businessId } = useParams<{ businessId: string }>();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('return') || undefined;
   const venueHint = searchParams.get('name') || undefined;
   const enabled = isQueueUuid(businessId);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['business-menu', businessId],
@@ -44,38 +53,62 @@ export default function BusinessMenuPage() {
   );
 
   return (
-    <BookingShell variant="waiting" showJazzPill>
+    <div className="booking-waiting flex min-h-full flex-1 flex-col">
       <GuestActiveEntryGuard returnTo={returnTo} />
-      <div className="flex flex-1 flex-col">
-        <div className="mb-4 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-q-cream/95 px-5 pb-3 pt-5 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-md items-center gap-3">
           {returnTo ? (
             <Link
               href={returnTo}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ececf0] bg-white text-black"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-q-line bg-white text-q-green"
               aria-label="Back to queue"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
           ) : null}
           <div className="min-w-0">
-            <h1 className="font-display text-[28px] font-bold leading-tight text-black">
+            <h1 className="text-[30px] font-semibold leading-none tracking-[-0.03em] text-q-green">
               Menu
             </h1>
-            <p className="truncate text-[13px] text-[#6b7280]">{venueName}</p>
+            <p className="mt-1 truncate text-[13px] text-q-subtle">{venueName}</p>
           </div>
         </div>
+        {categories.length > 1 ? (
+          <nav
+            className="mx-auto mt-3 flex w-full max-w-md gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
+            aria-label="Menu sections"
+          >
+            {categories.map((category) => (
+              <a
+                key={category.id}
+                href={`#menu-${category.id}`}
+                onClick={() => setActiveCategory(category.id)}
+                className={cn(
+                  'shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
+                  (activeCategory ?? categories[0]?.id) === category.id
+                    ? 'bg-q-green text-q-lime'
+                    : 'border border-q-field bg-white text-q-green',
+                )}
+              >
+                {category.name}
+              </a>
+            ))}
+          </nav>
+        ) : null}
+      </div>
 
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-10 pt-2">
         {isLoading ? (
           <div className="space-y-3 py-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl bg-[#f3f0ff]" />
+              <div key={i} className="h-24 animate-pulse rounded-[18px] bg-white" />
             ))}
           </div>
         ) : (
-          <div className="space-y-8 pb-8">
+          <div className="space-y-7">
             {categories.map((category) => (
-              <section key={category.id}>
-                <h2 className="font-display text-[22px] font-bold text-black">
+              <section key={category.id} id={`menu-${category.id}`} className="scroll-mt-36">
+                <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-q-green">
                   {category.name}
                 </h2>
                 <div className="mt-3 space-y-2.5">
@@ -84,47 +117,46 @@ export default function BusinessMenuPage() {
                     .map((item) => (
                       <article
                         key={item.id}
-                        className="rounded-2xl bg-[#f3f0ff] px-4 py-3.5"
+                        className="rounded-[18px] border border-q-line bg-white px-4 py-3.5"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[15px] font-bold text-black">{item.name}</p>
-                            {item.description ? (
-                              <p className="mt-1 text-[12px] leading-snug text-[#6b7280]">
-                                {item.description}
-                              </p>
-                            ) : null}
-                            {item.tags && item.tags.length > 0 ? (
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {item.tags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className={cn(
-                                      'rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9b8cff]',
-                                    )}
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                          <p className="shrink-0 font-display text-[17px] font-bold text-black">
+                          <p className="text-[16px] font-semibold text-q-ink">{item.name}</p>
+                          <p className="shrink-0 text-[16px] font-bold text-q-green">
                             {formatPrice(item.price)}
                           </p>
                         </div>
+                        {item.description ? (
+                          <p className="mt-1 text-[13px] leading-snug text-q-muted">
+                            {item.description}
+                          </p>
+                        ) : null}
+                        {item.tags && item.tags.length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {item.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className={cn(
+                                  'rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none',
+                                  menuTagClass(tag),
+                                )}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </article>
                     ))}
                 </div>
               </section>
             ))}
 
-            <p className="text-center text-[11px] text-[#9ca3af]">
+            <p className="pb-2 text-center text-[12px] text-q-subtle">
               Prices may vary · Ask staff about allergens
             </p>
           </div>
         )}
-      </div>
-    </BookingShell>
+      </main>
+    </div>
   );
 }

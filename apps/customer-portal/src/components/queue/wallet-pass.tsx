@@ -33,7 +33,7 @@ export function WalletPass({
       aria-label={`Queue pass for ${businessName}, token ${token}`}
     >
       {/* Top gradient header */}
-      <div className="bg-gradient-to-br from-primary via-accent-purple to-secondary px-6 pb-16 pt-6 text-white">
+      <div className="bg-gradient-to-br from-primary via-q-green-muted to-secondary px-6 pb-16 pt-6 text-white">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/70">
@@ -97,7 +97,7 @@ export function WalletPass({
       </div>
 
       {/* Bottom stub */}
-      <div className="mx-3 mt-1 rounded-b-2xl bg-gradient-to-r from-primary/10 to-accent-purple/10 px-6 py-3 text-center">
+      <div className="mx-3 mt-1 rounded-b-2xl bg-gradient-to-r from-primary/10 to-q-green-muted/10 px-6 py-3 text-center">
         <p className="text-xs font-medium text-muted">Powered by Quyk</p>
       </div>
     </div>

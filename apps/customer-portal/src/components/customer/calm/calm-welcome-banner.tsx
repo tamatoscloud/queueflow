@@ -1,8 +1,8 @@
 'use client';
 
 import type { ServiceModeCopy } from '@/lib/restaurant/service-mode-config';
-import { CalmCard } from '@/components/customer/calm/primitives';
 
+/** Figma first-visit banner on the tracking page ("You're on the list!"). */
 export function CalmWelcomeBanner({
   copy,
   onDismiss,
@@ -11,18 +11,16 @@ export function CalmWelcomeBanner({
   onDismiss: () => void;
 }) {
   return (
-    <div role="status">
-      <CalmCard highlighted className="text-center">
-      <p className="font-display text-lg font-bold text-[var(--foreground)]">{copy.welcomeTitle}</p>
-      <p className="mt-1 text-sm text-[#6b6870]">{copy.welcomeSubtitle}</p>
+    <div role="status" className="mb-4 rounded-[20px] bg-q-lime-tint px-4 py-4">
+      <p className="text-[15px] font-semibold text-q-green">{copy.welcomeTitle}</p>
+      <p className="mt-1 text-[13px] text-q-muted">{copy.welcomeSubtitle}</p>
       <button
         type="button"
         onClick={onDismiss}
-        className="mt-3 text-xs font-semibold text-[var(--primary)]"
+        className="mt-2 text-[14px] font-semibold text-q-green"
       >
         Got it
       </button>
-      </CalmCard>
     </div>
   );
 }

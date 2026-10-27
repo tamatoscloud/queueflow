@@ -69,7 +69,7 @@ export function TableReadyScreen({
       </div>
 
       <Button
-        variant="gradient"
+        variant="default"
         size="lg"
         className="h-16 w-full max-w-sm rounded-2xl text-lg font-bold active:scale-[0.98]"
         onClick={onProceed}

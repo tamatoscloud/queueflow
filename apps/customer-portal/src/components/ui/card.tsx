@@ -35,7 +35,7 @@ export function GradientCard({ className, children, ...props }: React.HTMLAttrib
   return (
     <div
       className={cn(
-        'rounded-2xl bg-gradient-to-br from-primary to-accent-purple p-5 text-white shadow-lg',
+        'rounded-2xl bg-gradient-to-br from-primary to-q-green-muted p-5 text-white shadow-lg',
         className,
       )}
       {...props}

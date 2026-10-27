@@ -1,12 +1,48 @@
+import { Music2 } from 'lucide-react';
+import { QuykMarkTile } from '@/components/quyk/ui';
+import { cn } from '@/lib/utils';
+
 type BookingShellProps = {
   children: React.ReactNode;
   venueName?: string;
+  /** Lime "Jazz Music" pill (waiting screens). */
   showJazzPill?: boolean;
-  /** Waiting/track mockup: brand header + Jazz Music (screenshot). */
   variant?: 'default' | 'waiting' | 'called';
   tone?: 'default' | 'called';
 };
 
+function JazzPill() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-q-lime px-3 py-1.5 text-[12px] font-semibold text-q-green">
+      <Music2 className="h-3.5 w-3.5" aria-hidden />
+      Jazz Music
+      <span className="ml-0.5 flex h-3 items-end gap-[2px]" aria-hidden>
+        {[0, 140, 280].map((delay, i) => (
+          <span
+            key={delay}
+            className="animate-quyk-eq inline-block w-[2px] rounded-full bg-q-green"
+            style={{ height: [7, 11, 8][i], animationDelay: `${delay}ms` }}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+function LivePill() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-q-green-panel px-2.5 py-1 text-[12px] font-semibold text-white">
+      <span className="animate-pulse-glow h-2 w-2 rounded-full bg-q-lime" aria-hidden />
+      Live
+    </span>
+  );
+}
+
+/**
+ * Guest page frame from the Quyk redesign: Q tile, venue name and
+ * "Powered by Quyk" on the left; Jazz Music (waiting) or Live (called) pill
+ * on the right. Cream page by default; deep green when the guest is called.
+ */
 export function BookingShell({
   children,
   venueName,
@@ -14,94 +50,44 @@ export function BookingShell({
   variant,
   tone = 'default',
 }: BookingShellProps) {
-  const waiting = variant === 'waiting';
   const called = tone === 'called' || variant === 'called';
-  const title = waiting ? 'Quyk' : (venueName ?? 'Quyk');
+  const waiting = variant === 'waiting';
+  const title = venueName ?? 'Quyk';
 
   return (
     <div
-      className={
-        called
-          ? 'flex min-h-full flex-1 flex-col bg-primary text-white'
-          : waiting
-            ? 'booking-waiting flex min-h-full flex-1 flex-col bg-white text-[#0a0a0a]'
-            : 'booking-light flex min-h-full flex-1 flex-col bg-[var(--neutral-50)] text-foreground'
-      }
+      className={cn(
+        'flex min-h-full flex-1 flex-col',
+        called ? 'booking-dark' : waiting ? 'booking-waiting' : 'booking-light',
+      )}
     >
-      <header
-        className={
-          called
-            ? 'border-b border-white/20 px-5 pb-4 pt-6'
-            : waiting
-              ? 'border-b border-[#ececf0] px-5 pb-3.5 pt-5'
-              : 'border-b border-border px-5 pb-4 pt-6'
-        }
-      >
-        <div className="mx-auto flex w-full max-w-md items-center justify-between">
-          <div>
-            <p
-              className={
-                called
-                  ? 'text-2xl font-bold tracking-tight text-white'
-                  : waiting
-                    ? 'font-display text-[28px] font-bold leading-none tracking-tight text-black'
-                    : 'text-2xl font-bold tracking-tight text-foreground'
-              }
-            >
-              {title}
-            </p>
-            {venueName && !waiting && !called ? (
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-muted">
+      <header className="px-5 pb-2 pt-5">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <QuykMarkTile tone={called ? 'dark' : 'light'} />
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  'truncate text-[17px] font-semibold leading-tight',
+                  called ? 'text-white' : 'text-q-green',
+                )}
+              >
+                {title}
+              </p>
+              <p
+                className={cn(
+                  'mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                  called ? 'text-white/60' : 'text-q-subtle',
+                )}
+              >
                 Powered by Quyk
               </p>
-            ) : null}
+            </div>
           </div>
-          {showJazzPill || waiting ? (
-            waiting ? (
-              <div className="flex items-center gap-1.5 rounded-full border border-[#ececf0] bg-white px-3 py-1.5 text-[12px] font-medium text-[#3f3f46] shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-                <span className="text-[14px] leading-none text-[#9b8cff]" aria-hidden>
-                  ♫
-                </span>
-                <span>Jazz Music</span>
-                <span className="ml-0.5 flex h-3 items-end gap-[2px]" aria-hidden>
-                  <span className="inline-block w-[2px] animate-pulse rounded-full bg-[#9b8cff]" style={{ height: 6 }} />
-                  <span className="inline-block w-[2px] animate-pulse rounded-full bg-[#9b8cff]" style={{ height: 10, animationDelay: '120ms' }} />
-                  <span className="inline-block w-[2px] animate-pulse rounded-full bg-[#9b8cff]" style={{ height: 7, animationDelay: '240ms' }} />
-                </span>
-              </div>
-            ) : (
-              <div
-                className={
-                  called
-                    ? 'flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs text-white'
-                    : 'flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted shadow-sm'
-                }
-              >
-                <span
-                  className={`h-2 w-2 rounded-full ${called ? 'bg-white' : 'bg-emerald-500'}`}
-                  aria-hidden
-                />
-                <span>Live</span>
-              </div>
-            )
-          ) : null}
+          {called ? <LivePill /> : showJazzPill && waiting ? <JazzPill /> : null}
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 py-5">{children}</main>
-      <footer
-        className={
-          called
-            ? 'border-t border-white/20 px-5 py-4 text-[10px] text-white/70'
-            : waiting
-              ? 'border-t border-[#ececf0] px-5 py-3.5 text-[10px] text-[#9ca3af]'
-              : 'border-t border-border px-5 py-4 text-[10px] text-muted'
-        }
-      >
-        <div className="mx-auto flex max-w-md justify-between">
-          <span>{waiting ? 'v1.0.0.1' : 'Quyk'}</span>
-          <span>{waiting ? '© 2026 Quyk' : '© 2026'}</span>
-        </div>
-      </footer>
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-8 pt-4">{children}</main>
     </div>
   );
 }

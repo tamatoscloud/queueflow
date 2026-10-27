@@ -47,7 +47,7 @@ export function BusinessHeader({
                 />
               ) : (
                 <div
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent-purple text-lg font-bold text-white shadow-md ring-2 ring-white/80"
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-q-green-muted text-lg font-bold text-white shadow-md ring-2 ring-white/80"
                   aria-hidden
                 >
                   {name.charAt(0)}
@@ -68,7 +68,7 @@ export function BusinessHeader({
         <>
           {logoUrl ? (
             <div className="relative">
-              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary to-accent-purple opacity-30 blur-sm" />
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary to-q-green-muted opacity-30 blur-sm" />
               <Image
                 src={logoUrl}
                 alt={`${name} logo`}
@@ -80,7 +80,7 @@ export function BusinessHeader({
             </div>
           ) : (
             <div
-              className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent-purple text-3xl font-bold text-white shadow-lg"
+              className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-q-green-muted text-3xl font-bold text-white shadow-lg"
               aria-hidden
             >
               {name.charAt(0)}

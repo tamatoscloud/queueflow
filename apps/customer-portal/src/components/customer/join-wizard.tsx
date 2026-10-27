@@ -275,7 +275,7 @@ export function JoinWizard({ businessName, onSubmit, submitError }: JoinWizardPr
             {step < STEPS.length - 1 ? (
               <Button
                 type="button"
-                variant="gradient"
+                variant="default"
                 className="h-12 flex-1 rounded-2xl"
                 onClick={() => void next()}
               >
@@ -285,7 +285,7 @@ export function JoinWizard({ businessName, onSubmit, submitError }: JoinWizardPr
             ) : (
               <Button
                 type="submit"
-                variant="gradient"
+                variant="default"
                 className="h-12 flex-1 rounded-2xl"
                 disabled={form.formState.isSubmitting}
               >

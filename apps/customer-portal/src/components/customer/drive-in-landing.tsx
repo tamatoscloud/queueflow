@@ -50,7 +50,7 @@ export function DriveInLanding({ data, queueId }: { data: QueueLanding; queueId:
       </div>
 
       <Button
-        variant="gradient"
+        variant="default"
         size="lg"
         className="h-14 w-full rounded-2xl font-bold"
         disabled={!canJoin}

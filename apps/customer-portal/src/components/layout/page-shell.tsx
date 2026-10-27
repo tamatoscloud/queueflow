@@ -12,7 +12,7 @@ export function PageShell({
       {gradient && (
         <>
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/10 via-accent-purple/5 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/10 via-q-green-muted/5 to-transparent"
             aria-hidden
           />
           <div

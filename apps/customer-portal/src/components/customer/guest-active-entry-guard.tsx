@@ -82,7 +82,7 @@ export function GuestActiveEntryGuard({
           role="status"
           aria-live="polite"
         >
-          <p className="rounded-full bg-black/85 px-4 py-2 text-[12px] font-semibold text-white shadow-lg">
+          <p className="rounded-full bg-q-green px-4 py-2 text-[12px] font-semibold text-q-lime shadow-lg">
             Still in line
             {typeof ahead === 'number' ? ` · ${ahead} ahead` : ''}
             {' · Live'}

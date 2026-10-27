@@ -15,7 +15,7 @@ function MissingQueueState({ mode }: { mode: 'takeaway' | 'drive' }) {
     <div className="flex flex-1 flex-col gap-5 py-8">
       <CalmCard className="flex items-start gap-3">
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-[#8b7cf8]" aria-hidden />
-        <div className="space-y-2 text-sm text-[#6b6870]">
+        <div className="space-y-2 text-sm text-q-muted">
           <p className="font-semibold text-[#17151a]">
             {mode === 'takeaway' ? 'Scan your receipt QR' : 'Scan the drive-in entrance QR'}
           </p>

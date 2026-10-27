@@ -56,7 +56,7 @@ export function CalmFeedback({ entryId }: { entryId: string }) {
           {emoji !== null ? EMOJIS[emoji] : '🙏'}
         </span>
         <CalmHeading>Thank you!</CalmHeading>
-        <p className="text-sm text-[#6b6870]">Your feedback helps us create better experiences.</p>
+        <p className="text-sm text-q-muted">Your feedback helps us create better experiences.</p>
         <Link
           href="/"
           className="flex h-14 w-full items-center justify-center rounded-full bg-[#8b7cf8] text-base font-semibold text-white shadow-sm"
@@ -71,7 +71,7 @@ export function CalmFeedback({ entryId }: { entryId: string }) {
     <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
       <div className="text-center">
         <CalmHeading>How was your visit?</CalmHeading>
-        <p className="mt-2 text-sm text-[#6b6870]">Takes about 20 seconds</p>
+        <p className="mt-2 text-sm text-q-muted">Takes about 20 seconds</p>
       </div>
 
       <CalmCard className="text-center">
@@ -107,8 +107,8 @@ export function CalmFeedback({ entryId }: { entryId: string }) {
               className={cn(
                 'rounded-full border px-3 py-2 text-xs font-semibold transition-all',
                 chips.includes(chip)
-                  ? 'border-[#8b7cf8] bg-[#f5f3ff] text-[#8b7cf8]'
-                  : 'border-[#e8e3e8] text-[#6b6870]',
+                  ? 'border-[#8b7cf8] bg-q-lime-tint text-[#8b7cf8]'
+                  : 'border-q-field text-q-muted',
               )}
             >
               {chip}
@@ -123,7 +123,7 @@ export function CalmFeedback({ entryId }: { entryId: string }) {
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           maxLength={2000}
-          className="min-h-[80px] w-full resize-none border-0 bg-transparent text-sm text-[#17151a] outline-none placeholder:text-[#6b6870]"
+          className="min-h-[80px] w-full resize-none border-0 bg-transparent text-sm text-[#17151a] outline-none placeholder:text-q-muted"
         />
       </CalmCard>
 

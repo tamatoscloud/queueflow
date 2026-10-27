@@ -95,7 +95,7 @@ export function VisitCompleted({ tracking, className }: VisitCompletedProps) {
         </div>
       </GlassCard>
 
-      <Button variant="gradient" className="h-12 rounded-2xl" asChild>
+      <Button variant="default" className="h-12 rounded-2xl" asChild>
         <Link href={`/feedback/${tracking.entry.id}`}>
           <Star className="h-4 w-4" aria-hidden />
           Share your experience

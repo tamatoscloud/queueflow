@@ -48,7 +48,7 @@ export function ProgressRing({
         <defs>
           <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="var(--primary)" />
-            <stop offset="100%" stopColor="var(--accent-purple)" />
+            <stop offset="100%" stopColor="var(--q-green-muted)" />
           </linearGradient>
         </defs>
       </svg>

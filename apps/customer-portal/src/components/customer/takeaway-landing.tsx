@@ -43,7 +43,7 @@ export function TakeawayLanding({ data, queueId }: { data: QueueLanding; queueId
       </GlassCard>
 
       <Button
-        variant="gradient"
+        variant="default"
         size="lg"
         className="h-14 w-full rounded-2xl font-bold"
         disabled={!canTrack}

@@ -150,7 +150,7 @@ export function SuccessCelebration({
         <p className="text-xs text-muted">Screenshot your pass or bookmark the tracking link.</p>
       </GlassCard>
 
-      <Button variant="gradient" size="lg" className="h-14 w-full rounded-2xl" asChild>
+      <Button variant="default" size="lg" className="h-14 w-full rounded-2xl" asChild>
         <Link href={`/track/${entryId}`}>
           Track your position
           <ArrowRight className="h-5 w-5" aria-hidden />

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const COLORS = ['#6366f1', '#a855f7', '#06b6d4', '#ec4899', '#10b981', '#f59e0b'];
+const COLORS = ['#e4ff2c', '#003d32', '#f1ffa6', '#0b5444', '#ffffff', '#3b6b5d'];
 
 type ConfettiBurstProps = {
   active: boolean;

@@ -1,20 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import QRCode from 'react-qr-code';
-import { Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useQueueLanding } from '@/hooks/use-queue-landing';
 import {
   DEMO_DINE_IN_QUEUE_ID,
   DEMO_QUEUE_NAME,
   DEMO_VENUE_NAME,
 } from '@/lib/demo/bella-vista';
+import { QuykLinkButton, QuykPill, QuykWordmark } from '@/components/quyk/ui';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_PORTAL_ORIGIN = 'https://queueflow-six-beta.vercel.app';
 
+function waitingLine(waiting: number): string {
+  if (waiting === 0) return 'No one waiting — you can be first.';
+  if (waiting === 1) return '1 party waiting ahead.';
+  return `${waiting} parties waiting ahead.`;
+}
+
+/** Figma screen 1: venue QR poster on deep green. */
 export function HomeJoinQr() {
   const joinPath = `/q/${DEMO_DINE_IN_QUEUE_ID}`;
   const { data, isLoading } = useQueueLanding(DEMO_DINE_IN_QUEUE_ID);
@@ -35,78 +40,63 @@ export function HomeJoinQr() {
   }, [joinPath]);
 
   return (
-    <div className="flex w-full flex-col items-center gap-6">
-      <div className="text-center">
-        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          <Sparkles className="h-3 w-3" aria-hidden />
-          Real-time queue tracking
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Quyk</h1>
-        <p className="mx-auto mt-3 max-w-sm text-muted">
-          Scan this QR with your phone camera to join the live waiting list.
+    <div className="flex w-full flex-col items-center gap-5 text-center">
+      <QuykWordmark className="h-8 w-auto" />
+
+      <QuykPill tone="panel" className="px-3 py-1.5 text-[11px]">
+        Live queue · no app needed
+      </QuykPill>
+
+      <div>
+        <h1 className="text-[30px] font-medium leading-tight tracking-[-0.02em] text-white">
+          Your queue, made <span className="font-bold text-q-lime">Quyk.</span>
+        </h1>
+        <p className="mx-auto mt-2 max-w-[19rem] text-[15px] leading-snug text-white/85">
+          Scan this code with your phone camera to join the waiting list. No app, no account.
         </p>
       </div>
 
-      <Card className="w-full overflow-hidden">
-        <CardContent className="flex flex-col items-center gap-4 pt-6 pb-6">
-          <div className="flex w-full items-center justify-between gap-2 text-left">
-            <div>
-              <p className="text-sm font-semibold text-foreground">{venue}</p>
-              <p className="text-xs text-muted">{queueName}</p>
-            </div>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                isLive
-                  ? 'bg-emerald-500/15 text-emerald-700'
-                  : isLoading
-                    ? 'bg-neutral-100 text-muted'
-                    : 'bg-amber-500/15 text-amber-800'
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isLive ? 'bg-emerald-500' : isLoading ? 'bg-neutral-400' : 'bg-amber-500'
-                }`}
-                aria-hidden
-              />
-              {isLoading ? 'Checking…' : isLive ? 'Live now' : 'Queue paused'}
-            </span>
+      <div className="w-full rounded-[26px] bg-white px-5 pb-5 pt-5 text-left">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-[17px] font-semibold text-q-green">{venue}</p>
+            <p className="mt-0.5 text-[13px] text-q-subtle">{queueName}</p>
           </div>
+          <QuykPill
+            tone={isLive ? 'lime' : 'tint'}
+            className={cn(!isLive && !isLoading && 'bg-warning-light text-[#7a4b0c]')}
+          >
+            {isLoading ? 'Checking…' : isLive ? 'Live now' : 'Queue paused'}
+          </QuykPill>
+        </div>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-border">
-            <QRCode
-              value={joinUrl}
-              size={200}
-              level="M"
-              aria-label={`QR code to join ${queueName}`}
-            />
-          </div>
+        <div className="mx-auto mt-4 w-fit rounded-[22px] bg-q-cream p-4">
+          <QRCode
+            value={joinUrl}
+            size={176}
+            level="M"
+            fgColor="#003d32"
+            bgColor="#f3f7ea"
+            aria-label={`QR code to join ${queueName}`}
+          />
+        </div>
 
-          {typeof waiting === 'number' && isLive ? (
-            <p className="text-sm text-muted">
-              {waiting === 0
-                ? 'No one waiting — you can be first.'
-                : waiting === 1
-                  ? '1 guest waiting ahead.'
-                  : `${waiting} guests waiting ahead.`}
-            </p>
-          ) : null}
+        {typeof waiting === 'number' && isLive ? (
+          <p className="mt-4 text-center text-[14px] text-q-muted">{waitingLine(waiting)}</p>
+        ) : null}
 
-          <Button asChild variant="gradient" size="lg" className="w-full">
-            <Link href={joinPath}>Join without scanning</Link>
-          </Button>
-        </CardContent>
-      </Card>
+        <QuykLinkButton href={joinPath} className="mt-4">
+          Join without scanning
+        </QuykLinkButton>
+      </div>
 
-      <Card className="w-full text-left">
-        <CardContent className="pt-5">
-          <p className="font-semibold text-foreground">Already joined?</p>
-          <p className="mt-1.5 text-sm text-muted">
-            Open the tracking link from your confirmation screen, or check your SMS/WhatsApp
-            notification.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="w-full rounded-[22px] bg-q-green-panel px-5 py-4 text-left">
+        <p className="text-[15px] font-semibold text-white">Already joined?</p>
+        <p className="mt-1 text-[13px] leading-snug text-white/80">
+          Open the tracking link on your confirmation screen, or reopen this page — your place is
+          saved.
+        </p>
+      </div>
     </div>
   );
 }
