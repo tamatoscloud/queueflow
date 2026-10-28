@@ -62,6 +62,10 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         run: flutter analyze --fatal-infos > analyze.txt 2>&1 || (cat analyze.txt; exit 1)
 
+      - name: Unit tests (output published with previews)
+        working-directory: apps/${{ matrix.app }}
+        run: flutter test 2>&1 | tee unit-test.txt || true
+
       - name: Render previews
         working-directory: apps/${{ matrix.app }}
         run: |
@@ -81,6 +85,7 @@ jobs:
           cp apps/${{ matrix.app }}/test_preview/goldens/*.png "$out/" 2>/dev/null || true
           cp apps/${{ matrix.app }}/analyze.txt "$out/" 2>/dev/null || true
           cp apps/${{ matrix.app }}/preview-test.txt "$out/" 2>/dev/null || true
+          cp apps/${{ matrix.app }}/unit-test.txt "$out/" 2>/dev/null || true
           echo "${{ github.sha }}" > "$out/SOURCE_SHA"
           cd "$out"
           git init -q -b previews/${{ matrix.app }}
