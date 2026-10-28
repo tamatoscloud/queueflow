@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a Flutter web app inside Vercel's own build step, so pushes to main
+# Builds a Flutter web app (Quyk apps) inside Vercel's own build step, so pushes to main
 # deploy without a CLI token. Run from the app directory (the Vercel project's
 # Root Directory), e.g. apps/staff_app:
 #   bash ../../scripts/vercel-flutter-build.sh install
