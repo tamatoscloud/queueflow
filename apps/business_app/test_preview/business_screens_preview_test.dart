@@ -1,20 +1,25 @@
 // Renders the Quyk business screens with fixture data so they can be
 // reviewed without a backend. Not part of the regular suite (outside test/).
 //   flutter test test_preview --update-goldens
+import 'dart:async';
 import 'dart:io';
 
 import 'package:business_app/core/connectivity/connectivity_provider.dart';
 import 'package:business_app/core/models/models.dart';
 import 'package:business_app/core/realtime/realtime_client.dart';
+import 'package:business_app/core/restaurant/restaurant_config_provider.dart';
+import 'package:business_app/core/restaurant/service_mode.dart';
 import 'package:business_app/features/auth/data/models/auth_user.dart';
 import 'package:business_app/features/auth/presentation/auth_controller.dart';
 import 'package:business_app/features/auth/presentation/login_screen.dart';
 import 'package:business_app/features/branches/presentation/branches_screen.dart';
 import 'package:business_app/features/customers/presentation/customers_screen.dart';
 import 'package:business_app/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:business_app/features/menu/presentation/menu_screen.dart';
 import 'package:business_app/features/queue_console/presentation/queue_console_screen.dart';
 import 'package:business_app/features/queues/presentation/queues_screen.dart';
 import 'package:business_app/features/reports/presentation/reports_screen.dart';
+import 'package:business_app/features/restaurant_demo/presentation/qr_center_screen.dart';
 import 'package:business_app/features/settings/presentation/settings_screen.dart';
 import 'package:business_app/features/shell/presentation/business_shell.dart';
 import 'package:business_app/features/staff/presentation/staff_screen.dart';
@@ -230,6 +235,32 @@ List<Override> _overrides() => [
         },
       ),
       reportsProvider.overrideWith((ref, day) async => _summary),
+      restaurantConfigProvider.overrideWith((ref) => Completer<RestaurantConfig>().future),
+      qrCenterBusinessNameProvider.overrideWith((ref) async => 'Bella Vista'),
+      guestMenuProvider.overrideWith(
+        (ref) async => {
+          'isDefault': false,
+          'menu': {
+            'categories': [
+              {
+                'id': 'c1',
+                'name': 'Starters',
+                'items': [
+                  {'id': 'i1', 'name': 'Burrata Caprese', 'description': 'Heirloom tomatoes, basil oil', 'price': 16, 'available': true},
+                  {'id': 'i2', 'name': 'Crispy Calamari', 'description': 'Lemon aioli, chili flakes', 'price': 14, 'available': false},
+                ],
+              },
+              {
+                'id': 'c2',
+                'name': 'Pasta & risotto',
+                'items': [
+                  {'id': 'i3', 'name': 'Truffle Tagliatelle', 'description': 'Parmesan, black truffle', 'price': 24, 'available': true},
+                ],
+              },
+            ],
+          },
+        },
+      ),
     ];
 
 Future<void> _render(
@@ -295,6 +326,12 @@ void main() {
   testWidgets('team', (t) => _render(t, name: 'team', path: '/staff', page: const StaffScreen()));
   testWidgets('reports', (t) => _render(t, name: 'reports', path: '/reports', page: const ReportsScreen()));
   testWidgets('settings', (t) => _render(t, name: 'settings', path: '/settings', page: const SettingsScreen()));
+  testWidgets('guest_codes', (t) => _render(t, name: 'guest_codes', path: '/restaurant/qr', page: const QrCenterScreen()));
+  testWidgets('menu', (t) => _render(t, name: 'menu', path: '/menu', page: const MenuScreen()));
+  testWidgets(
+    'dashboard_laptop',
+    (t) => _render(t, name: 'dashboard_laptop', path: '/dashboard', page: const DashboardScreen(), size: const Size(1536, 674)),
+  );
 
   testWidgets('login', (tester) async {
     tester.view.physicalSize = const Size(1440, 1024);

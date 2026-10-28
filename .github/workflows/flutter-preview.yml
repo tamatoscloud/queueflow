@@ -10,6 +10,8 @@ on:
       - "apps/staff_app/**"
       - "apps/business_app/**"
       - "apps/admin_panel/**"
+      - "apps/marketing_website/**"
+      - "apps/tv_display/**"
       - "packages/**"
       - ".github/workflows/flutter-preview.yml"
 
@@ -27,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [staff_app, business_app, admin_panel]
+        app: [staff_app, business_app, admin_panel, marketing_website, tv_display]
     steps:
       - uses: actions/checkout@v4
 
@@ -75,6 +77,11 @@ jobs:
           else
             echo "No previews for ${{ matrix.app }}"
           fi
+          # Apps with checked-in goldens under test/goldens: re-render them so
+          # an intentional restyle can be reviewed and committed.
+          if [ -d test/goldens ]; then
+            flutter test test/goldens --update-goldens 2>&1 | tee -a preview-test.txt || true
+          fi
 
       - name: Publish to previews/<app>
         if: always()
@@ -83,6 +90,9 @@ jobs:
           out="$RUNNER_TEMP/previews"
           mkdir -p "$out"
           cp apps/${{ matrix.app }}/test_preview/goldens/*.png "$out/" 2>/dev/null || true
+          for f in apps/${{ matrix.app }}/test/goldens/goldens/*.png; do
+            if [ -f "$f" ]; then cp "$f" "$out/unit_golden_$(basename "$f")"; fi
+          done
           cp apps/${{ matrix.app }}/analyze.txt "$out/" 2>/dev/null || true
           cp apps/${{ matrix.app }}/preview-test.txt "$out/" 2>/dev/null || true
           cp apps/${{ matrix.app }}/unit-test.txt "$out/" 2>/dev/null || true

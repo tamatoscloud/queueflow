@@ -212,9 +212,9 @@ class _Body extends StatelessWidget {
                 ),
                 if (k.revenueMrr == null) ...[
                   const SizedBox(height: 10),
-                  Text(
+                  const Text(
                     'Billing isn’t connected yet, so revenue isn’t shown.',
-                    style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+                    style: TextStyle(fontSize: 12, color: QuykColors.subtle),
                   ),
                 ],
               ],
