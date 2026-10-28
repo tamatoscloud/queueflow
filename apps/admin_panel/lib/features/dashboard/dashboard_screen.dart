@@ -89,7 +89,7 @@ class _Body extends StatelessWidget {
               label: 'Businesses',
               value: '${k.businesses}',
               icon: Icons.storefront_outlined,
-              hint: '${k.activeBranches} active branches',
+              hint: '${k.activeBranches} active branch${k.activeBranches == 1 ? '' : 'es'}',
               highlight: true,
               onTap: () => context.go(AppRoutes.tenants),
             ),
@@ -106,10 +106,12 @@ class _Body extends StatelessWidget {
               hint: 'Across all businesses',
             ),
             QuykStatTile(
-              label: 'Guest alerts sent',
+              label: 'Guest alerts sent today',
               value: NumberFormat.decimalPattern().format(k.notificationsSent),
               icon: Icons.send_outlined,
-              hint: k.failedNotifications > 0 ? '${k.failedNotifications} failed' : 'No failures',
+              hint: k.failedNotifications > 0
+                  ? '${NumberFormat.decimalPattern().format(k.failedNotifications)} failed in total'
+                  : 'No failures',
               onTap: () => context.go(AppRoutes.notifications),
             ),
           ],
@@ -211,7 +213,7 @@ class _Body extends StatelessWidget {
                 if (k.revenueMrr == null) ...[
                   const SizedBox(height: 10),
                   Text(
-                    k.revenueNote ?? 'Billing isn’t connected yet, so revenue isn’t shown.',
+                    'Billing isn’t connected yet, so revenue isn’t shown.',
                     style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
                   ),
                 ],

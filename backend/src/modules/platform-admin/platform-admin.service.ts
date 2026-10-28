@@ -35,6 +35,9 @@ import type {
 import { BusinessStatusDto } from '../business/dto/business.dto';
 import type { CreateBusinessDto, ListBusinessQueryDto } from '../business/dto/business.dto';
 
+
+/** Waits longer than this (8 h) are excluded from averages. */
+const MAX_REAL_WAIT_MINUTES = 8 * 60;
 @Injectable()
 export class PlatformAdminService {
   constructor(
@@ -95,7 +98,7 @@ export class PlatformAdminService {
         notificationsSent,
         failedNotifications,
         revenueMrr: null,
-        revenueNote: 'Billing integration pending',
+        revenueNote: null,
       },
       systemHealth: {
         api: 'up',
@@ -479,7 +482,9 @@ export class PlatformAdminService {
         deletedAt: null,
         status: QueueEntryStatus.COMPLETED,
         servedAt: { gte: from, lte: to },
-        actualWaitMinutes: { not: null },
+        // Visits left open for hours (overnight, test data) are not real
+        // waits; they pushed the platform average into the thousands.
+        actualWaitMinutes: { not: null, lte: MAX_REAL_WAIT_MINUTES },
       },
       _avg: { actualWaitMinutes: true },
     });
@@ -490,7 +495,6 @@ export class PlatformAdminService {
       dailyCustomers,
       notificationSuccess,
       averageWaitMinutes: avgWait._avg.actualWaitMinutes ?? 0,
-      peakHoursNote: 'Hourly breakdown available in future analytics release',
     };
   }
 

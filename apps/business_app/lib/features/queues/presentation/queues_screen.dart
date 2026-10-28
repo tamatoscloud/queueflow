@@ -73,6 +73,11 @@ String _fmtMinutes(double value) {
   return value == rounded ? '$rounded' : value.toStringAsFixed(1);
 }
 
+/// Wait a guest joining now is quoted. Mirrors the backend rule in
+/// backend/src/queue-engine/domain/services/wait-estimate-bounds.ts:
+/// 2.5 min per party in line (including them), capped at 30 min.
+double quotedWaitForNewGuest(int waiting) => ((waiting + 1) * 2.5).clamp(2.5, 30).toDouble();
+
 String queueStatusLabel(String status) => switch (status.toUpperCase()) {
       'ACTIVE' => 'Open',
       'PAUSED' => 'Paused',
@@ -199,7 +204,7 @@ class _QueueCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  '~${_fmtMinutes(queue.averageServiceTimeMinutes)} min each',
+                  'New guests wait ~${_fmtMinutes(quotedWaitForNewGuest(queue.waitingCount))} min',
                   style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
                 ),
               ),
@@ -482,9 +487,10 @@ class QueueDetailScreen extends ConsumerWidget {
                   icon: Icons.timer_outlined,
                 ),
                 QuykStatTile(
-                  label: 'Per guest',
-                  value: '${_fmtMinutes(queue.averageServiceTimeMinutes)} min',
+                  label: 'Quoted to new guests',
+                  value: '~${_fmtMinutes(quotedWaitForNewGuest(waiting))} min',
                   icon: Icons.hourglass_bottom_rounded,
+                  hint: '2.5 min per party ahead, up to 30',
                 ),
               ],
             ),
@@ -769,7 +775,7 @@ class _QueueSettingsFormState extends ConsumerState<_QueueSettingsForm> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Minutes per guest',
-                        helperText: 'Used to estimate wait times',
+                        helperText: 'Your own service target. Guest wait estimates use 2.5 min per party.',
                       ),
                     ),
                   ),
