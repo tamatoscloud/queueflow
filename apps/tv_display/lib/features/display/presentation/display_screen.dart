@@ -543,14 +543,7 @@ class _NowServingTokenState extends State<NowServingToken>
           ),
           decoration: BoxDecoration(
             borderRadius: AppRadius.xxlAll,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accent.withValues(alpha: 0.18 + _glow.value * 0.08),
-                QuykColors.greenPanel.withValues(alpha: 0.5 + _glow.value * 0.1),
-              ],
-            ),
+            color: QuykColors.greenPanel,
             border: Border.all(
               color: accent.withValues(alpha: 0.45 + _glow.value * 0.25),
               width: 2,
@@ -570,7 +563,7 @@ class _NowServingTokenState extends State<NowServingToken>
       },
       child: ShaderMask(
         shaderCallback: (bounds) => LinearGradient(
-          colors: [accent, QuykColors.limeSoft],
+          colors: [accent, accent],
         ).createShader(bounds),
         child: Text(
           token,
@@ -721,15 +714,46 @@ class DisplayFooter extends StatelessWidget {
         if (snapshot != null) ...[
           _WaitCountdown(minutes: wait, scale: scale),
           SizedBox(width: 32 * scale),
-          MetricCard(
-            label: 'Waiting',
-            value: '${snapshot!.metrics.waitingCount}',
-            icon: Icons.people_alt_outlined,
-            accentColor: AppColors.secondary,
-          ),
+          // MetricCard stretches its label row (Expanded), which can't lay
+          // out inside this Row — the footer threw on every board.
+          _WaitingCount(count: snapshot!.metrics.waitingCount, scale: scale),
         ] else
           _WaitCountdown(minutes: wait, scale: scale),
       ],
+    );
+  }
+}
+
+class _WaitingCount extends StatelessWidget {
+  const _WaitingCount({required this.count, required this.scale});
+
+  final int count;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 14 * scale),
+      decoration: BoxDecoration(
+        color: QuykColors.greenPanel,
+        borderRadius: BorderRadius.circular(24 * scale),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.people_alt_outlined, color: QuykColors.lime, size: 28 * scale),
+          SizedBox(width: 12 * scale),
+          Text(
+            '$count',
+            style: TextStyle(fontSize: 40 * scale, fontWeight: FontWeight.w700, color: Colors.white, height: 1),
+          ),
+          SizedBox(width: 8 * scale),
+          Text(
+            'waiting',
+            style: TextStyle(fontSize: 18 * scale, color: Colors.white.withValues(alpha: 0.8)),
+          ),
+        ],
+      ),
     );
   }
 }

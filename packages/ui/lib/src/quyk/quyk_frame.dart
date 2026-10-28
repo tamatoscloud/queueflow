@@ -370,7 +370,7 @@ class _Rail extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [Colors.white, Colors.white, Colors.transparent],
-                      stops: [0, 0.88, 1],
+                      stops: [0, 0.94, 1],
                     ).createShader(rect),
                     child: Scrollbar(thumbVisibility: true, child: list),
                   );

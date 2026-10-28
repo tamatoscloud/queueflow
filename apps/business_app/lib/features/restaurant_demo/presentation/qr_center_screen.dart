@@ -295,7 +295,12 @@ class _QueueRow extends StatelessWidget {
           if (selected)
             const Icon(Icons.check_circle_rounded, color: QuykColors.green)
           else
-            QuykStatusPill(status: queue.status),
+            QuykPill(
+              label: queueStatusLabel(queue.status),
+              background: queue.status.toUpperCase() == 'ACTIVE' ? QuykColors.lime : QuykColors.mist,
+              foreground: queue.status.toUpperCase() == 'ACTIVE' ? QuykColors.green : QuykColors.greenMuted,
+              fontSize: 11,
+            ),
         ],
       ),
     );
