@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:queueflow_theme/queueflow_theme.dart';
-import 'package:queueflow_ui/queueflow_ui.dart';
 import 'package:queueflow_utils/queueflow_utils.dart';
-import 'package:queueflow_widgets/queueflow_widgets.dart';
 
 import '../../../core/network/api_error_message.dart' show apiExceptionMessage;
 import '../../../core/routing/staff_routes.dart';
 import 'auth_controller.dart';
+import 'quyk_auth_layout.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -52,77 +50,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.lightBackground,
-      body: Column(
-        children: [
-          const GradientHeader(
-            title: 'Quyk Staff',
-            subtitle: 'Sign in to run the floor',
-            compact: true,
-          ),
-          Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: AppCard(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AppTextField(
-                            controller: _email,
-                            label: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) => Validators.required(v) ?? Validators.email(v),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          AppTextField(
-                            controller: _password,
-                            label: 'Password',
-                            obscureText: true,
-                            validator: Validators.required,
-                          ),
-                          if (_error != null) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.dangerLight,
-                                borderRadius: AppRadius.lgAll,
-                              ),
-                              child: Text(
-                                _error!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(color: AppColors.danger),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: AppSpacing.lg),
-                          AppPrimaryButton(
-                            label: 'Sign in',
-                            isLoading: _loading,
-                            onPressed: _loading ? null : _submit,
-                          ),
-                          AppButton(
-                            label: 'Forgot password?',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: () => context.push(StaffRoutes.forgotPassword),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+    return QuykAuthLayout(
+      title: 'Welcome back',
+      subtitle: 'Sign in to run the floor.',
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.mail_outline_rounded),
                 ),
+                validator: (v) => Validators.required(v) ?? Validators.email(v),
               ),
-            ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _password,
+                obscureText: true,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock_outline_rounded),
+                ),
+                validator: Validators.required,
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 14),
+                QuykAuthError(_error!),
+              ],
+              const SizedBox(height: 24),
+              QuykAuthButton(label: 'Sign in', loading: _loading, onPressed: _submit),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.push(StaffRoutes.forgotPassword),
+                child: const Text('Forgot password?'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
