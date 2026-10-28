@@ -19,8 +19,8 @@ class CalmCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = highlighted
-        ? AppColors.calmLilac.withValues(alpha: 0.45)
-        : AppColors.lightSurface;
+        ? QuykColors.limeSoft.withValues(alpha: 0.45)
+        : Colors.white;
 
     final card = Container(
       width: double.infinity,
@@ -30,8 +30,8 @@ class CalmCard extends StatelessWidget {
         borderRadius: AppRadius.lgAll,
         border: Border.all(
           color: highlighted
-              ? AppColors.calmViolet.withValues(alpha: 0.25)
-              : AppColors.calmBorder,
+              ? QuykColors.green.withValues(alpha: 0.25)
+              : QuykColors.line,
         ),
       ),
       child: child,

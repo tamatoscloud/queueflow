@@ -1,112 +1,220 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
-import 'package:queueflow_widgets/queueflow_widgets.dart';
+import 'package:queueflow_ui/queueflow_ui.dart';
 
+import '../../../core/models/models.dart';
 import '../../../core/network/business_api_client.dart';
+import '../../../core/network/connection_diagnostics.dart' show apiExceptionMessage;
+import '../../../core/session/session_providers.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
-import '../../../shared/widgets/calm/calm_card.dart';
-import '../../../shared/widgets/calm/calm_section_label.dart';
 
-final reportsProvider = FutureProvider.autoDispose((ref) async {
+DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// Summary for one day at the selected location (or all locations).
+final reportsProvider = FutureProvider.autoDispose.family<DailySummaryModel, DateTime>((ref, day) async {
   final api = ref.watch(businessApiClientProvider);
   final businessId = ref.watch(currentUserProvider)?.businessId;
-  return api.getDailySummary(businessId: businessId);
+  final branchId = ref.watch(selectedBranchIdProvider);
+  return api.getDailySummary(businessId: businessId, branchId: branchId, date: day);
 });
 
-class ReportsScreen extends ConsumerWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(reportsProvider);
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: AppColors.calmIvory,
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(reportsProvider),
-        child: async.when(
-          loading: () => const PageLoading(message: 'Loading today’s numbers…'),
-          error: (e, _) => PageError(
-            message: 'We couldn’t load today’s numbers. Pull to try again.',
-            onRetry: () => ref.invalidate(reportsProvider),
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  DateTime _selected = _day(DateTime.now());
+
+  bool get _isToday => _selected == _day(DateTime.now());
+
+  Future<void> _pickDay() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selected,
+      firstDate: DateTime(2024),
+      lastDate: _day(DateTime.now()),
+    );
+    if (picked != null) setState(() => _selected = _day(picked));
+  }
+
+  void _shift(int days) {
+    final next = _selected.add(Duration(days: days));
+    if (next.isAfter(_day(DateTime.now()))) return;
+    setState(() => _selected = next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(reportsProvider(_selected));
+    final label = _isToday ? 'Today' : DateFormat('EEE, d MMM yyyy').format(_selected);
+
+    return QuykPage(
+      title: 'Reports',
+      subtitle: 'Guests joined, served and how long they waited.',
+      onRefresh: () async => ref.invalidate(reportsProvider(_selected)),
+      action: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton.outlined(
+            tooltip: 'Previous day',
+            onPressed: () => _shift(-1),
+            icon: const Icon(Icons.chevron_left_rounded),
           ),
-          data: (summary) {
-            if (!summary.hasActivity) {
-              return ListView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                children: const [
-                  EmptyStateView(
-                    title: 'Quiet so far today',
-                    message: 'Numbers appear here once guests start joining your lines.',
-                    icon: Icons.bar_chart_outlined,
-                  ),
-                ],
+          const SizedBox(width: 6),
+          OutlinedButton.icon(
+            onPressed: _pickDay,
+            icon: const Icon(Icons.calendar_today_outlined, size: 16),
+            label: Text(label),
+          ),
+          const SizedBox(width: 6),
+          IconButton.outlined(
+            tooltip: 'Next day',
+            onPressed: _isToday ? null : () => _shift(1),
+            icon: const Icon(Icons.chevron_right_rounded),
+          ),
+        ],
+      ),
+      children: [
+        async.when(
+          loading: () => const QuykLoadingBlock(),
+          error: (e, _) => QuykMessageCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'We couldn’t load this day’s numbers',
+            subtitle: apiExceptionMessage(e),
+            actionLabel: 'Try again',
+            onAction: () => ref.invalidate(reportsProvider(_selected)),
+          ),
+          data: (s) {
+            if (!s.hasActivity) {
+              return QuykMessageCard(
+                icon: Icons.insights_outlined,
+                title: _isToday ? 'Quiet so far today' : 'No guests on this day',
+                subtitle: 'Numbers appear here once guests join your lines.',
               );
             }
-
-            return ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
+            final servedRate = s.joined > 0 ? (s.totalServed * 100 / s.joined).round() : 0;
+            final noShowRate = s.joined > 0 ? (s.noShows * 100 / s.joined).round() : 0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                CalmSectionLabel(
-                  'Today’s snapshot',
-                  subtitle: summary.date.isNotEmpty ? summary.date : 'How your restaurant is doing today',
+                QuykGrid(
+                  minTileWidth: 220,
+                  children: [
+                    QuykStatTile(
+                      label: 'Guests joined',
+                      value: '${s.joined}',
+                      icon: Icons.people_alt_outlined,
+                      highlight: true,
+                    ),
+                    QuykStatTile(
+                      label: 'Served',
+                      value: '${s.totalServed}',
+                      icon: Icons.check_circle_outline_rounded,
+                      hint: '$servedRate% of guests',
+                    ),
+                    QuykStatTile(
+                      label: 'Average wait',
+                      value: s.averageWaitMinutes > 0 ? '${s.averageWaitMinutes} min' : '—',
+                      icon: Icons.timer_outlined,
+                      hint: 'Join to being served',
+                    ),
+                    QuykStatTile(
+                      label: 'No-shows',
+                      value: '${s.noShows}',
+                      icon: Icons.person_off_outlined,
+                      hint: '$noShowRate% of guests',
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                CalmCard(
-                  highlighted: true,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                const SizedBox(height: 20),
+                QuykCard(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ReportRow(label: 'Guests served', value: '${summary.totalServed}'),
-                      const Divider(height: 24),
-                      _ReportRow(label: 'Missed / no-shows', value: '${summary.noShows}'),
-                      const Divider(height: 24),
-                      _ReportRow(
-                        label: 'Average wait',
-                        value: summary.averageWaitMinutes > 0
-                            ? '~${summary.averageWaitMinutes} min'
-                            : 'Not enough data yet',
+                      const Text(
+                        'Where guests ended up',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: QuykColors.ink),
+                      ),
+                      const SizedBox(height: 14),
+                      _OutcomeBar(
+                        served: s.totalServed,
+                        noShows: s.noShows,
+                        stillActive: s.stillActive,
+                        total: s.joined,
                       ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                CalmCard(
-                  child: Text(
-                    'This is today’s summary. More detailed weekly and monthly views are coming later.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.calmWarmGray,
-                        ),
                   ),
                 ),
               ],
             );
           },
         ),
-      ),
+      ],
     );
   }
 }
 
-class _ReportRow extends StatelessWidget {
-  const _ReportRow({required this.label, required this.value});
+class _OutcomeBar extends StatelessWidget {
+  const _OutcomeBar({
+    required this.served,
+    required this.noShows,
+    required this.stillActive,
+    required this.total,
+  });
 
-  final String label;
-  final String value;
+  final int served;
+  final int noShows;
+  final int stillActive;
+  final int total;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final other = (total - served - noShows - stillActive).clamp(0, total);
+    final segments = [
+      ('Served', served, QuykColors.green),
+      ('Still in line', stillActive, QuykColors.lime),
+      ('No-show', noShows, QuykColors.danger),
+      ('Cancelled / left', other, QuykColors.field),
+    ].where((s) => s.$2 > 0).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.bodyLarge),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: AppColors.calmCharcoal,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            height: 14,
+            child: Row(
+              children: [
+                for (final s in segments) Expanded(flex: s.$2, child: ColoredBox(color: s.$3)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 18,
+          runSpacing: 8,
+          children: [
+            for (final s in segments)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(color: s.$3, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('${s.$1} · ${s.$2}', style: const TextStyle(fontSize: 13, color: QuykColors.muted)),
+                ],
               ),
+          ],
         ),
       ],
     );

@@ -1,12 +1,12 @@
 {
-    "name": "business_app",
-    "short_name": "business_app",
+    "name": "Quyk Business",
+    "short_name": "Quyk Business",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#F3F7EA",
+    "theme_color": "#003D32",
+    "description": "Run your restaurant's waiting lines, guests and team.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

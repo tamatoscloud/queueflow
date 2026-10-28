@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:queueflow_theme/queueflow_theme.dart';
+import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../core/persona/user_persona.dart';
 import '../../core/routing/app_routes.dart';
@@ -21,55 +24,110 @@ import '../../features/restaurant_demo/presentation/qr_center_screen.dart';
 import '../../features/restaurant_demo/presentation/table_floor_screen.dart';
 import '../../features/reviews/presentation/reviews_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
-import '../../features/shell/presentation/app_shell_resolver.dart';
+import '../../features/shell/presentation/business_shell.dart';
 import '../../features/staff/presentation/staff_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
-  final init = ref.watch(sessionInitProvider);
+  // Rebuilding the GoRouter on every auth change resets navigation; instead
+  // keep one router and re-run its redirect when auth / boot state changes.
+  final refresh = ValueNotifier<int>(0);
+  ref
+    ..listen(authControllerProvider, (_, __) => refresh.value++)
+    ..listen(sessionInitProvider, (_, __) => refresh.value++)
+    ..onDispose(refresh.dispose);
+
+  String? pendingDeepLink;
 
   return GoRouter(
     initialLocation: AppRoutes.boot,
+    refreshListenable: refresh,
     redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
+      final init = ref.read(sessionInitProvider);
       final loc = state.matchedLocation;
       final isLogin = loc == AppRoutes.login || loc == AppRoutes.forgotPassword;
       final isBoot = loc == AppRoutes.boot;
       if (init.isLoading) {
+        if (!isBoot && !isLogin) pendingDeepLink = state.uri.toString();
         return isBoot || isLogin ? null : AppRoutes.boot;
       }
       final isAuth = auth.isAuthenticated;
-      if (!isAuth && !isLogin) return AppRoutes.login;
+      if (!isAuth && !isLogin) {
+        if (!isBoot) pendingDeepLink = state.uri.toString();
+        return AppRoutes.login;
+      }
+      final user = auth.session?.user;
+      final persona = personaFromUser(user);
       if (isAuth && (isLogin || isBoot)) {
-        return defaultRouteForPersona(personaFromUser(auth.session?.user));
+        final target = pendingDeepLink;
+        pendingDeepLink = null;
+        if (target != null && userCanAccessPath(user, Uri.parse(target).path)) return target;
+        return defaultRouteForPersona(persona);
       }
       if (isAuth) {
-        final user = auth.session?.user;
-        final persona = personaFromUser(user);
-        if (!userCanAccessPath(user, state.matchedLocation)) {
-          return defaultRouteForPersona(persona);
-        }
-        if (persona == BusinessPersona.staff &&
-            state.matchedLocation == AppRoutes.dashboard) {
+        if (!userCanAccessPath(user, loc)) return defaultRouteForPersona(persona);
+        if (persona == BusinessPersona.staff && loc == AppRoutes.dashboard) {
           return AppRoutes.queues;
+        }
+        if (!kDebugMode &&
+            (loc.startsWith(AppRoutes.restaurantSimulator) ||
+                loc.startsWith(AppRoutes.restaurantTables))) {
+          return defaultRouteForPersona(persona);
         }
       }
       return null;
     },
+    errorBuilder: (context, state) => const _NotFoundScreen(),
     routes: [
       GoRoute(path: AppRoutes.boot, builder: (_, __) => const _SessionBootScreen()),
       GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
       GoRoute(path: AppRoutes.forgotPassword, builder: (_, __) => const ForgotPasswordScreen()),
       ShellRoute(
-        builder: (context, state, child) => AppShellResolver(child: child),
+        builder: (context, state, child) => BusinessShell(child: child),
         routes: [
           GoRoute(path: AppRoutes.dashboard, builder: (_, __) => const DashboardScreen()),
+          GoRoute(path: AppRoutes.staffToday, redirect: (_, __) => AppRoutes.queues),
           GoRoute(
-            path: AppRoutes.staffToday,
-            redirect: (_, __) => AppRoutes.queues,
+            path: AppRoutes.queues,
+            builder: (_, __) => const QueuesScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (_, state) => QueueDetailScreen(queueId: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'console',
+                    builder: (_, state) => QueueConsoleScreen(queueId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'settings',
+                    builder: (_, state) => QueueSettingsScreen(queueId: state.pathParameters['id']!),
+                  ),
+                ],
+              ),
+            ],
           ),
-          GoRoute(path: AppRoutes.queues, builder: (_, __) => const QueuesScreen()),
-          GoRoute(path: AppRoutes.branches, builder: (_, __) => const BranchesScreen()),
-          GoRoute(path: AppRoutes.customers, builder: (_, __) => const CustomersScreen()),
+          GoRoute(
+            path: AppRoutes.branches,
+            builder: (_, __) => const BranchesScreen(),
+            routes: [
+              GoRoute(path: 'add', builder: (_, __) => const BranchFormScreen()),
+              GoRoute(
+                path: ':id/edit',
+                builder: (_, state) => BranchFormScreen(branchId: state.pathParameters['id']),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: AppRoutes.customers,
+            builder: (_, __) => const CustomersScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (_, state) => CustomerDetailScreen(customerId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
           GoRoute(path: AppRoutes.reviews, builder: (_, __) => const ReviewsScreen()),
           GoRoute(path: AppRoutes.reports, builder: (_, __) => const ReportsScreen()),
           GoRoute(path: AppRoutes.notifications, builder: (_, __) => const NotificationsScreen()),
@@ -81,30 +139,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: AppRoutes.restaurantTables, builder: (_, __) => const TableFloorScreen()),
         ],
       ),
-      GoRoute(
-        path: '/queues/:id',
-        builder: (_, state) => QueueDetailScreen(queueId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/queues/:id/console',
-        builder: (_, state) => QueueConsoleScreen(queueId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/queues/:id/settings',
-        builder: (_, state) => QueueSettingsScreen(queueId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/branches/add',
-        builder: (_, __) => const BranchFormScreen(),
-      ),
-      GoRoute(
-        path: '/branches/:id/edit',
-        builder: (_, state) => BranchFormScreen(branchId: state.pathParameters['id']),
-      ),
-      GoRoute(
-        path: '/customers/:id',
-        builder: (_, state) => CustomerDetailScreen(customerId: state.pathParameters['id']!),
-      ),
     ],
   );
 });
@@ -115,7 +149,54 @@ class _SessionBootScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+      backgroundColor: QuykColors.cream,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            QuykLogoTile(size: 56),
+            SizedBox(height: 20),
+            SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.6)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotFoundScreen extends StatelessWidget {
+  const _NotFoundScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: QuykColors.cream,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const QuykIconBubble(icon: Icons.explore_off_outlined, size: 56),
+              const SizedBox(height: 16),
+              const Text(
+                "This page doesn't exist",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: QuykColors.green),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'The link may be old or mistyped.',
+                style: TextStyle(fontSize: 14, color: QuykColors.muted),
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => context.go(AppRoutes.dashboard),
+                child: const Text('Go to home'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -119,7 +119,7 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
     final isTablet = Breakpoints.isTablet(context);
 
     return Scaffold(
-      backgroundColor: AppColors.calmIvory,
+      backgroundColor: QuykColors.cream,
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(queuesProvider),
         child: async.when(
@@ -183,7 +183,7 @@ class _QrCenterScreenState extends ConsumerState<QrCenterScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'No $mode queues yet — showing all queues. Create a ${modeInfo.label.toLowerCase()} queue to enable dedicated QR codes.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: QuykColors.subtle),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.md),
@@ -360,7 +360,7 @@ class _QrPreview extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             modeInfo.label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral600),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: QuykColors.muted),
           ),
           const SizedBox(height: AppSpacing.lg),
           _PrintablePoster(
@@ -373,7 +373,7 @@ class _QrPreview extends StatelessWidget {
           SelectableText(
             joinUrl,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: QuykColors.subtle),
           ),
           const SizedBox(height: AppSpacing.lg),
           Wrap(
@@ -430,7 +430,7 @@ class _PrintablePoster extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: AppRadius.xlAll,
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: QuykColors.line),
         boxShadow: AppShadows.md(Theme.of(context).brightness),
       ),
       child: Column(
@@ -439,7 +439,7 @@ class _PrintablePoster extends StatelessWidget {
             'WELCOME TO',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   letterSpacing: 2,
-                  color: AppColors.neutral500,
+                  color: QuykColors.subtle,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -449,7 +449,7 @@ class _PrintablePoster extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: AppColors.neutral900,
+                  color: QuykColors.ink,
                 ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -472,19 +472,19 @@ class _PrintablePoster extends StatelessWidget {
             ),
             dataModuleStyle: const QrDataModuleStyle(
               dataModuleShape: QrDataModuleShape.square,
-              color: AppColors.neutral800,
+              color: QuykColors.ink,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             modeInfo.posterSubline,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral600),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: QuykColors.muted),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             queueName,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.neutral400),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: QuykColors.subtle),
           ),
         ],
       ),

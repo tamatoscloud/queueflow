@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:queueflow_shared/queueflow_shared.dart';
+import 'package:queueflow_theme/queueflow_theme.dart';
+import 'package:queueflow_ui/queueflow_ui.dart';
 
-import '../../../core/network/connection_diagnostics.dart';
+import '../../../core/network/connection_diagnostics.dart' show apiExceptionMessage;
 import '../../../core/routing/app_routes.dart';
 import 'auth_controller.dart';
 
@@ -52,7 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _email.text.trim(),
             _password.text,
           );
-      if (mounted) context.go(AppRoutes.dashboard);
+      // The router redirect sends the user to their home (or the link they opened).
     } catch (e) {
       setState(() => _error = _friendlyAuthError(e));
     } finally {
@@ -64,143 +66,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final config = ref.watch(appConfigProvider);
     final showDiagnostics = kDebugMode || !config.flavor.isProduction;
-    final diagnostics = showDiagnostics ? ref.watch(connectionDiagnosticsProvider) : null;
 
-    return Scaffold(
-      backgroundColor: AppColors.calmIvory,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.calmViolet,
-                      borderRadius: AppRadius.lgAll,
-                    ),
-                    child: const Icon(Icons.storefront_outlined, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Quyk',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.calmCharcoal,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Sign in to manage your restaurant waiting lines',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.calmWarmGray,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  AppCard(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (diagnostics != null) ...[
-                            diagnostics.when(
-                              loading: () => const LinearProgressIndicator(
-                                color: AppColors.primary,
-                                backgroundColor: AppColors.neutral100,
-                              ),
-                              error: (_, __) => const SizedBox.shrink(),
-                              data: (result) => switch (result) {
-                                ConnectionOk() => const SizedBox.shrink(),
-                                ConnectionFailed() => Container(
-                                    padding: const EdgeInsets.all(AppSpacing.sm),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.dangerLight,
-                                      borderRadius: AppRadius.lgAll,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Can’t connect right now',
-                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                color: AppColors.danger,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Check your Wi‑Fi, then try again.',
-                                          style: Theme.of(context).textTheme.bodySmall,
-                                        ),
-                                        AppButton(
-                                          label: 'Try again',
-                                          variant: AppButtonVariant.ghost,
-                                          size: AppButtonSize.sm,
-                                          onPressed: () =>
-                                              ref.invalidate(connectionDiagnosticsProvider),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                          ],
-                          AppTextField(
-                            controller: _email,
-                            label: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) => Validators.required(v) ?? Validators.email(v),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          AppTextField(
-                            controller: _password,
-                            label: 'Password',
-                            obscureText: true,
-                            validator: Validators.required,
-                          ),
-                          if (_error != null) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.dangerLight,
-                                borderRadius: AppRadius.lgAll,
-                              ),
-                              child: Text(
-                                _error!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(color: AppColors.danger),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: AppSpacing.lg),
-                          AppPrimaryButton(
-                            label: 'Sign in',
-                            isLoading: _loading,
-                            onPressed: _loading ? null : _submit,
-                          ),
-                          AppButton(
-                            label: 'Forgot password?',
-                            variant: AppButtonVariant.ghost,
-                            onPressed: () => context.push(AppRoutes.forgotPassword),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+    return QuykAuthLayout(
+      title: 'Welcome back',
+      subtitle: 'Sign in to manage your restaurant.',
+      panelHeadline: 'Every line,\nevery location,\none dashboard.',
+      panelBody:
+          'See who is waiting, how long it takes and what guests think — then tune your lines, menu and team.',
+      panelChips: const ['Live lines', 'Guest codes', 'Reviews', 'Team'],
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                ),
+                validator: (v) {
+                  final value = v?.trim() ?? '';
+                  if (value.isEmpty) return 'Enter your email';
+                  if (!value.contains('@')) return 'Enter a valid email';
+                  return null;
+                },
               ),
-            ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _password,
+                obscureText: true,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock_outline_rounded),
+                ),
+                validator: (v) => (v ?? '').isEmpty ? 'Enter your password' : null,
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 14),
+                QuykAuthError(_error!),
+              ],
+              const SizedBox(height: 24),
+              QuykAuthButton(label: 'Sign in', loading: _loading, onPressed: _submit),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.push(AppRoutes.forgotPassword),
+                child: const Text('Forgot password?'),
+              ),
+              if (showDiagnostics) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'API: ${config.apiBaseUrl}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+                ),
+              ],
+            ],
           ),
         ),
       ),

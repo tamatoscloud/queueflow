@@ -141,7 +141,7 @@ class _TableFloorScreenState extends ConsumerState<TableFloorScreen> {
                     leading: AppAvatar(name: e.displayCode, size: 40),
                     title: Text('${e.displayCode} · ${e.customerName ?? 'Guest'}'),
                     subtitle: Text('Party of ${e.partySize}${e.isVip ? ' · VIP' : ''}'),
-                    trailing: fits ? null : const Icon(Icons.warning_amber, color: AppColors.warning),
+                    trailing: fits ? null : const Icon(Icons.warning_amber, color: QuykColors.warning),
                     onTap: fits ? () => Navigator.pop(ctx, e) : null,
                   );
                 },
@@ -163,10 +163,10 @@ class _TableFloorScreenState extends ConsumerState<TableFloorScreen> {
   }
 
   Color _statusColor(TableStatus status) => switch (status) {
-        TableStatus.available => AppColors.success,
-        TableStatus.occupied => AppColors.primary,
-        TableStatus.cleaning => AppColors.warning,
-        TableStatus.reserved => AppColors.accentPurple,
+        TableStatus.available => QuykColors.green,
+        TableStatus.occupied => QuykColors.green,
+        TableStatus.cleaning => QuykColors.warning,
+        TableStatus.reserved => QuykColors.greenMuted,
       };
 
   @override
@@ -234,10 +234,10 @@ class _TableFloorScreenState extends ConsumerState<TableFloorScreen> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.3,
                 children: [
-                  MetricCard(label: 'Tables', value: '${_tables.length}', icon: Icons.table_bar, accentColor: AppColors.primary),
-                  MetricCard(label: 'Available', value: '$available', icon: Icons.event_available, accentColor: AppColors.success),
-                  MetricCard(label: 'Occupied', value: '$occupied', icon: Icons.people, accentColor: AppColors.secondary),
-                  MetricCard(label: 'Waiting', value: '${waiting.length}', icon: Icons.hourglass_top, accentColor: AppColors.accentPurple),
+                  MetricCard(label: 'Tables', value: '${_tables.length}', icon: Icons.table_bar, accentColor: QuykColors.green),
+                  MetricCard(label: 'Available', value: '$available', icon: Icons.event_available, accentColor: QuykColors.green),
+                  MetricCard(label: 'Occupied', value: '$occupied', icon: Icons.people, accentColor: QuykColors.greenMuted),
+                  MetricCard(label: 'Waiting', value: '${waiting.length}', icon: Icons.hourglass_top, accentColor: QuykColors.greenMuted),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -278,10 +278,10 @@ class _TableFloorScreenState extends ConsumerState<TableFloorScreen> {
                       spacing: 12,
                       runSpacing: 8,
                       children: [
-                        _LegendDot(color: AppColors.success, label: 'Available — tap to seat'),
-                        _LegendDot(color: AppColors.primary, label: 'Occupied — tap to complete dining'),
-                        _LegendDot(color: AppColors.warning, label: 'Cleaning — tap when ready'),
-                        _LegendDot(color: AppColors.accentPurple, label: 'Reserved — long press to toggle'),
+                        _LegendDot(color: QuykColors.green, label: 'Available — tap to seat'),
+                        _LegendDot(color: QuykColors.green, label: 'Occupied — tap to complete dining'),
+                        _LegendDot(color: QuykColors.warning, label: 'Cleaning — tap when ready'),
+                        _LegendDot(color: QuykColors.greenMuted, label: 'Reserved — long press to toggle'),
                       ],
                     ),
                   ],
@@ -351,7 +351,7 @@ class _TableCard extends StatelessWidget {
                 Text(
                   entry.displayCode,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.primary,
+                        color: QuykColors.green,
                         fontWeight: FontWeight.w600,
                       ),
                 ),

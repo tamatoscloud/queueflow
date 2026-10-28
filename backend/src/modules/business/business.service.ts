@@ -44,6 +44,11 @@ export class BusinessService {
   ) {
     const row = await this.require(id);
     this.assertActorCanAccess(actor, row.id);
+    if (dto.status !== undefined && !actor.isPlatformAdmin) {
+      // Status (active / suspended / cancelled) is a platform decision; an
+      // owner must not be able to lift a suspension from their own profile.
+      throw new ForbiddenException('Only platform admins can change business status');
+    }
     const updated = await this.repository.update(id, dto);
     return toBusinessResponse({ ...updated, settings: null });
   }

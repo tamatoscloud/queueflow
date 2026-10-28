@@ -1,0 +1,89 @@
+name: Flutter UI previews
+
+# Renders each app's test_preview/ goldens to PNGs and publishes them on a
+# `previews/<app>` branch so design changes can be reviewed without a device.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["feat/quyk-*"]
+    paths:
+      - "apps/staff_app/**"
+      - "apps/business_app/**"
+      - "apps/admin_panel/**"
+      - "packages/**"
+      - ".github/workflows/flutter-preview.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flutter-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [staff_app, business_app, admin_panel]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.38.5"
+          cache: true
+
+      - name: Bootstrap workspace
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Generate code
+        run: |
+          set -euo pipefail
+          melos exec -c 1 --scope="queueflow_core" --scope="queueflow_models" --scope="queueflow_network" -- "dart run build_runner build --delete-conflicting-outputs"
+          cd apps/${{ matrix.app }}
+          if [ -f lib/features/auth/data/models/auth_user.dart ]; then
+            dart run build_runner build --delete-conflicting-outputs \
+              --build-filter="package:${{ matrix.app }}/features/auth/data/models/auth_user.dart" \
+              --build-filter="package:${{ matrix.app }}/features/auth/data/models/auth_user.freezed.dart" \
+              --build-filter="package:${{ matrix.app }}/features/auth/data/models/auth_user.g.dart"
+          fi
+
+      - name: Prepare env assets
+        working-directory: apps/${{ matrix.app }}
+        run: for env in dev staging production; do cp ".env.$env.example" ".env.$env"; done
+
+      - name: Analyze
+        working-directory: apps/${{ matrix.app }}
+        run: flutter analyze --fatal-infos > analyze.txt 2>&1 || (cat analyze.txt; exit 1)
+
+      - name: Render previews
+        working-directory: apps/${{ matrix.app }}
+        run: |
+          if [ -d test_preview ]; then
+            flutter test test_preview --update-goldens
+          else
+            echo "No previews for ${{ matrix.app }}"
+          fi
+
+      - name: Publish to previews/<app>
+        if: always()
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/previews"
+          mkdir -p "$out"
+          cp apps/${{ matrix.app }}/test_preview/goldens/*.png "$out/" 2>/dev/null || true
+          cp apps/${{ matrix.app }}/analyze.txt "$out/" 2>/dev/null || true
+          echo "${{ github.sha }}" > "$out/SOURCE_SHA"
+          cd "$out"
+          git init -q -b previews/${{ matrix.app }}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "${{ matrix.app }} previews for ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:previews/${{ matrix.app }}

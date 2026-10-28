@@ -11,6 +11,11 @@ export class DailySummaryQueryDto {
   @IsUUID('4')
   queueId?: string;
 
+  @ApiPropertyOptional({ format: 'uuid', description: 'Limit to one location' })
+  @IsOptional()
+  @IsUUID('4')
+  branchId?: string;
+
   @ApiPropertyOptional({
     description: 'ISO date (YYYY-MM-DD). Defaults to today (UTC).',
     example: '2026-07-22',

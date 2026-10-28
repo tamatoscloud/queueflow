@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
+import 'package:queueflow_ui/queueflow_ui.dart';
 
-import '../../../core/models/staff_model.dart';
+import '../../../core/models/models.dart';
 import '../../../core/network/business_api_client.dart';
+import '../../../core/network/connection_diagnostics.dart' show apiExceptionMessage;
 import '../../../features/auth/presentation/auth_controller.dart';
-import '../../../shared/widgets/calm/calm_card.dart';
-import '../../../shared/widgets/calm/calm_section_label.dart';
+import '../../../shared/feedback.dart';
+import '../../branches/presentation/branches_screen.dart';
 
 final staffRosterProvider = FutureProvider.autoDispose<StaffRosterModel>((ref) async {
   final businessId = ref.watch(currentUserProvider)?.businessId;
@@ -35,7 +37,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             children: [
               Text(
                 'They’ll get an email so they can sign in and help serve guests.',
-                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: AppColors.calmWarmGray),
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: QuykColors.muted),
               ),
               const SizedBox(height: 12),
               TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
@@ -126,7 +128,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(backgroundColor: QuykColors.danger),
             child: const Text('Remove access'),
           ),
         ],
@@ -153,169 +155,159 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     }
   }
 
+  Future<void> _changeRole(StaffMemberModel member, String role) async {
+    if (role == member.role.toUpperCase()) return;
+    final businessId = ref.read(currentUserProvider)?.businessId;
+    final ok = await runWithFeedback(
+      context,
+      () => ref.read(businessApiClientProvider).updateStaffRole(member.id, role, businessId: businessId),
+      success: '${member.fullName.isEmpty ? member.email : member.fullName} is now ${staffRoleShortLabel(role)}',
+      failure: 'Couldn’t change the role',
+    );
+    if (ok) ref.invalidate(staffRosterProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(staffRosterProvider);
-    final currentUserId = ref.watch(currentUserProvider)?.id;
+    final user = ref.watch(currentUserProvider);
+    final currentUserId = user?.id;
+    final canManageRoles = (user?.roles ?? const <String>[]).map((r) => r.toUpperCase()).contains('OWNER');
+    final branches = ref.watch(branchesProvider).valueOrNull ?? const <BranchModel>[];
+    String branchNames(List<String> ids) {
+      if (ids.isEmpty) return 'All locations';
+      final names = [for (final b in branches) if (ids.contains(b.id)) b.name];
+      return names.isEmpty ? '${ids.length} location${ids.length == 1 ? '' : 's'}' : names.join(', ');
+    }
 
-    return Scaffold(
-      backgroundColor: AppColors.calmIvory,
-      floatingActionButton: FloatingActionButton.extended(
+    return QuykPage(
+      title: 'Team',
+      subtitle: 'People who can sign in and help run your waiting lines.',
+      action: FilledButton.icon(
         onPressed: _invite,
-        backgroundColor: AppColors.calmViolet,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add_outlined),
+        icon: const Icon(Icons.person_add_alt_outlined),
         label: const Text('Invite'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(staffRosterProvider),
-        child: async.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.calmViolet)),
-          error: (_, __) => ListView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            children: [
-              const SizedBox(height: 80),
-              CalmCard(
-                child: Column(
-                  children: [
-                    Text(
-                      'We couldn’t load your team.',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    FilledButton(
-                      onPressed: () => ref.invalidate(staffRosterProvider),
-                      child: const Text('Try again'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      onRefresh: () async => ref.invalidate(staffRosterProvider),
+      children: [
+        async.when(
+          loading: () => const QuykLoadingBlock(),
+          error: (e, _) => QuykMessageCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'We couldn’t load your team',
+            subtitle: apiExceptionMessage(e),
+            actionLabel: 'Try again',
+            onAction: () => ref.invalidate(staffRosterProvider),
           ),
           data: (roster) {
             final members = roster.members.where((m) => m.isActive).toList();
             final pending = roster.invitations;
-            final isEmpty = members.isEmpty && pending.isEmpty;
-
-            return ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
+            if (members.isEmpty && pending.isEmpty) {
+              return QuykMessageCard(
+                icon: Icons.groups_outlined,
+                title: 'Invite your first host',
+                subtitle: 'Send an invite so someone can sign in on a phone or tablet and call the next guest.',
+                actionLabel: 'Invite someone',
+                onAction: _invite,
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const CalmSectionLabel(
-                  'Your team',
-                  subtitle: 'People who can help run your waiting lines',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (isEmpty)
-                  CalmCard(
-                    child: Column(
-                      children: [
-                        const Icon(Icons.groups_outlined, size: 48, color: AppColors.calmViolet),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Invite your first host',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+                if (members.isNotEmpty) ...[
+                  QuykSectionTitle('Active · ${members.length}'),
+                  QuykTable(
+                    columns: const [
+                      QuykColumn('Name', flex: 5),
+                      QuykColumn('Role', flex: 3),
+                      QuykColumn('Locations', flex: 4),
+                      QuykColumn('', flex: 2, alignEnd: true),
+                    ],
+                    rows: [
+                      for (final m in members)
+                        [
+                          Row(
+                            children: [
+                              QuykAvatar(name: m.fullName.isEmpty ? m.email : m.fullName, size: 36),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    QuykCellText(m.fullName.isEmpty ? m.email : m.fullName, strong: true),
+                                    Text(
+                                      m.id == currentUserId ? '${m.email} · you' : m.email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+                                    ),
+                                  ],
+                                ),
                               ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          'Send an invite so someone can sign in on a phone or tablet and call the next guest.',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.calmWarmGray,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        FilledButton.icon(
-                          onPressed: _invite,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primaryDark,
-                            minimumSize: const Size.fromHeight(48),
+                            ],
                           ),
-                          icon: const Icon(Icons.person_add_outlined),
-                          label: const Text('Invite someone'),
-                        ),
-                      ],
-                    ),
-                  )
-                else ...[
-                  if (members.isNotEmpty) ...[
-                    const CalmSectionLabel('Active'),
-                    const SizedBox(height: AppSpacing.sm),
-                    for (final member in members)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: CalmCard(
-                          child: ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.calmViolet.withValues(alpha: 0.15),
-                              foregroundColor: AppColors.calmViolet,
-                              child: Text(
-                                member.fullName.isNotEmpty
-                                    ? member.fullName.characters.first.toUpperCase()
-                                    : '?',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            title: Text(
-                              member.fullName.isNotEmpty ? member.fullName : member.email,
-                              style: const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: Text(
-                              '${staffRoleShortLabel(member.role)} · ${member.email}',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.calmWarmGray,
-                                  ),
-                            ),
-                            trailing: member.id == currentUserId || member.role.toUpperCase() == 'OWNER'
-                                ? null
-                                : IconButton(
-                                    tooltip: 'Remove access',
-                                    icon: const Icon(Icons.person_off_outlined, color: AppColors.calmWarmGray),
-                                    onPressed: () => _disable(member),
-                                  ),
+                          QuykPill(
+                            label: staffRoleShortLabel(m.role),
+                            background: m.role.toUpperCase() == 'OWNER' ? QuykColors.lime : QuykColors.mist,
+                            foreground: m.role.toUpperCase() == 'OWNER' ? QuykColors.green : QuykColors.greenMuted,
+                            fontSize: 11,
                           ),
-                        ),
-                      ),
-                  ],
-                  if (pending.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    const CalmSectionLabel('Waiting to join', subtitle: 'Invite sent — not signed up yet'),
-                    const SizedBox(height: AppSpacing.sm),
-                    for (final invite in pending)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: CalmCard(
-                          child: ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: const CircleAvatar(
-                              backgroundColor: AppColors.warningLight,
-                              foregroundColor: AppColors.warning,
-                              child: Icon(Icons.mail_outline, size: 20),
+                          QuykCellText(branchNames(m.branchIds)),
+                          if (m.id == currentUserId || m.role.toUpperCase() == 'OWNER')
+                            const SizedBox.shrink()
+                          else
+                            PopupMenuButton<String>(
+                              tooltip: 'Team member options',
+                              icon: const Icon(Icons.more_horiz_rounded, color: QuykColors.muted),
+                              onSelected: (v) => v == 'remove' ? _disable(m) : _changeRole(m, v),
+                              itemBuilder: (_) => [
+                                if (canManageRoles)
+                                  for (final r in const ['MANAGER', 'RECEPTIONIST', 'STAFF', 'VIEWER'])
+                                    CheckedPopupMenuItem(
+                                      value: r,
+                                      checked: m.role.toUpperCase() == r,
+                                      child: Text('Make ${staffRoleShortLabel(r).toLowerCase()}'),
+                                    ),
+                                if (canManageRoles) const PopupMenuDivider(),
+                                const PopupMenuItem(
+                                  value: 'remove',
+                                  child: Text('Remove access', style: TextStyle(color: QuykColors.danger)),
+                                ),
+                              ],
                             ),
-                            title: Text(invite.email, style: const TextStyle(fontWeight: FontWeight.w700)),
-                            subtitle: Text(
-                              'Invite pending · ${staffRoleShortLabel(invite.role)}',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.calmWarmGray,
-                                  ),
-                            ),
-                            trailing: TextButton(
-                              onPressed: () => _resend(invite),
-                              child: const Text('Resend'),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                        ],
+                    ],
+                  ),
                 ],
-                const SizedBox(height: 88),
+                if (pending.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  QuykSectionTitle('Invited · waiting to join · ${pending.length}'),
+                  QuykTable(
+                    columns: const [
+                      QuykColumn('Email', flex: 6),
+                      QuykColumn('Role', flex: 3),
+                      QuykColumn('', flex: 3, alignEnd: true),
+                    ],
+                    rows: [
+                      for (final invite in pending)
+                        [
+                          QuykCellText(invite.email, strong: true),
+                          QuykPill(
+                            label: staffRoleShortLabel(invite.role),
+                            background: QuykColors.warningTint,
+                            foreground: const Color(0xFF7A4B0C),
+                            fontSize: 11,
+                          ),
+                          TextButton(onPressed: () => _resend(invite), child: const Text('Resend invite')),
+                        ],
+                    ],
+                  ),
+                ],
               ],
             );
           },
         ),
-      ),
+      ],
     );
   }
 }
