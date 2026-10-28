@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ServiceMode } from '@prisma/client';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -70,6 +72,12 @@ export class CreateQueueDto {
   @IsInt()
   @Min(0)
   noShowTimeoutSeconds?: number;
+
+  @ApiPropertyOptional({ enum: ServiceMode, default: ServiceMode.DINE_IN })
+  @IsOptional()
+  @IsEnum(ServiceMode)
+  serviceMode?: ServiceMode;
+
 }
 
 export class UpdateQueueDto {
@@ -120,6 +128,12 @@ export class UpdateQueueDto {
   @IsInt()
   @Min(0)
   noShowTimeoutSeconds?: number;
+
+  @ApiPropertyOptional({ enum: ServiceMode, default: ServiceMode.DINE_IN })
+  @IsOptional()
+  @IsEnum(ServiceMode)
+  serviceMode?: ServiceMode;
+
 }
 
 export class ListQueueQueryDto extends PaginationQueryDto {

@@ -56,4 +56,32 @@ describe('BusinessService tenant isolation', () => {
     });
     expect(result.id).toBe('biz-a');
   });
+
+  it('blocks owners from changing their business status', async () => {
+    const repository = {
+      findById: vi.fn().mockResolvedValue({ id: 'biz-a', name: 'Mine' }),
+      update: vi.fn(),
+    };
+    const service = new BusinessService(repository as never);
+    await expect(
+      service.update('biz-a', { status: 'ACTIVE' } as never, {
+        businessId: 'biz-a',
+        isPlatformAdmin: false,
+      }),
+    ).rejects.toThrow('Only platform admins can change business status');
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it('lets platform admins change business status', async () => {
+    const repository = {
+      findById: vi.fn().mockResolvedValue({ id: 'biz-a', name: 'Mine' }),
+      update: vi.fn().mockResolvedValue({ id: 'biz-a', name: 'Mine', status: 'SUSPENDED' }),
+    };
+    const service = new BusinessService(repository as never);
+    await service.update('biz-a', { status: 'SUSPENDED' } as never, {
+      businessId: null,
+      isPlatformAdmin: true,
+    });
+    expect(repository.update).toHaveBeenCalled();
+  });
 });

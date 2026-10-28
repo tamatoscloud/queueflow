@@ -52,7 +52,14 @@ export class BusinessController {
   }
 
   @Get(':id')
-  @RequireAnyPermission(Permission.BUSINESS_MANAGE, Permission.PLATFORM_MANAGE_TENANTS)
+  @RequireAnyPermission(
+    Permission.BUSINESS_MANAGE,
+    Permission.SETTINGS_MANAGE,
+    Permission.BRANCH_MANAGE,
+    Permission.REPORTS_VIEW,
+    Permission.QUEUE_OPERATE,
+    Permission.PLATFORM_MANAGE_TENANTS,
+  )
   @ApiOperation({ summary: 'Get business by id' })
   @ApiStandardOkResponse('Business details')
   get(
@@ -75,7 +82,11 @@ export class BusinessController {
   }
 
   @Get(':id/menu')
-  @RequireAnyPermission(Permission.BUSINESS_MANAGE, Permission.PLATFORM_MANAGE_TENANTS)
+  @RequireAnyPermission(
+    Permission.BUSINESS_MANAGE,
+    Permission.SETTINGS_MANAGE,
+    Permission.PLATFORM_MANAGE_TENANTS,
+  )
   @ApiOperation({ summary: 'Get guest-facing restaurant menu' })
   @ApiStandardOkResponse('Guest menu')
   getMenu(
@@ -86,7 +97,7 @@ export class BusinessController {
   }
 
   @Put(':id/menu')
-  @RequirePermissions(Permission.BUSINESS_MANAGE)
+  @RequireAnyPermission(Permission.BUSINESS_MANAGE, Permission.SETTINGS_MANAGE)
   @ApiOperation({ summary: 'Replace guest-facing restaurant menu' })
   @ApiStandardOkResponse('Saved guest menu')
   putMenu(

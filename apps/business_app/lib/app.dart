@@ -15,19 +15,7 @@ class BusinessApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Quyk',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light.copyWith(
-        scaffoldBackgroundColor: AppColors.calmIvory,
-        extensions: [
-          ...AppTheme.light.extensions.values,
-          const ProductTheme(identity: ProductIdentity.owner),
-        ],
-      ),
-      darkTheme: AppTheme.dark.copyWith(
-        extensions: [
-          ...AppTheme.dark.extensions.values,
-          const ProductTheme(identity: ProductIdentity.owner),
-        ],
-      ),
+      theme: buildQuykTheme(identity: ProductIdentity.owner),
       themeMode: ThemeMode.light,
       routerConfig: router,
       localizationsDelegates: const [

@@ -44,9 +44,16 @@ export class ReportsService {
     }
     const start = new Date(`${dateLabel}T00:00:00.000Z`);
     const end = new Date(`${dateLabel}T23:59:59.999Z`);
+    if (query.branchId) {
+      const branch = await this.tenantScope.requireBranch(query.branchId);
+      if (branch.businessId !== businessId) {
+        throw new ForbiddenException('TENANT_ACCESS_DENIED');
+      }
+    }
     const filters = {
       businessId,
       queueId: query.queueId,
+      branchId: query.branchId,
       start,
       end,
       dateLabel,

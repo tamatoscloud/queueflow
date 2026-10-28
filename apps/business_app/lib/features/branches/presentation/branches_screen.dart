@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_ui/queueflow_ui.dart';
-import 'package:queueflow_widgets/queueflow_widgets.dart';
 
 import '../../../core/cache/cached_fetch.dart';
 import '../../../core/cache/offline_cache_service.dart';
@@ -13,8 +12,7 @@ import '../../../core/network/business_api_client.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/session/session_providers.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
-import '../../../shared/widgets/calm/calm_section_label.dart';
-import '../../../shared/widgets/skeleton_loaders.dart';
+import '../../../shared/feedback.dart';
 
 final branchesProvider = FutureProvider.autoDispose<List<BranchModel>>((ref) async {
   final api = ref.watch(businessApiClientProvider);
@@ -29,148 +27,165 @@ final branchesProvider = FutureProvider.autoDispose<List<BranchModel>>((ref) asy
   );
 });
 
+/// Short location code the backend requires (2–20 of A–Z, 0–9, _ or -).
+/// Built from the name's initials, padded from the first word, e.g.
+/// "Bella Vista Downtown" → "BVD", "Gulberg" → "GULBERG".
+String branchCodeFromName(String name, {Iterable<String> taken = const []}) {
+  final words = name
+      .toUpperCase()
+      .replaceAll(RegExp('[^A-Z0-9 ]'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  var base = words.length > 1 ? words.map((w) => w[0]).join() : (words.isEmpty ? 'LOC' : words.first);
+  if (base.length < 2) base = '${base}X';
+  if (base.length > 16) base = base.substring(0, 16);
+  final used = taken.map((t) => t.toUpperCase()).toSet();
+  var code = base;
+  var n = 2;
+  while (used.contains(code)) {
+    code = '$base-$n';
+    n++;
+  }
+  return code;
+}
+
 class BranchesScreen extends ConsumerWidget {
   const BranchesScreen({super.key});
+
+  Future<void> _remove(BuildContext context, WidgetRef ref, BranchModel b) async {
+    final ok = await confirmAction(
+      context,
+      title: 'Remove ${b.name}?',
+      message: 'Waiting lines at this location stop taking guests. This can’t be undone from the app.',
+      confirmLabel: 'Remove location',
+      destructive: true,
+    );
+    if (!ok || !context.mounted) return;
+    final done = await runWithFeedback(
+      context,
+      () => ref.read(businessApiClientProvider).deleteBranch(b.id),
+      success: '${b.name} removed',
+      failure: 'Couldn’t remove ${b.name}',
+    );
+    if (done) {
+      if (ref.read(selectedBranchIdProvider) == b.id) {
+        ref.read(selectedBranchIdProvider.notifier).state = null;
+        await ref.read(sessionBootstrapProvider).saveBranchId(null);
+      }
+      ref.invalidate(branchesProvider);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(branchesProvider);
-    return Scaffold(
-      backgroundColor: AppColors.calmIvory,
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(branchesProvider),
-        child: async.when(
-          loading: () => ListView.builder(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            itemCount: 6,
-            itemBuilder: (_, __) => const ListTileSkeleton(),
-          ),
-          error: (e, _) => PageError(
-            message: apiExceptionMessage(e),
-            onRetry: () => ref.invalidate(branchesProvider),
+    final selected = ref.watch(selectedBranchIdProvider);
+    return QuykPage(
+      title: 'Locations',
+      subtitle: 'Each location has its own waiting lines and guest codes.',
+      action: FilledButton.icon(
+        onPressed: () => context.push(AppRoutes.branchAdd),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add location'),
+      ),
+      onRefresh: () async => ref.invalidate(branchesProvider),
+      children: [
+        async.when(
+          loading: () => const QuykLoadingBlock(),
+          error: (e, _) => QuykMessageCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'We couldn’t load your locations',
+            subtitle: apiExceptionMessage(e),
+            actionLabel: 'Try again',
+            onAction: () => ref.invalidate(branchesProvider),
           ),
           data: (branches) {
             if (branches.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 80),
-                  EmptyStateView(
-                    title: 'No branches',
-                    message: 'Add a branch to start managing queues.',
-                    icon: Icons.store_outlined,
-                  ),
-                ],
+              return QuykMessageCard(
+                icon: Icons.storefront_outlined,
+                title: 'No locations yet',
+                subtitle: 'Add your first location, then create waiting lines for it.',
+                actionLabel: 'Add location',
+                onAction: () => context.push(AppRoutes.branchAdd),
               );
             }
-            return ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
+            return QuykGrid(
+              minTileWidth: 340,
               children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: CalmSectionLabel(
-                        'My locations',
-                        subtitle: 'Select your current branch',
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      tooltip: 'Add location',
-                      onPressed: () => context.push(AppRoutes.branchAdd),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
                 for (final b in branches)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: AppCard(
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.calmViolet.withValues(alpha: 0.12),
-                              borderRadius: AppRadius.lgAll,
-                            ),
-                            child: const Icon(Icons.store_outlined, color: AppColors.calmViolet),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  b.name,
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                  QuykCard(
+                    padding: const EdgeInsets.all(18),
+                    borderColor: b.id == selected ? QuykColors.green : QuykColors.line,
+                    child: Row(
+                      children: [
+                        const QuykIconBubble(icon: Icons.storefront_outlined, size: 44),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                b.name,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: QuykColors.ink,
                                 ),
-                                if (b.city != null || b.address != null)
-                                  Text(
-                                    b.city ?? b.address ?? '',
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                [b.address, b.city].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ')
+                                    .ifEmpty('No address yet'),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+                              ),
+                              if (b.id == selected) ...[
+                                const SizedBox(height: 8),
+                                const QuykPill(label: 'Showing this location', fontSize: 11),
                               ],
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, color: AppColors.calmWarmGray),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              PopupMenuItem(value: 'switch', child: Text('Switch to this location')),
-                              PopupMenuItem(value: 'delete', child: Text('Remove')),
                             ],
-                            onSelected: (v) async {
-                              if (v == 'edit') await context.push(AppRoutes.branchEdit(b.id));
-                              if (v == 'switch') {
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          tooltip: 'Location options',
+                          icon: const Icon(Icons.more_horiz_rounded, color: QuykColors.muted),
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(value: 'edit', child: Text('Edit details')),
+                            if (b.id != selected)
+                              const PopupMenuItem(value: 'switch', child: Text('Show only this location')),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Remove', style: TextStyle(color: QuykColors.danger)),
+                            ),
+                          ],
+                          onSelected: (v) async {
+                            switch (v) {
+                              case 'edit':
+                                await context.push(AppRoutes.branchEdit(b.id));
+                              case 'switch':
                                 ref.read(selectedBranchIdProvider.notifier).state = b.id;
                                 await ref.read(sessionBootstrapProvider).saveBranchId(b.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Switched to ${b.name}')),
-                                  );
-                                }
-                              }
-                              if (v == 'delete') {
-                                if (!context.mounted) return;
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: Text('Remove ${b.name}?'),
-                                    content: const Text(
-                                      'This location will be removed. Waiting lines at this location may stop working for guests.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () => Navigator.pop(ctx, true),
-                                        style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-                                        child: const Text('Remove'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed != true) return;
-                                await ref.read(businessApiClientProvider).deleteBranch(b.id);
-                                ref.invalidate(branchesProvider);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                              case 'delete':
+                                if (context.mounted) await _remove(context, ref, b);
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
               ],
             );
           },
         ),
-      ),
+      ],
     );
   }
+}
+
+extension on String {
+  String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
 
 class BranchFormScreen extends ConsumerStatefulWidget {
@@ -186,28 +201,42 @@ class _BranchFormScreenState extends ConsumerState<BranchFormScreen> {
   final _name = TextEditingController();
   final _city = TextEditingController();
   final _address = TextEditingController();
-  bool _loading = false;
-  bool _initialized = false;
+  final _phone = TextEditingController();
+  bool _saving = false;
+  bool _loadingExisting = false;
+  String? _loadError;
+  String? _error;
+
+  bool get _editing => widget.branchId != null;
 
   @override
   void initState() {
     super.initState();
-    if (widget.branchId != null) {
+    if (_editing) {
+      _loadingExisting = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadBranch());
     }
   }
 
   Future<void> _loadBranch() async {
+    setState(() {
+      _loadingExisting = true;
+      _loadError = null;
+    });
     try {
       final branch = await ref.read(businessApiClientProvider).getBranch(widget.branchId!);
       if (!mounted) return;
       _name.text = branch.name;
       _city.text = branch.city ?? '';
       _address.text = branch.address ?? '';
-      setState(() => _initialized = true);
+      _phone.text = branch.phone ?? '';
+      setState(() => _loadingExisting = false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiExceptionMessage(e))));
+        setState(() {
+          _loadingExisting = false;
+          _loadError = apiExceptionMessage(e);
+        });
       }
     }
   }
@@ -217,64 +246,133 @@ class _BranchFormScreenState extends ConsumerState<BranchFormScreen> {
     _name.dispose();
     _city.dispose();
     _address.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    setState(() => _loading = true);
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Give the location a name.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     final api = ref.read(businessApiClientProvider);
-    final businessId = ref.read(currentUserProvider)?.businessId;
-    final body = {
-      'name': _name.text.trim(),
+    final details = {
+      'name': name,
       'city': _city.text.trim(),
       'address': _address.text.trim(),
-      if (businessId != null) 'businessId': businessId,
+      if (_phone.text.trim().isNotEmpty) 'phone': _phone.text.trim(),
     };
     try {
-      if (widget.branchId == null) {
-        await api.createBranch(body);
+      if (_editing) {
+        // UpdateBranchDto rejects businessId / code.
+        await api.updateBranch(widget.branchId!, details);
       } else {
-        await api.updateBranch(widget.branchId!, body);
+        final businessId = ref.read(currentUserProvider)?.businessId;
+        final existing = ref.read(branchesProvider).valueOrNull ?? const <BranchModel>[];
+        await api.createBranch({
+          ...details,
+          if (businessId != null) 'businessId': businessId,
+          'code': branchCodeFromName(name, taken: existing.map((b) => b.code ?? branchCodeFromName(b.name))),
+        });
       }
       ref.invalidate(branchesProvider);
-      if (mounted) context.pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_editing ? 'Location updated' : '$name added')),
+      );
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(AppRoutes.branches);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = apiExceptionMessage(e));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final loadingExisting = widget.branchId != null && !_initialized;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.branchId == null ? 'Add location' : 'Edit location')),
-      body: loadingExisting
-          ? const PageLoading()
-          : Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
+    final title = _editing ? 'Edit location' : 'Add location';
+    if (_loadingExisting) {
+      return QuykPage(title: title, back: true, children: const [QuykLoadingBlock()]);
+    }
+    if (_loadError != null) {
+      return QuykPage(
+        title: title,
+        back: true,
+        children: [
+          QuykMessageCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'We couldn’t load this location',
+            subtitle: _loadError,
+            actionLabel: 'Try again',
+            onAction: _loadBranch,
+          ),
+        ],
+      );
+    }
+    return QuykPage(
+      title: title,
+      subtitle: _editing ? null : 'Guests see the name when they join a line here.',
+      back: true,
+      maxWidth: 640,
+      children: [
+        QuykCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _name,
+                autofocus: !_editing,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g. Bella Vista Downtown'),
+              ),
+              const SizedBox(height: 14),
+              TextField(controller: _address, decoration: const InputDecoration(labelText: 'Street address')),
+              const SizedBox(height: 14),
+              Row(
                 children: [
-                  AppCard(
-                    child: Column(
-                      children: [
-                        TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name')),
-                        const SizedBox(height: AppSpacing.md),
-                        TextField(controller: _city, decoration: const InputDecoration(labelText: 'City')),
-                        const SizedBox(height: AppSpacing.md),
-                        TextField(controller: _address, decoration: const InputDecoration(labelText: 'Address')),
-                      ],
-                    ),
+                  Expanded(
+                    child: TextField(controller: _city, decoration: const InputDecoration(labelText: 'City')),
                   ),
-                  const Spacer(),
-                  AppButton(
-                    label: _loading ? 'Saving…' : 'Save',
-                    fullWidth: true,
-                    isLoading: _loading,
-                    onPressed: _loading ? null : _save,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(labelText: 'Phone (optional)'),
+                    ),
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 14),
+          QuykAuthError(_error!),
+        ],
+        const SizedBox(height: 20),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: 240,
+            child: QuykAuthButton(
+              label: _editing ? 'Save changes' : 'Add location',
+              loading: _saving,
+              onPressed: _save,
             ),
+          ),
+        ),
+      ],
     );
   }
 }

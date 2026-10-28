@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:queueflow_network/queueflow_network.dart';
 
 import 'auth_remote_data_source.dart';
 import 'auth_token_holder.dart';
@@ -26,7 +25,16 @@ class AuthRepository {
   Future<AuthSession> login(String email, String password) async {
     final session = await _publicRemote.login(email: email, password: password);
     if (!session.user.isPlatformAdmin) {
-      throw const ApiException.forbidden();
+      // The backend already opened a session; close it so it doesn't linger.
+      _holder.setAccessToken(session.tokens.accessToken);
+      try {
+        await _remote.logout();
+      } catch (_) {
+        // Best-effort.
+      } finally {
+        _holder.setAccessToken(null);
+      }
+      throw PlatformAdminRequiredException();
     }
     await _persist(session);
     return session;

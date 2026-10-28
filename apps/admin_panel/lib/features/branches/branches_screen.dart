@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
+import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../core/models/platform_models.dart';
 import '../../core/network/api_error_message.dart';
 import '../../core/network/platform_api_client.dart';
-import '../../shared/widgets/admin_widgets.dart';
+import '../../core/routing/app_routes.dart';
+import '../tenants/tenants_screen.dart' show businessStatusPill;
 
-final businessesForBranchesProvider = FutureProvider.autoDispose((ref) async {
+/// Businesses matching a search (server-side, so it isn't capped at 100).
+final branchBusinessSearchProvider =
+    FutureProvider.autoDispose.family<List<BusinessSummary>, String>((ref, query) async {
   final api = ref.watch(platformApiClientProvider);
-  final page = await api.listBusinesses(pageSize: 100);
+  final page = await api.listBusinesses(pageSize: 12, search: query.isEmpty ? null : query);
   return page.items;
 });
 
-final branchesProvider = FutureProvider.autoDispose.family((ref, String? businessId) async {
-  if (businessId == null) return <BranchSummary>[];
-  final api = ref.watch(platformApiClientProvider);
-  return api.listBranches(businessId);
+final branchesProvider = FutureProvider.autoDispose.family<List<BranchSummary>, String>((ref, businessId) async {
+  return ref.watch(platformApiClientProvider).listBranches(businessId);
 });
 
 class BranchesScreen extends ConsumerStatefulWidget {
@@ -27,75 +30,119 @@ class BranchesScreen extends ConsumerStatefulWidget {
 }
 
 class _BranchesScreenState extends ConsumerState<BranchesScreen> {
-  String? _selectedBusinessId;
+  final _search = TextEditingController();
+  String _query = '';
+  BusinessSummary? _selected;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final businessesAsync = ref.watch(businessesForBranchesProvider);
-    final branchesAsync = ref.watch(branchesProvider(_selectedBusinessId));
+    final businesses = ref.watch(branchBusinessSearchProvider(_query));
+    final selected = _selected;
+    return QuykPage(
+      title: 'Branches',
+      subtitle: 'Pick a business to see its locations.',
+      children: [
+        QuykSearchField(
+          controller: _search,
+          hint: 'Find a business',
+          onSubmitted: (v) => setState(() => _query = v.trim()),
+          trailing: FilledButton(
+            onPressed: () => setState(() => _query = _search.text.trim()),
+            child: const Text('Search'),
+          ),
+        ),
+        const SizedBox(height: 14),
+        businesses.when(
+          loading: () => const LinearProgressIndicator(),
+          error: (e, _) => Text(apiExceptionMessage(e), style: const TextStyle(color: QuykColors.danger)),
+          data: (list) => list.isEmpty
+              ? const Text('No businesses match.', style: TextStyle(color: QuykColors.muted))
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final b in list)
+                      QuykFilterChip(
+                        label: b.name,
+                        selected: selected?.id == b.id,
+                        onTap: () => setState(() => _selected = b),
+                      ),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 20),
+        if (selected == null)
+          const QuykMessageCard(
+            icon: Icons.location_on_outlined,
+            title: 'Choose a business',
+            subtitle: 'Its branches, lines and team sizes show here.',
+          )
+        else
+          _BranchList(business: selected),
+      ],
+    );
+  }
+}
 
+class _BranchList extends ConsumerWidget {
+  const _BranchList({required this.business});
+
+  final BusinessSummary business;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(branchesProvider(business.id));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AdminToolbar(
-          children: [
-            SizedBox(
-              width: 360,
-              child: businessesAsync.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text(apiExceptionMessage(e)),
-                data: (businesses) => DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: 'Select business',
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                    border: OutlineInputBorder(borderRadius: AppRadius.lgAll),
-                  ),
-                  initialValue: _selectedBusinessId,
-                  items: [
-                    for (final b in businesses)
-                      DropdownMenuItem(value: b.id, child: Text(b.name)),
-                  ],
-                  onChanged: (v) => setState(() => _selectedBusinessId = v),
-                ),
-              ),
-            ),
-          ],
+        QuykSectionTitle(
+          business.name,
+          trailing: TextButton(
+            onPressed: () => context.go(AppRoutes.tenantDetail(business.id)),
+            child: const Text('Open business'),
+          ),
         ),
-        Expanded(
-          child: _selectedBusinessId == null
-              ? const AdminEmptyHint(
-                  message: 'Select a business to view branches',
-                  icon: Icons.store_outlined,
+        async.when(
+          loading: () => const QuykLoadingBlock(height: 140),
+          error: (e, _) => QuykMessageCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'We couldn’t load branches',
+            subtitle: apiExceptionMessage(e),
+            actionLabel: 'Try again',
+            onAction: () => ref.invalidate(branchesProvider(business.id)),
+          ),
+          data: (branches) => branches.isEmpty
+              ? const QuykMessageCard(
+                  icon: Icons.location_off_outlined,
+                  title: 'No branches yet',
+                  subtitle: 'This business hasn’t added a location.',
                 )
-              : branchesAsync.when(
-                  loading: () => const PageLoading(),
-                  error: (e, _) => PageError(
-                    message: apiExceptionMessage(e),
-                    onRetry: () => ref.invalidate(branchesProvider(_selectedBusinessId)),
-                  ),
-                  data: (branches) => ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    itemCount: branches.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (_, i) {
-                      final b = branches[i];
-                      return AdminDataCard(
-                        title: b.name,
-                        subtitle:
-                            '${b.city ?? b.code ?? ''} · ${b.queueCount} queues · ${b.staffCount} staff',
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary.withValues(alpha: 0.1),
-                            borderRadius: AppRadius.lgAll,
-                          ),
-                          child: const Icon(Icons.store_outlined, size: 20, color: AppColors.secondary),
-                        ),
-                        trailing: StatusBadge(status: b.status),
-                      );
-                    },
-                  ),
+              : QuykTable(
+                  columns: const [
+                    QuykColumn('Branch', flex: 4),
+                    QuykColumn('Code', flex: 2),
+                    QuykColumn('City', flex: 3),
+                    QuykColumn('Lines', flex: 1),
+                    QuykColumn('Team', flex: 1),
+                    QuykColumn('Status', flex: 2, alignEnd: true),
+                  ],
+                  rows: [
+                    for (final b in branches)
+                      [
+                        QuykCellText(b.name, strong: true),
+                        QuykCellText(b.code ?? '—', green: true, strong: true),
+                        QuykCellText(b.city ?? '—'),
+                        QuykCellText('${b.queueCount}'),
+                        QuykCellText('${b.staffCount}'),
+                        businessStatusPill(b.status),
+                      ],
+                  ],
                 ),
         ),
       ],

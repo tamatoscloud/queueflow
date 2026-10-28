@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
+  IsIn,
   IsObject,
   IsOptional,
   IsString,
@@ -53,15 +54,17 @@ export class PlatformUserQueryDto extends PaginationQueryDto {
 
 export class UpdatePlatformUserStatusDto {
   @ApiProperty({ enum: ['ACTIVE', 'SUSPENDED', 'DEACTIVATED'] })
-  @IsString()
+  @IsIn(['ACTIVE', 'SUSPENDED', 'DEACTIVATED'])
   status!: 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
 }
 
+export const SUBSCRIPTION_STATUSES = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'] as const;
+
 export class UpdateSubscriptionDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: SUBSCRIPTION_STATUSES })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsIn(SUBSCRIPTION_STATUSES)
+  status?: (typeof SUBSCRIPTION_STATUSES)[number];
 
   @ApiPropertyOptional()
   @IsOptional()

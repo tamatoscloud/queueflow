@@ -3,7 +3,6 @@ import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../../core/models/notification_model.dart';
 import '../../../shared/widgets/quyk/quyk_widgets.dart';
-import '../../../theme/quyk_staff_theme.dart';
 
 /// "Your turn", "Queue joined", … for a notification type.
 String guestMessageEventLabel(String type) {

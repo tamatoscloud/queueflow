@@ -43,7 +43,15 @@ export class QueueService {
       recallTimeoutSeconds: dto.recallTimeoutSeconds,
       noShowTimeoutSeconds: dto.noShowTimeoutSeconds,
     });
-    return queue.toProps();
+    const props = queue.toProps();
+    if (dto.serviceMode) {
+      await this.prisma.queue.update({
+        where: { id: props.id },
+        data: { serviceMode: dto.serviceMode },
+      });
+      return { ...props, serviceMode: dto.serviceMode };
+    }
+    return props;
   }
 
   async update(id: string, dto: UpdateQueueDto) {
@@ -59,6 +67,7 @@ export class QueueService {
         isAcceptingEntries: dto.isAcceptingEntries,
         recallTimeoutSeconds: dto.recallTimeoutSeconds,
         noShowTimeoutSeconds: dto.noShowTimeoutSeconds,
+        serviceMode: dto.serviceMode,
       },
     });
   }

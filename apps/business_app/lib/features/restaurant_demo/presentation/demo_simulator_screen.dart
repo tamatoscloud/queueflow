@@ -234,7 +234,7 @@ class _DemoSimulatorScreenState extends ConsumerState<DemoSimulatorScreen> {
                     children: [
                       Icon(
                         _lastAction!.startsWith('✓') ? Icons.check_circle : Icons.error_outline,
-                        color: _lastAction!.startsWith('✓') ? AppColors.success : AppColors.danger,
+                        color: _lastAction!.startsWith('✓') ? QuykColors.green : QuykColors.danger,
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(child: Text(_lastAction!, style: Theme.of(context).textTheme.bodyMedium)),
@@ -279,10 +279,10 @@ class _SnapshotSummary extends StatelessWidget {
           crossAxisSpacing: 12,
           childAspectRatio: 1.6,
           children: [
-            MetricCard(label: 'Waiting', value: '${m.waitingCount}', icon: Icons.people_outline, accentColor: AppColors.primary),
-            MetricCard(label: 'Called', value: '${m.calledCount}', icon: Icons.record_voice_over_outlined, accentColor: AppColors.secondary),
-            MetricCard(label: 'Completed', value: '${m.completedToday}', icon: Icons.check_circle_outline, accentColor: AppColors.success),
-            MetricCard(label: 'No shows', value: '${m.noShowCount}', icon: Icons.person_off_outlined, accentColor: AppColors.danger),
+            MetricCard(label: 'Waiting', value: '${m.waitingCount}', icon: Icons.people_outline, accentColor: QuykColors.green),
+            MetricCard(label: 'Called', value: '${m.calledCount}', icon: Icons.record_voice_over_outlined, accentColor: QuykColors.greenMuted),
+            MetricCard(label: 'Completed', value: '${m.completedToday}', icon: Icons.check_circle_outline, accentColor: QuykColors.green),
+            MetricCard(label: 'No shows', value: '${m.noShowCount}', icon: Icons.person_off_outlined, accentColor: QuykColors.danger),
           ],
         ),
       ],

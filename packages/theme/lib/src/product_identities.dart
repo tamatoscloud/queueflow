@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'tokens/app_colors.dart';
 import 'tokens/app_gradients.dart';
+import 'tokens/quyk_colors.dart';
 
 /// Per-product color identity — subtle differentiation while sharing tokens.
 enum ProductIdentity {
@@ -35,20 +36,20 @@ class ProductThemeData {
               label: 'Customer',
             ),
         ProductIdentity.staff => const ProductThemeData(
-              accent: AppColors.calmViolet,
-              accentLight: AppColors.calmLilac,
+              accent: QuykColors.green,
+              accentLight: QuykColors.limeSoft,
               gradient: LinearGradient(
-                colors: [AppColors.calmViolet, AppColors.calmVioletDeep],
+                colors: [QuykColors.green, QuykColors.greenPanel],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               label: 'Staff',
             ),
         ProductIdentity.owner => const ProductThemeData(
-              accent: AppColors.calmViolet,
-              accentLight: AppColors.calmLilac,
+              accent: QuykColors.green,
+              accentLight: QuykColors.limeSoft,
               gradient: LinearGradient(
-                colors: [AppColors.calmViolet, AppColors.calmVioletDeep],
+                colors: [QuykColors.green, QuykColors.greenPanel],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -61,10 +62,12 @@ class ProductThemeData {
               label: 'Display',
             ),
         ProductIdentity.platformAdmin => const ProductThemeData(
-              accent: AppColors.neutral700,
-              accentLight: Color(0xFFF1F5F9),
+              accent: QuykColors.green,
+              accentLight: QuykColors.limeSoft,
               gradient: LinearGradient(
-                colors: [AppColors.neutral800, AppColors.neutral900],
+                colors: [QuykColors.green, QuykColors.greenPanel],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               label: 'Platform',
             ),

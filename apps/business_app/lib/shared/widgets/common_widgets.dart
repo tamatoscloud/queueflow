@@ -64,9 +64,9 @@ class BranchSwitcher extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
+        color: QuykColors.green.withValues(alpha: 0.08),
         borderRadius: AppRadius.lgAll,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: QuykColors.green.withValues(alpha: 0.2)),
         boxShadow: AppShadows.sm(brightness),
       ),
       child: DropdownButtonHideUnderline(
@@ -75,25 +75,25 @@ class BranchSwitcher extends ConsumerWidget {
           hint: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
+              const Icon(Icons.store_outlined, size: 18, color: QuykColors.green),
               const SizedBox(width: 6),
               Text(
                 'All locations',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
+                      color: QuykColors.green,
                       fontWeight: FontWeight.w600,
                     ),
               ),
             ],
           ),
-          icon: const Icon(Icons.expand_more, color: AppColors.primary, size: 20),
+          icon: const Icon(Icons.expand_more, color: QuykColors.green, size: 20),
           borderRadius: AppRadius.lgAll,
           items: [
             const DropdownMenuItem(
               value: null,
               child: Row(
                 children: [
-                  Icon(Icons.hub_outlined, size: 18, color: AppColors.neutral500),
+                  Icon(Icons.hub_outlined, size: 18, color: QuykColors.subtle),
                   SizedBox(width: 8),
                   Text('All locations'),
                 ],
@@ -104,7 +104,7 @@ class BranchSwitcher extends ConsumerWidget {
                 value: b.id,
                 child: Row(
                   children: [
-                    const Icon(Icons.store_outlined, size: 18, color: AppColors.primary),
+                    const Icon(Icons.store_outlined, size: 18, color: QuykColors.green),
                     const SizedBox(width: 8),
                     Text(b.name),
                   ],
@@ -137,10 +137,10 @@ class StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
+                color: QuykColors.green.withValues(alpha: 0.12),
                 borderRadius: AppRadius.lgAll,
               ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
+              child: Icon(icon, color: QuykColors.green, size: 20),
             ),
           if (icon != null) const SizedBox(height: AppSpacing.sm),
           Text(label, style: Theme.of(context).textTheme.labelMedium),

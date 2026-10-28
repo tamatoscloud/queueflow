@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 export interface DailySummaryFilters {
+  branchId?: string;
   businessId: string;
   queueId?: string;
   start: Date;
@@ -19,6 +20,7 @@ export class ReportsRepository {
       deletedAt: null,
       joinedAt: { gte: filters.start, lte: filters.end },
       ...(filters.queueId ? { queueId: filters.queueId } : {}),
+      ...(filters.branchId ? { branchId: filters.branchId } : {}),
     };
 
     const [

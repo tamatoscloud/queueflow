@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../shared/widgets/quyk/quyk_widgets.dart';
-import '../../theme/quyk_staff_theme.dart';
 
 /// Presentational Profile page (Figma "Quyk Redesign Staff", Profile).
 class ProfileView extends StatelessWidget {

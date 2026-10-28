@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../../core/models/notification_model.dart';
 import '../../../core/network/business_api_client.dart';
 import '../../../core/routing/app_routes.dart';
-import '../../../shared/widgets/calm/calm_alert_card.dart';
-import '../../../shared/widgets/calm/calm_empty_state.dart';
-import '../../../shared/widgets/calm/calm_section_label.dart';
+import 'guest_messages_view.dart';
 
 class NotificationsNotifier extends StateNotifier<AsyncValue<List<NotificationModel>>> {
   NotificationsNotifier(this._api) : super(const AsyncValue.loading()) {
@@ -84,166 +81,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(notificationsNotifierProvider);
-    return Scaffold(
-      backgroundColor: AppColors.calmIvory,
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(notificationsNotifierProvider.notifier).refresh(),
-        child: async.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.calmViolet)),
-          error: (_, __) => ListView(
-            children: [
-              const SizedBox(height: 80),
-              CalmEmptyState(
-                title: 'Couldn\'t load alerts',
-                message: 'We\'ll try again when you pull to refresh.',
-                icon: Icons.notifications_off_outlined,
-                actionLabel: 'Try again',
-                onAction: () => ref.read(notificationsNotifierProvider.notifier).refresh(),
-              ),
-            ],
-          ),
-          data: (items) {
-            if (items.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 40),
-                  Padding(
-                    padding: EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Alerts',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.calmCharcoal,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'What needs your attention',
-                          style: TextStyle(color: AppColors.calmWarmGray),
-                        ),
-                      ],
-                    ),
-                  ),
-                  CalmEmptyState(
-                    title: 'You\'re all caught up',
-                    message: 'Customer alerts and queue updates will appear here when they need your attention.',
-                    icon: Icons.check_circle_outline,
-                  ),
-                ],
-              );
-            }
-
-            final needsAttention = <NotificationModel>[];
-            final customerIssues = <NotificationModel>[];
-            final completed = <NotificationModel>[];
-
-            for (final n in items) {
-              final type = n.type.toUpperCase();
-              if (n.status == 'DELIVERED' || n.status == 'COMPLETED') {
-                completed.add(n);
-              } else if (type.contains('FAIL') || type.contains('NO_SHOW') || type.contains('ISSUE')) {
-                customerIssues.add(n);
-              } else {
-                needsAttention.add(n);
-              }
-            }
-
-            return ListView(
-              controller: _scroll,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                Text(
-                  'Alerts',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.calmCharcoal,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'What needs your attention',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.calmWarmGray),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (needsAttention.isNotEmpty) ...[
-                  const CalmSectionLabel('Needs attention'),
-                  const SizedBox(height: AppSpacing.sm),
-                  ...needsAttention.map((n) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _alertCard(context, n, CalmAlertSeverity.attention),
-                      )),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-                if (customerIssues.isNotEmpty) ...[
-                  const CalmSectionLabel('Customer issues'),
-                  const SizedBox(height: AppSpacing.sm),
-                  ...customerIssues.map((n) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _alertCard(context, n, CalmAlertSeverity.info),
-                      )),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-                if (completed.isNotEmpty) ...[
-                  const CalmSectionLabel('Completed'),
-                  const SizedBox(height: AppSpacing.sm),
-                  ...completed.take(10).map((n) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _alertCard(context, n, CalmAlertSeverity.completed),
-                      )),
-                ],
-                const SizedBox(height: AppSpacing.md),
-                const Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.calmViolet),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+    final notifier = ref.read(notificationsNotifierProvider.notifier);
+    return RefreshIndicator(
+      color: QuykColors.green,
+      backgroundColor: Colors.white,
+      onRefresh: notifier.refresh,
+      child: GuestMessagesView(
+        scrollController: _scroll,
+        items: async.valueOrNull ?? const <NotificationModel>[],
+        loading: async.isLoading && !async.hasValue,
+        errorMessage: async.hasError && !async.hasValue
+            ? "We couldn't load message delivery history."
+            : null,
+        onRetry: notifier.refresh,
+        onViewQueue: (n) => n.queueId == null
+            ? context.go(AppRoutes.queues)
+            : context.push(AppRoutes.queueConsole(n.queueId!)),
       ),
     );
-  }
-
-  Widget _alertCard(BuildContext context, NotificationModel n, CalmAlertSeverity severity) {
-    final title = _humanTitle(n);
-    final message = n.message?.trim().isNotEmpty == true ? n.message! : _humanMessage(n);
-    final detail = DateFormat.yMMMd().add_jm().format(n.createdAt);
-    final showAction = severity != CalmAlertSeverity.completed;
-
-    return CalmAlertCard(
-      title: title,
-      message: message,
-      detail: detail,
-      severity: severity,
-      actionLabel: showAction ? 'View queues' : null,
-      onAction: showAction ? () => context.go(AppRoutes.queues) : null,
-    );
-  }
-
-  String _humanTitle(NotificationModel n) {
-    final type = n.type.replaceAll('_', ' ').toLowerCase();
-    if (type.contains('wait')) return 'Long wait time';
-    if (type.contains('ready')) return 'Customer ready';
-    if (type.contains('no show')) return 'No show';
-    if (type.contains('sms') || type.contains('notification')) return 'Customer notification';
-    return type.isEmpty ? 'Queue update' : _titleCase(type);
-  }
-
-  String _humanMessage(NotificationModel n) {
-    if (n.recipientPhone?.trim().isNotEmpty == true) {
-      return 'Sent to ${n.recipientPhone}';
-    }
-    return 'Status: ${_titleCase(n.status.toLowerCase())}';
-  }
-
-  String _titleCase(String value) {
-    return value.split(' ').map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
   }
 }

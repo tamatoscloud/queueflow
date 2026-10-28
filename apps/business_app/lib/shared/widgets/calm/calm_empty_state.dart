@@ -26,21 +26,21 @@ class CalmEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: AppColors.calmViolet.withValues(alpha: 0.7)),
+          Icon(icon, size: 48, color: QuykColors.green.withValues(alpha: 0.7)),
           const SizedBox(height: AppSpacing.md),
           Text(
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: AppColors.calmCharcoal,
+                  color: QuykColors.ink,
                 ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.calmWarmGray),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: QuykColors.muted),
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: AppSpacing.lg),

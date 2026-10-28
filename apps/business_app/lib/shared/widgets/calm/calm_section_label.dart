@@ -17,7 +17,7 @@ class CalmSectionLabel extends StatelessWidget {
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
-                color: AppColors.calmWarmGray,
+                color: QuykColors.muted,
               ),
         ),
         if (subtitle != null) ...[
@@ -25,7 +25,7 @@ class CalmSectionLabel extends StatelessWidget {
           Text(
             subtitle!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.calmWarmGray,
+                  color: QuykColors.muted,
                 ),
           ),
         ],

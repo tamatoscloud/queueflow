@@ -39,6 +39,7 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> sessionExpired() async {
+    if (state.status == AuthStatus.unauthenticated) return;
     await _repo.clearSession();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }

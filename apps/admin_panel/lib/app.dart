@@ -17,7 +17,8 @@ class AdminPanelApp extends ConsumerWidget {
     if (init.isLoading) {
       return MaterialApp(
         title: appConfig.appName,
-        theme: AppTheme.light,
+        debugShowCheckedModeBanner: false,
+        theme: buildQuykTheme(identity: ProductIdentity.platformAdmin),
         home: const SessionLoadingScreen(),
       );
     }
@@ -25,8 +26,7 @@ class AdminPanelApp extends ConsumerWidget {
     return MaterialApp.router(
       title: appConfig.appName,
       debugShowCheckedModeBanner: !appConfig.flavor.isProduction,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: buildQuykTheme(identity: ProductIdentity.platformAdmin),
       themeMode: ThemeMode.light,
       routerConfig: router,
     );

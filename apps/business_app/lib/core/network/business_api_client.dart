@@ -17,7 +17,10 @@ class BusinessApiClient {
       _parser.getData(() => _dio.get('/branches/$id'), BranchModel.fromJson);
 
   Future<List<BranchModel>> getBranches({String? businessId}) => _parser.getList(
-        () => _dio.get('/branches', queryParameters: {if (businessId != null) 'businessId': businessId}),
+        () => _dio.get('/branches', queryParameters: {
+          'pageSize': 100,
+          if (businessId != null) 'businessId': businessId,
+        }),
         BranchModel.fromJson,
       );
 
@@ -32,6 +35,7 @@ class BusinessApiClient {
   // Queues
   Future<List<QueueModel>> getQueues({String? branchId, String? businessId}) => _parser.getList(
         () => _dio.get('/queues', queryParameters: {
+          'pageSize': 100,
           if (branchId != null) 'branchId': branchId,
           if (businessId != null) 'businessId': businessId,
         }),
@@ -107,16 +111,17 @@ class BusinessApiClient {
       );
 
   // Customers
-  Future<CustomerModel?> lookupCustomer(String phone) async {
-    try {
-      return await _parser.getData(
-        () => _dio.get('/customers/lookup/active', queryParameters: {'phone': phone}),
+  /// Guests list; `q` matches name, phone or ticket code. `activeOnly`
+  /// limits to guests currently waiting or called.
+  Future<List<CustomerModel>> listCustomers({String? q, bool activeOnly = true}) =>
+      _parser.getList(
+        () => _dio.get('/customers', queryParameters: {
+          if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+          'activeOnly': activeOnly,
+          'pageSize': 50,
+        }),
         CustomerModel.fromJson,
       );
-    } catch (_) {
-      return null;
-    }
-  }
 
   Future<CustomerModel> getCustomer(String id) =>
       _parser.getData(() => _dio.get('/customers/$id'), CustomerModel.fromJson);
@@ -135,7 +140,7 @@ class BusinessApiClient {
       _parser.getList(
         () => _dio.get('/feedback', queryParameters: {
           'page': page,
-          'pageSize': 30,
+          'pageSize': 100,
           if (rating != null) 'rating': rating,
           if (branchId != null) 'branchId': branchId,
         }),
@@ -143,11 +148,23 @@ class BusinessApiClient {
       );
 
   // Reports
-  Future<DailySummaryModel> getDailySummary({String? businessId, String? queueId}) =>
+  Future<DailySummaryModel> getDailySummary({
+    String? businessId,
+    String? queueId,
+    String? branchId,
+    DateTime? date,
+  }) =>
       _parser.getData(
         () => _dio.get(
           queueId != null ? '/reports/queues/$queueId/daily-summary' : '/reports/daily-summary',
-          queryParameters: {if (businessId != null) 'businessId': businessId},
+          queryParameters: {
+            if (businessId != null) 'businessId': businessId,
+            if (branchId != null) 'branchId': branchId,
+            if (date != null)
+              'date': '${date.year.toString().padLeft(4, '0')}-'
+                  '${date.month.toString().padLeft(2, '0')}-'
+                  '${date.day.toString().padLeft(2, '0')}',
+          },
         ),
         DailySummaryModel.fromJson,
       );
@@ -209,6 +226,9 @@ class BusinessApiClient {
   // Business
   Future<Map<String, dynamic>> getBusiness(String id) =>
       _parser.getData(() => _dio.get('/businesses/$id'), (json) => json);
+
+  Future<Map<String, dynamic>> updateBusiness(String id, Map<String, dynamic> body) =>
+      _parser.getData(() => _dio.patch('/businesses/$id', data: body), (json) => json);
 
   Future<Map<String, dynamic>> getGuestMenu(String businessId) =>
       _parser.getData(() => _dio.get('/businesses/$businessId/menu'), (json) => json);

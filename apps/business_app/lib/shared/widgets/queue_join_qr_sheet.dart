@@ -16,7 +16,7 @@ Future<void> showQueueJoinQrSheet(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.lightSurface,
+    backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -35,7 +35,7 @@ Future<void> showQueueJoinQrSheet(
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.neutral200,
+                color: QuykColors.line,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -45,14 +45,14 @@ Future<void> showQueueJoinQrSheet(
               textAlign: TextAlign.center,
               style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.neutral900,
+                    color: QuykColors.ink,
                   ),
             ),
             const SizedBox(height: 4),
             Text(
               'Scan to join',
               style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.neutral500,
+                    color: QuykColors.subtle,
                   ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -61,7 +61,7 @@ Future<void> showQueueJoinQrSheet(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.neutral200),
+                border: Border.all(color: QuykColors.line),
               ),
               child: QrImageView(
                 data: joinUrl,
@@ -69,11 +69,11 @@ Future<void> showQueueJoinQrSheet(
                 backgroundColor: Colors.white,
                 eyeStyle: const QrEyeStyle(
                   eyeShape: QrEyeShape.square,
-                  color: AppColors.primary,
+                  color: QuykColors.green,
                 ),
                 dataModuleStyle: const QrDataModuleStyle(
                   dataModuleShape: QrDataModuleShape.square,
-                  color: AppColors.neutral900,
+                  color: QuykColors.ink,
                 ),
               ),
             ),
@@ -82,7 +82,7 @@ Future<void> showQueueJoinQrSheet(
               joinUrl,
               textAlign: TextAlign.center,
               style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
-                    color: AppColors.neutral500,
+                    color: QuykColors.subtle,
                   ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -105,7 +105,7 @@ Future<void> showQueueJoinQrSheet(
                     ),
                     icon: const Icon(Icons.open_in_new),
                     label: const Text('Copy & open'),
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                    style: FilledButton.styleFrom(backgroundColor: QuykColors.green),
                   ),
                 ),
               ],
@@ -167,7 +167,7 @@ Future<void> _showPrintPoster(
             Text(
               'Scan to join the queue',
               style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
-                    color: AppColors.neutral500,
+                    color: QuykColors.subtle,
                   ),
             ),
             const SizedBox(height: AppSpacing.md),

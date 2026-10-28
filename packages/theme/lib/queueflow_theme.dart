@@ -7,6 +7,7 @@ export 'src/app_theme.dart';
 export 'src/brand_assets.dart';
 export 'src/breakpoints/breakpoints.dart';
 export 'src/product_identities.dart';
+export 'src/quyk_theme.dart';
 export 'src/tokens/app_colors.dart';
 export 'src/tokens/app_gradients.dart';
 export 'src/tokens/app_motion.dart';

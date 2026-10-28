@@ -4,9 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:queueflow_shared/queueflow_shared.dart';
 
 import '../../core/routing/app_routes.dart';
-import '../../shared/widgets/calm/calm_card.dart';
-import '../../shared/widgets/calm/calm_primary_button.dart';
-import '../../shared/widgets/calm/calm_section_label.dart';
 import '../auth/presentation/auth_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -17,118 +14,86 @@ class SettingsScreen extends ConsumerWidget {
     final config = ref.watch(appConfigProvider);
     final user = ref.watch(currentUserProvider);
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    Widget row(IconData icon, String title, String subtitle, {String? route}) => ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+          leading: QuykIconBubble(icon: icon, size: 40),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text(subtitle, style: const TextStyle(fontSize: 12.5, color: QuykColors.subtle)),
+          trailing: route == null ? null : const Icon(Icons.chevron_right_rounded, color: QuykColors.subtle),
+          onTap: route == null ? null : () => context.go(route),
+        );
+
+    return QuykPage(
+      title: 'Settings',
+      subtitle: 'Your account and this environment.',
+      maxWidth: 820,
       children: [
-        Text('Settings', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: AppSpacing.lg),
-        CalmSettingsSection(
-          title: 'Account',
-          children: [
-            CalmSettingsTile(icon: Icons.person_outline, title: 'Profile', subtitle: user?.email ?? '—'),
-            const CalmSettingsTile(icon: Icons.lock_outline, title: 'Security', subtitle: 'JWT session with refresh token'),
-          ],
+        QuykCard(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              QuykAvatar(name: user?.fullName ?? '?', size: 48),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.fullName ?? 'Platform admin',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: QuykColors.ink),
+                    ),
+                    Text(
+                      '${user?.email ?? ''} · Platform admin',
+                      style: const TextStyle(fontSize: 12.5, color: QuykColors.subtle),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await ref.read(authControllerProvider.notifier).logout();
+                  if (context.mounted) context.go(AppRoutes.login);
+                },
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: const Text('Sign out'),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        CalmSettingsSection(
-          title: 'Platform',
-          children: [
-            CalmSettingsTile(
-              icon: Icons.notifications_outlined,
-              title: 'Notifications',
-              subtitle: 'Delivery monitoring',
-              onTap: () => context.push(AppRoutes.notifications),
-            ),
-            CalmSettingsTile(
-              icon: Icons.flag_outlined,
-              title: 'Feature flags',
-              subtitle: 'Global platform toggles',
-              onTap: () => context.push(AppRoutes.featureFlags),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        CalmSettingsSection(
-          title: 'Advanced',
-          subtitle: 'Technical configuration',
-          children: [
-            CalmSettingsTile(icon: Icons.cloud_outlined, title: 'API base URL', subtitle: config.apiBaseUrl),
-            CalmSettingsTile(icon: Icons.hub_outlined, title: 'WebSocket URL', subtitle: config.wsBaseUrl),
-            CalmSettingsTile(icon: Icons.layers_outlined, title: 'Environment', subtitle: config.flavor.label),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        CalmPrimaryButton(
-          label: 'Sign out',
-          icon: Icons.logout,
-          variant: CalmPrimaryVariant.danger,
-          onPressed: () async {
-            await ref.read(authControllerProvider.notifier).logout();
-            if (context.mounted) context.go(AppRoutes.login);
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// Settings section widgets (admin-local, calm-styled)
-class CalmSettingsSection extends StatelessWidget {
-  const CalmSettingsSection({required this.title, required this.children, super.key, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CalmSectionLabel(title, subtitle: subtitle),
-        const SizedBox(height: AppSpacing.sm),
-        CalmCard(
+        const SizedBox(height: 20),
+        const QuykSectionTitle('Platform'),
+        QuykCard(
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const Divider(height: 1, color: AppColors.calmBorder),
-                children[i],
-              ],
+              row(
+                Icons.notifications_none_rounded,
+                'Guest alerts',
+                'Delivery across every business',
+                route: AppRoutes.notifications,
+              ),
+              const Divider(height: 1, indent: 70),
+              row(Icons.flag_outlined, 'Feature flags', 'Platform-wide toggles', route: AppRoutes.featureFlags),
+              const Divider(height: 1, indent: 70),
+              row(Icons.monitor_heart_outlined, 'Health', 'Service status', route: AppRoutes.health),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        const QuykSectionTitle('Environment'),
+        QuykCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              row(Icons.layers_outlined, 'Environment', config.flavor.label),
+              const Divider(height: 1, indent: 70),
+              row(Icons.cloud_outlined, 'API', config.apiBaseUrl),
+              const Divider(height: 1, indent: 70),
+              row(Icons.hub_outlined, 'Realtime', config.wsBaseUrl),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class CalmSettingsTile extends StatelessWidget {
-  const CalmSettingsTile({
-    required this.icon,
-    required this.title,
-    super.key,
-    this.subtitle,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: AppColors.calmLilac, borderRadius: BorderRadius.circular(12)),
-        child: Icon(icon, color: AppColors.calmViolet, size: 20),
-      ),
-      title: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
-      trailing: onTap != null ? const Icon(Icons.chevron_right, color: AppColors.calmWarmGray) : null,
     );
   }
 }

@@ -258,7 +258,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final async = ref.watch(guestMenuProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.calmIvory,
+      backgroundColor: QuykColors.cream,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _draft == null ? null : _addCategory,
         icon: const Icon(Icons.create_new_folder_outlined),
@@ -290,7 +290,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 'Menu',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.calmCharcoal,
+                      color: QuykColors.ink,
                     ),
               ),
               const SizedBox(height: 4),
@@ -299,7 +299,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     ? 'Showing the starter menu. Edit and save to publish your own for waiting guests.'
                     : 'Guests see this menu when they tap Browse Menu while waiting.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.calmWarmGray,
+                      color: QuykColors.muted,
                     ),
               ),
               const SizedBox(height: AppSpacing.md),
