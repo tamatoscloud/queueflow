@@ -15,8 +15,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Quyk'), findsOneWidget);
-    expect(find.text('Platform Administration'), findsOneWidget);
+    expect(find.text('Platform admin'), findsOneWidget);
+    expect(find.text('Sign in to manage Quyk.'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
   });
 
@@ -30,7 +30,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Quyk'), findsOneWidget);
-    expect(find.text('Platform Administration'), findsOneWidget);
+    expect(find.text('Platform admin'), findsOneWidget);
+    expect(find.text('Sign in to manage Quyk.'), findsOneWidget);
   });
 }
