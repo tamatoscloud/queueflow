@@ -69,23 +69,29 @@ class QuykPill extends StatelessWidget {
         color: background,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: fontSize + 2, color: foreground),
-            const SizedBox(width: 4),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            if (icon != null) ...[
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Icon(icon, size: fontSize + 2, color: foreground),
+                ),
+              ),
+            ],
+            TextSpan(text: label),
           ],
-          Text(
-            label,
-            style: TextStyle(
-              color: foreground,
-              fontSize: fontSize,
-              fontWeight: FontWeight.w600,
-              height: 1.1,
-            ),
-          ),
-        ],
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: foreground,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+          height: 1.1,
+        ),
       ),
     );
   }
@@ -368,8 +374,70 @@ class QuykTable extends StatelessWidget {
     );
   }
 
+  /// Below this width rows render as stacked cards instead of columns.
+  static const double stackedBreakpoint = 560;
+
+  Widget _stacked(BuildContext context) {
+    return Column(
+      children: [
+        for (var r = 0; r < rows.length; r++) ...[
+          if (r > 0) const SizedBox(height: 10),
+          QuykCard(
+            onTap: onRowTap == null ? null : () => onRowTap!(r),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (rows[r].isNotEmpty) rows[r].first,
+                if (rows[r].length > 1) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 18,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    children: [
+                      for (var i = 1; i < rows[r].length && i < columns.length; i++)
+                        if (rows[r][i] is! SizedBox)
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (columns[i].label.isNotEmpty)
+                                Text(
+                                  columns[i].label.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.6,
+                                    color: QuykColors.subtle,
+                                  ),
+                                ),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 260),
+                                child: rows[r][i],
+                              ),
+                            ],
+                          ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          constraints.maxWidth < stackedBreakpoint ? _stacked(context) : _table(context),
+    );
+  }
+
+  Widget _table(BuildContext context) {
     return QuykCard(
       padding: EdgeInsets.zero,
       child: Column(
