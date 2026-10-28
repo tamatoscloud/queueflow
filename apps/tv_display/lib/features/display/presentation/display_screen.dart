@@ -807,19 +807,25 @@ class QueueStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final variant = switch (status) {
-      'PAUSED' => AppBadgeVariant.warning,
-      'CLOSED' => AppBadgeVariant.danger,
-      _ => AppBadgeVariant.success,
+    final (String label, Color bg, Color fg, IconData icon) = switch (status) {
+      'PAUSED' => ('PAUSED', QuykColors.warningTint, const Color(0xFF7A4B0C), Icons.pause_circle_outline),
+      'CLOSED' => ('CLOSED', QuykColors.dangerTint, QuykColors.danger, Icons.cancel_outlined),
+      _ => ('OPEN', QuykColors.lime, QuykColors.green, Icons.check_circle_outline),
     };
-    return AppBadge(
-      label: status,
-      variant: variant,
-      icon: switch (status) {
-        'PAUSED' => Icons.pause_circle_outline,
-        'CLOSED' => Icons.cancel_outlined,
-        _ => Icons.check_circle_outline,
-      },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: fg),
+          ),
+        ],
+      ),
     );
   }
 }
