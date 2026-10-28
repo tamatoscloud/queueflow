@@ -153,15 +153,15 @@ List<Override> _overrides() => [
         ),
       ),
       analyticsProvider.overrideWith(
-        (ref, days) async => PlatformAnalytics(
+        (ref, days) async => const PlatformAnalytics(
           businessGrowth: 7,
           averageWaitMinutes: 11.4,
-          dailyCustomers: const [
+          dailyCustomers: [
             {'status': 'COMPLETED', '_count': {'_all': 38210}},
             {'status': 'NO_SHOW', '_count': {'_all': 2104}},
             {'status': 'CANCELLED', '_count': {'_all': 1830}},
           ],
-          notificationSuccess: const [
+          notificationSuccess: [
             {'status': 'DELIVERED', 'channel': 'WHATSAPP', '_count': {'_all': 51200}},
             {'status': 'FAILED', 'channel': 'WHATSAPP', '_count': {'_all': 310}},
             {'status': 'DELIVERED', 'channel': 'SMS', '_count': {'_all': 9100}},

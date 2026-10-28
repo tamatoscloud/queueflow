@@ -66,7 +66,8 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         run: |
           if [ -d test_preview ]; then
-            flutter test test_preview --update-goldens
+            set -o pipefail
+            flutter test test_preview --update-goldens 2>&1 | tee preview-test.txt
           else
             echo "No previews for ${{ matrix.app }}"
           fi
@@ -79,6 +80,7 @@ jobs:
           mkdir -p "$out"
           cp apps/${{ matrix.app }}/test_preview/goldens/*.png "$out/" 2>/dev/null || true
           cp apps/${{ matrix.app }}/analyze.txt "$out/" 2>/dev/null || true
+          cp apps/${{ matrix.app }}/preview-test.txt "$out/" 2>/dev/null || true
           echo "${{ github.sha }}" > "$out/SOURCE_SHA"
           cd "$out"
           git init -q -b previews/${{ matrix.app }}

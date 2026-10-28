@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:queueflow_theme/queueflow_theme.dart';
 import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../core/network/api_error_message.dart';

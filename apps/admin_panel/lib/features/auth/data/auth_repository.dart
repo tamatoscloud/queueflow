@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:queueflow_network/queueflow_network.dart';
 
 import 'auth_remote_data_source.dart';
 import 'auth_token_holder.dart';
