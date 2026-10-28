@@ -61,3 +61,4 @@ case "${1:-}" in
   build) build ;;
   *) echo "usage: $0 install|build" >&2; exit 1 ;;
 esac
+
