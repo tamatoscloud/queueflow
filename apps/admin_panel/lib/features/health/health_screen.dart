@@ -37,8 +37,36 @@ String serviceLabel(String key) => switch (key) {
       'socketIo' => 'Realtime updates',
       'notificationQueue' => 'Guest notifications',
       'workers' => 'Background workers',
-      _ => key,
+      'notificationWorkers' => 'Notification workers',
+      'supabase' => 'Storage (Supabase)',
+      _ => humanizeKey(key),
     };
+
+/// `notificationWorkers` → `Notification workers`.
+String humanizeKey(String key) {
+  final words = key
+      .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+      .replaceAll(RegExp(r'[_-]+'), ' ')
+      .trim()
+      .toLowerCase();
+  return words.isEmpty ? key : words[0].toUpperCase() + words.substring(1);
+}
+
+/// Readable one-liner from a health check's extra fields.
+String serviceDetail(Object? value) {
+  if (value is! Map) return '';
+  final parts = <String>[];
+  final latency = value['latencyMs'];
+  if (latency is num) parts.add('${latency.round()} ms');
+  final detail = value['detail'];
+  if (detail is String && detail.trim().isNotEmpty) parts.add(detail.trim());
+  final checked = DateTime.tryParse('${value['lastCheckedAt'] ?? ''}');
+  if (checked != null) {
+    final ago = DateTime.now().difference(checked.toLocal());
+    parts.add(ago.inMinutes < 1 ? 'checked just now' : 'checked ${ago.inMinutes} min ago');
+  }
+  return parts.join(' · ');
+}
 
 String _serviceSummary(String key, ServiceState state) => switch (state) {
       ServiceState.up => 'Working normally',
@@ -95,7 +123,7 @@ class HealthScreen extends ConsumerWidget {
   }
 }
 
-/// Table of services with state and the raw technical detail.
+/// Table of services with state and a short readable detail.
 class ServiceHealthTable extends StatelessWidget {
   const ServiceHealthTable({super.key, required this.health});
 
@@ -148,12 +176,7 @@ class ServiceHealthTable extends StatelessWidget {
                 serviceStatePill(serviceState(entry.value)),
                 QuykCellText(_serviceSummary(entry.key, serviceState(entry.value))),
                 Text(
-                  entry.value is Map
-                      ? (entry.value as Map).entries
-                          .where((e) => e.key != 'status')
-                          .map((e) => '${e.key}: ${e.value}')
-                          .join(' · ')
-                      : '',
+                  serviceDetail(entry.value),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12, color: QuykColors.subtle),

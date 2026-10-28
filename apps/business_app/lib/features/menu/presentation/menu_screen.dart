@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
+import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../../core/network/api_error_message.dart' show apiExceptionMessage;
 import '../../../core/network/business_api_client.dart';
 import '../../../features/auth/presentation/auth_controller.dart';
-import '../../../shared/widgets/calm/calm_card.dart';
-import '../../../shared/widgets/calm/calm_empty_state.dart';
-import '../../../shared/widgets/calm/calm_primary_button.dart';
-import '../../../shared/widgets/calm/calm_section_label.dart';
 
 class GuestMenuItemDraft {
   GuestMenuItemDraft({
@@ -29,10 +26,11 @@ class GuestMenuItemDraft {
 
   factory GuestMenuItemDraft.fromJson(Map<String, dynamic> json) {
     return GuestMenuItemDraft(
-      id: (json['id'] as String?) ?? UniqueKey().toString(),
-      name: (json['name'] as String?) ?? '',
-      description: (json['description'] as String?) ?? '',
-      price: (json['price'] as String?) ?? '0',
+      // Tolerate numbers as well as strings (older menus store price as a number).
+      id: json['id']?.toString() ?? UniqueKey().toString(),
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      price: json['price']?.toString() ?? '0',
       tags: ((json['tags'] as List?) ?? const []).map((e) => '$e').toList(),
       available: json['available'] != false,
     );
@@ -98,6 +96,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   bool _saving = false;
   String? _error;
   bool _isDefault = false;
+  bool _dirty = false;
 
   void _hydrate(Map<String, dynamic> payload) {
     final menu = payload['menu'] as Map<String, dynamic>? ?? const {};
@@ -124,7 +123,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           );
       if (!mounted) return;
       _hydrate(saved);
-      setState(() => _saving = false);
+      setState(() {
+        _saving = false;
+        _dirty = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Menu saved — guests can browse it while waiting')),
       );
@@ -256,119 +258,224 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(guestMenuProvider);
+    final ready = _draft != null || async.hasValue;
 
-    return Scaffold(
-      backgroundColor: QuykColors.cream,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _draft == null ? null : _addCategory,
-        icon: const Icon(Icons.create_new_folder_outlined),
-        label: const Text('Category'),
-      ),
-      body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => CalmEmptyState(
-          title: 'Could not load menu',
-          message: apiExceptionMessage(e),
-          actionLabel: 'Retry',
-          onAction: () => ref.invalidate(guestMenuProvider),
+    Future<void> addCategory() async {
+      await _addCategory();
+      if (mounted) setState(() => _dirty = true);
+    }
+
+    Future<void> editItem(GuestMenuCategoryDraft category, GuestMenuItemDraft? item) async {
+      await _editItem(category, item);
+      if (mounted) setState(() => _dirty = true);
+    }
+
+    void removeItem(GuestMenuCategoryDraft category, int index) {
+      final removed = category.items[index];
+      setState(() {
+        category.items.removeAt(index);
+        _dirty = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Removed ${removed.name}'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => setState(() => category.items.insert(index, removed)),
+          ),
         ),
-        data: (payload) {
-          _draft ??= () {
-            final menu = payload['menu'] as Map<String, dynamic>? ?? const {};
-            final cats = (menu['categories'] as List?) ?? const [];
-            _isDefault = payload['isDefault'] == true;
-            return cats
-                .whereType<Map<Object?, Object?>>()
-                .map((e) => GuestMenuCategoryDraft.fromJson(Map<String, dynamic>.from(e)))
-                .toList();
-          }();
-          final draft = _draft!;
-          return ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            children: [
-              Text(
-                'Menu',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: QuykColors.ink,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _isDefault
-                    ? 'Showing the starter menu. Edit and save to publish your own for waiting guests.'
-                    : 'Guests see this menu when they tap Browse Menu while waiting.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: QuykColors.muted,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              CalmPrimaryButton(
-                label: 'Save menu',
-                isLoading: _saving,
-                onPressed: _saving ? null : _save,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 8),
-                Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      );
+    }
+
+    return QuykPage(
+      title: 'Menu',
+      subtitle: _isDefault
+          ? 'This is a starter menu. Edit it and save to publish your own for waiting guests.'
+          : 'Guests can browse this while they wait.',
+      action: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (_dirty) const QuykPill(label: 'Unsaved changes', background: QuykColors.warningTint, foreground: Color(0xFF7A4B0C)),
+          OutlinedButton.icon(
+            onPressed: ready ? addCategory : null,
+            icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+            label: const Text('Add category'),
+          ),
+          FilledButton.icon(
+            onPressed: _saving || !(_dirty || _isDefault) ? null : _save,
+            icon: _saving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: QuykColors.lime),
+                  )
+                : const Icon(Icons.check_rounded, size: 18),
+            label: Text(_isDefault && !_dirty ? 'Publish menu' : 'Save menu'),
+          ),
+        ],
+      ),
+      onRefresh: _dirty ? null : () async => ref.invalidate(guestMenuProvider),
+      children: [
+        ...async.when(
+          loading: () => _draft == null ? const [QuykLoadingBlock()] : _sections(_draft!, editItem, removeItem),
+          error: (e, _) => [
+            QuykMessageCard(
+              icon: Icons.cloud_off_rounded,
+              title: 'We couldn’t load your menu',
+              subtitle: apiExceptionMessage(e),
+              actionLabel: 'Try again',
+              onAction: () => ref.invalidate(guestMenuProvider),
+            ),
+          ],
+          data: (payload) {
+            _draft ??= () {
+              final menu = payload['menu'] as Map<String, dynamic>? ?? const {};
+              final cats = (menu['categories'] as List?) ?? const [];
+              _isDefault = payload['isDefault'] == true;
+              return cats
+                  .whereType<Map<Object?, Object?>>()
+                  .map((e) => GuestMenuCategoryDraft.fromJson(Map<String, dynamic>.from(e)))
+                  .toList();
+            }();
+            return _sections(_draft!, editItem, removeItem);
+          },
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _sections(
+    List<GuestMenuCategoryDraft> draft,
+    Future<void> Function(GuestMenuCategoryDraft, GuestMenuItemDraft?) editItem,
+    void Function(GuestMenuCategoryDraft, int) removeItem,
+  ) {
+    return [
+      if (_error != null) ...[
+        QuykCard(
+          color: QuykColors.dangerTint,
+          borderColor: null,
+          child: Text(_error!, style: const TextStyle(color: QuykColors.danger)),
+        ),
+        const SizedBox(height: 14),
+      ],
+      if (draft.isEmpty)
+        const QuykMessageCard(
+          icon: Icons.restaurant_menu_rounded,
+          title: 'No categories yet',
+          subtitle: 'Add a category, then the dishes guests can browse while they wait.',
+        )
+      else
+        for (final category in draft) ...[
+          QuykSectionTitle(
+            category.name,
+            trailing: Text(
+              '${category.items.length} dish${category.items.length == 1 ? '' : 'es'}',
+              style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+            ),
+          ),
+          const SizedBox(height: 10),
+          QuykCard(
+            padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+            child: Column(
+              children: [
+                for (var i = 0; i < category.items.length; i++) ...[
+                  if (i > 0) const Divider(height: 1, color: QuykColors.line),
+                  _DishRow(
+                    item: category.items[i],
+                    onEdit: () => editItem(category, category.items[i]),
+                    onRemove: () => removeItem(category, i),
+                  ),
+                ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => editItem(category, null),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Add dish'),
+                  ),
+                ),
               ],
-              const SizedBox(height: AppSpacing.lg),
-              if (draft.isEmpty)
-                const CalmEmptyState(
-                  title: 'No categories yet',
-                  message: 'Add a category, then dishes guests can browse while waiting.',
-                )
-              else
-                for (final category in draft) ...[
-                  CalmSectionLabel(category.name),
-                  CalmCard(
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < category.items.length; i++) ...[
-                          if (i > 0) const Divider(height: 1),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(category.items[i].name),
-                            subtitle: Text(
-                              [
-                                if (category.items[i].description.isNotEmpty)
-                                  category.items[i].description,
-                                '\$${category.items[i].price}',
-                                if (!category.items[i].available) 'Unavailable',
-                              ].join(' · '),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined),
-                                  onPressed: () => _editItem(category, category.items[i]),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () => setState(() => category.items.removeAt(i)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () => _editItem(category, null),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add dish'),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+    ];
+  }
+}
+
+class _DishRow extends StatelessWidget {
+  const _DishRow({required this.item, required this.onEdit, required this.onRemove});
+
+  final GuestMenuItemDraft item;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.name,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: item.available ? QuykColors.ink : QuykColors.subtle,
                           ),
                         ),
+                      ),
+                      if (!item.available) ...[
+                        const SizedBox(width: 8),
+                        const QuykPill(
+                          label: 'Unavailable',
+                          background: QuykColors.mist,
+                          foreground: QuykColors.greenMuted,
+                          fontSize: 10.5,
+                        ),
                       ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  if (item.description.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      item.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12.5, color: QuykColors.muted),
+                    ),
+                  ],
                 ],
-              const SizedBox(height: 72),
-            ],
-          );
-        },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '\$${item.price}',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: QuykColors.green),
+            ),
+            IconButton(
+              tooltip: 'Edit',
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined, size: 19, color: QuykColors.greenMuted),
+            ),
+            IconButton(
+              tooltip: 'Remove',
+              onPressed: onRemove,
+              icon: const Icon(Icons.delete_outline_rounded, size: 19, color: QuykColors.danger),
+            ),
+          ],
+        ),
       ),
     );
   }

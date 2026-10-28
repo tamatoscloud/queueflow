@@ -16,8 +16,8 @@ class MarketingWebsiteApp extends ConsumerWidget {
     return MaterialApp.router(
       title: appConfig.appName,
       debugShowCheckedModeBanner: !appConfig.flavor.isProduction,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: buildQuykTheme(identity: ProductIdentity.marketing),
+      themeMode: ThemeMode.light,
       routerConfig: router,
     );
   }

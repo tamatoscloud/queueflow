@@ -4,7 +4,11 @@ import 'package:queueflow_ui/queueflow_ui.dart';
 
 import '../../../core/marketing_links.dart';
 
-/// Premium marketing landing — hero, features, pricing, CTA.
+/// Max width of landing page content.
+const double _maxWidth = 1160;
+
+/// Quyk landing page: green / lime / cream, matching the guest, staff and
+/// owner apps.
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
 
@@ -14,7 +18,9 @@ class LandingPage extends StatefulWidget {
 
 class _LandingPageState extends State<LandingPage> {
   final _scrollController = ScrollController();
+  final _howKey = GlobalKey();
   final _pricingKey = GlobalKey();
+  final _faqKey = GlobalKey();
 
   @override
   void dispose() {
@@ -22,40 +28,33 @@ class _LandingPageState extends State<LandingPage> {
     super.dispose();
   }
 
-  void _scrollToPricing() {
-    final context = _pricingKey.currentContext;
+  void _scrollTo(GlobalKey key) {
+    final context = key.currentContext;
     if (context == null) return;
-    Scrollable.ensureVisible(
-      context,
-      duration: const Duration(milliseconds: 450),
-      curve: Curves.easeInOut,
-    );
+    Scrollable.ensureVisible(context, duration: const Duration(milliseconds: 450), curve: Curves.easeInOut);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: QuykColors.cream,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
           SliverToBoxAdapter(
-            child: _HeroSection(
-              onBookDemo: openDemoRequest,
-              onSeePricing: _scrollToPricing,
+            child: _NavBar(
+              onHow: () => _scrollTo(_howKey),
+              onPricing: () => _scrollTo(_pricingKey),
+              onFaq: () => _scrollTo(_faqKey),
             ),
           ),
-          const SliverToBoxAdapter(child: _LogoStrip()),
-          const SliverToBoxAdapter(child: _FeaturesSection()),
-          const SliverToBoxAdapter(child: _HowItWorksSection()),
-          SliverToBoxAdapter(
-            child: _PricingSection(
-              sectionKey: _pricingKey,
-              onGetStarted: openGetStarted,
-            ),
-          ),
-          const SliverToBoxAdapter(child: _TestimonialsSection()),
-          const SliverToBoxAdapter(child: _FaqSection()),
-          const SliverToBoxAdapter(child: _CtaSection(onBookDemo: openDemoRequest)),
+          const SliverToBoxAdapter(child: _Hero()),
+          const SliverToBoxAdapter(child: _AudienceStrip()),
+          const SliverToBoxAdapter(child: _ThreeScreens()),
+          SliverToBoxAdapter(child: _HowItWorks(key: _howKey)),
+          SliverToBoxAdapter(child: _Pricing(key: _pricingKey)),
+          SliverToBoxAdapter(child: _Faq(key: _faqKey)),
+          const SliverToBoxAdapter(child: _CtaBand()),
           const SliverToBoxAdapter(child: _Footer()),
         ],
       ),
@@ -63,161 +62,408 @@ class _LandingPageState extends State<LandingPage> {
   }
 }
 
-class _HeroSection extends StatelessWidget {
-  const _HeroSection({required this.onBookDemo, required this.onSeePricing});
+bool _isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= 900;
 
-  final VoidCallback onBookDemo;
-  final VoidCallback onSeePricing;
+/// Centers content at [_maxWidth] with page gutters.
+class _Content extends StatelessWidget {
+  const _Content({required this.child, this.vertical = 0});
+
+  final Widget child;
+  final double vertical;
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final isWide = size.width > 900;
+    final gutter = MediaQuery.sizeOf(context).width < 600 ? 20.0 : 40.0;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: gutter, vertical: vertical),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _maxWidth),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppGradients.meshLight,
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.eyebrow, required this.title, this.subtitle, this.light = false});
+
+  final String eyebrow;
+  final String title;
+  final String? subtitle;
+  final bool light;
+
+  @override
+  Widget build(BuildContext context) {
+    final wide = _isWide(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow.toUpperCase(),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.4,
+            color: light ? QuykColors.lime : QuykColors.greenMuted,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: wide ? 40 : 30,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -1,
+            color: light ? Colors.white : QuykColors.green,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Text(
+              subtitle!,
+              style: TextStyle(
+                fontSize: 16.5,
+                height: 1.5,
+                color: light ? Colors.white.withValues(alpha: 0.75) : QuykColors.muted,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Nav ─────────────────────────────────────────────────────────────────────
+
+class _NavBar extends StatelessWidget {
+  const _NavBar({required this.onHow, required this.onPricing, required this.onFaq});
+
+  final VoidCallback onHow;
+  final VoidCallback onPricing;
+  final VoidCallback onFaq;
+
+  @override
+  Widget build(BuildContext context) {
+    final wide = _isWide(context);
+    return _Content(
+      vertical: 18,
+      child: Row(
+        children: [
+          const QuykLogoTile(size: 40),
+          const SizedBox(width: 10),
+          const Text(
+            'Quyk',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: QuykColors.green),
+          ),
+          const Spacer(),
+          if (wide) ...[
+            TextButton(onPressed: onHow, child: const Text('How it works')),
+            TextButton(onPressed: onPricing, child: const Text('Pricing')),
+            TextButton(onPressed: onFaq, child: const Text('FAQ')),
+            const SizedBox(width: 8),
+          ],
+          const OutlinedButton(onPressed: openBusinessSignIn, child: Text('Sign in')),
+          if (wide) ...[
+            const SizedBox(width: 8),
+            const FilledButton(onPressed: openDemoRequest, child: Text('Book a demo')),
+          ],
+        ],
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: isWide ? 80 : 24,
-        vertical: isWide ? 80 : 48,
-      ),
-      child: isWide
+    );
+  }
+}
+
+// ── Hero ────────────────────────────────────────────────────────────────────
+
+class _Hero extends StatelessWidget {
+  const _Hero();
+
+  @override
+  Widget build(BuildContext context) {
+    final wide = _isWide(context);
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const QuykPill(
+          label: 'Digital waiting lists for restaurants',
+          background: QuykColors.limeSoft,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        ),
+        const SizedBox(height: 22),
+        Text.rich(
+          TextSpan(
+            children: [
+              const TextSpan(text: 'Your queue,\nmade '),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.baseline,
+                baseline: TextBaseline.alphabetic,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(color: QuykColors.lime, borderRadius: BorderRadius.circular(14)),
+                  child: Text(
+                    'Quyk.',
+                    style: TextStyle(
+                      fontSize: wide ? 68 : 46,
+                      height: 1.05,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -2,
+                      color: QuykColors.green,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          style: TextStyle(
+            fontSize: wide ? 68 : 46,
+            height: 1.05,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -2,
+            color: QuykColors.green,
+          ),
+        ),
+        const SizedBox(height: 20),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: const Text(
+            'Guests scan a code and join from their phone — no app, no crowding at the door. '
+            'Your team calls the next guest from a tablet, and you see every line live.',
+            style: TextStyle(fontSize: 18, height: 1.5, color: QuykColors.muted),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            FilledButton.icon(
+              onPressed: openDemoRequest,
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 54), padding: const EdgeInsets.symmetric(horizontal: 26)),
+              icon: const Icon(Icons.calendar_month_outlined, size: 19),
+              label: const Text('Book a demo'),
+            ),
+            OutlinedButton.icon(
+              onPressed: openGuestDemo,
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 54), padding: const EdgeInsets.symmetric(horizontal: 24)),
+              icon: const Icon(Icons.qr_code_2_rounded, size: 19),
+              label: const Text('Try it as a guest'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 26),
+        const Wrap(
+          spacing: 18,
+          runSpacing: 8,
+          children: [
+            _Tick('No app for guests'),
+            _Tick('Any tablet or phone'),
+            _Tick('Live in a day'),
+          ],
+        ),
+      ],
+    );
+
+    return _Content(
+      vertical: wide ? 48 : 24,
+      child: wide
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(child: _HeroCopy(onBookDemo: onBookDemo, onSeePricing: onSeePricing)),
+                Expanded(flex: 11, child: copy),
                 const SizedBox(width: 48),
-                const Expanded(child: _HeroVisual()),
+                const Expanded(flex: 9, child: _HeroVisual()),
               ],
             )
           : Column(
-              children: [
-                _HeroCopy(onBookDemo: onBookDemo, onSeePricing: onSeePricing),
-                const SizedBox(height: 40),
-                const _HeroVisual(),
-              ],
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [copy, const SizedBox(height: 36), const _HeroVisual()],
             ),
     );
   }
 }
 
-class _HeroCopy extends StatelessWidget {
-  const _HeroCopy({required this.onBookDemo, required this.onSeePricing});
+class _Tick extends StatelessWidget {
+  const _Tick(this.label);
 
-  final VoidCallback onBookDemo;
-  final VoidCallback onSeePricing;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle_rounded, size: 18, color: QuykColors.greenMuted),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: QuykColors.ink)),
+      ],
+    );
+  }
+}
+
+/// Staff "who's next" card with a guest's phone view tucked beside it.
+class _HeroVisual extends StatelessWidget {
+  const _HeroVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: AppRadius.fullAll,
-          ),
-          child: Text(
-            'Digital queues for restaurants',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(color: QuykColors.green, borderRadius: BorderRadius.circular(36)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const QuykPill(label: 'Who’s next'),
+                  const Spacer(),
+                  Text(
+                    'Dine-in · Main hall',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.85)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'A-108',
+                style: TextStyle(fontSize: 84, height: 1, fontWeight: FontWeight.w700, letterSpacing: -3, color: QuykColors.lime),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sara · party of 4',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+              const SizedBox(height: 14),
+              const Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _DarkChip('Waiting 6 min'),
+                  _DarkChip('Window table'),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Container(
+                height: 58,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: QuykColors.lime, borderRadius: BorderRadius.circular(999)),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.room_service_outlined, color: QuykColors.green),
+                    SizedBox(width: 8),
+                    Text('Call next guest', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: QuykColors.green)),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 64),
+            ],
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          'Turn waiting lines into\na better guest experience',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                height: 1.1,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          'Guests scan a QR, join from their phone, and get called when ready. '
-          'Staff run the line on a tablet. Owners see live wait times — built for restaurants, cafés, and food courts.',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.neutral600,
-                height: 1.6,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            AppButton(
-              label: 'Book a demo',
-              icon: Icons.calendar_month_outlined,
-              onPressed: onBookDemo,
+        Positioned(
+          right: 18,
+          bottom: -22,
+          child: Container(
+            width: 230,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: QuykColors.line),
+              boxShadow: const [BoxShadow(color: Color(0x22003D32), blurRadius: 24, offset: Offset(0, 10))],
             ),
-            AppButton(
-              label: 'See pricing',
-              variant: AppButtonVariant.outline,
-              onPressed: onSeePricing,
+            child: const Row(
+              children: [
+                QuykIconBubble(icon: Icons.phone_iphone_rounded, size: 40),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('You’re 2nd in line', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: QuykColors.ink)),
+                      SizedBox(height: 2),
+                      Text('About 5 min · live', style: TextStyle(fontSize: 12.5, color: QuykColors.muted)),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 }
 
-class _HeroVisual extends StatelessWidget {
-  const _HeroVisual();
+class _DarkChip extends StatelessWidget {
+  const _DarkChip(this.label);
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        gradient: AppGradients.primary,
-        borderRadius: AppRadius.xxlAll,
-        boxShadow: AppShadows.lg(Theme.of(context).brightness),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(color: QuykColors.greenPanel, borderRadius: BorderRadius.circular(999)),
+      child: Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Colors.white)),
+    );
+  }
+}
+
+// ── Audience ────────────────────────────────────────────────────────────────
+
+class _AudienceStrip extends StatelessWidget {
+  const _AudienceStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (Icons.restaurant_rounded, 'Restaurants'),
+      (Icons.local_cafe_outlined, 'Cafés'),
+      (Icons.storefront_outlined, 'Food courts'),
+      (Icons.directions_car_outlined, 'Drive-ins'),
+      (Icons.account_tree_outlined, 'Multi-location'),
+    ];
+    return _Content(
+      vertical: 40,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.queue, color: Colors.white),
-              const SizedBox(width: 8),
-              Text(
-                'Live queue board',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ],
+          const Text(
+            'Built for busy front doors',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: QuykColors.subtle),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          const _MockQueueRow(token: 'A-042', label: 'Now serving', highlight: true),
-          const _MockQueueRow(token: 'A-043', label: 'Next'),
-          const _MockQueueRow(token: 'A-044', label: 'Waiting · 12 min'),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: AppRadius.lgAll,
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.qr_code_2, color: Colors.white, size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Customers scan to join — no app download',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
+          const SizedBox(height: 14),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final (icon, label) in items)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: QuykColors.line),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 18, color: QuykColors.green),
+                      const SizedBox(width: 8),
+                      Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuykColors.green)),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ],
       ),
@@ -225,190 +471,160 @@ class _HeroVisual extends StatelessWidget {
   }
 }
 
-class _MockQueueRow extends StatelessWidget {
-  const _MockQueueRow({
-    required this.token,
-    required this.label,
+// ── Three screens ───────────────────────────────────────────────────────────
+
+class _ThreeScreens extends StatelessWidget {
+  const _ThreeScreens();
+
+  @override
+  Widget build(BuildContext context) {
+    const cards = [
+      _ScreenCard(
+        icon: Icons.phone_iphone_rounded,
+        who: 'For guests',
+        title: 'Join and relax',
+        points: [
+          'Scan the code — no app or account',
+          'See your place and wait update live',
+          'Get called on your phone when it’s your turn',
+        ],
+      ),
+      _ScreenCard(
+        icon: Icons.tablet_mac_rounded,
+        who: 'For your team',
+        title: 'One tap to call next',
+        points: [
+          'Call, hold, skip or move a guest',
+          'Add walk-ins in seconds',
+          'Every line on one screen, updated live',
+        ],
+        highlight: true,
+      ),
+      _ScreenCard(
+        icon: Icons.insights_outlined,
+        who: 'For owners',
+        title: 'See every line',
+        points: [
+          'Waits, no-shows and guests served',
+          'Guest reviews after each visit',
+          'Locations, lines, menu and team in one place',
+        ],
+      ),
+    ];
+    return _Content(
+      vertical: 56,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeading(
+            eyebrow: 'One system',
+            title: 'Three screens, one live line',
+            subtitle: 'Guests, staff and owners all see the same queue — the moment anything changes.',
+          ),
+          const SizedBox(height: 32),
+          LayoutBuilder(
+            builder: (context, c) {
+              if (c.maxWidth < 820) {
+                return Column(
+                  children: [
+                    for (final card in cards) ...[card, const SizedBox(height: 14)],
+                  ],
+                );
+              }
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < cards.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 16),
+                      Expanded(child: cards[i]),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScreenCard extends StatelessWidget {
+  const _ScreenCard({
+    required this.icon,
+    required this.who,
+    required this.title,
+    required this.points,
     this.highlight = false,
   });
 
-  final String token;
-  final String label;
+  final IconData icon;
+  final String who;
+  final String title;
+  final List<String> points;
   final bool highlight;
 
   @override
   Widget build(BuildContext context) {
+    final fg = highlight ? Colors.white : QuykColors.ink;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(26),
       decoration: BoxDecoration(
-        color: highlight
-            ? Colors.white
-            : Colors.white.withValues(alpha: 0.12),
-        borderRadius: AppRadius.lgAll,
+        color: highlight ? QuykColors.green : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: highlight ? null : Border.all(color: QuykColors.line),
       ),
-      child: Row(
-        children: [
-          Text(
-            token,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: highlight ? AppColors.primary : Colors.white,
-                ),
-          ),
-          const Spacer(),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: highlight ? AppColors.neutral600 : Colors.white70,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LogoStrip extends StatelessWidget {
-  const _LogoStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    const logos = ['Restaurants', 'Cafés', 'Food courts', 'QSR chains', 'Multi-branch'];
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 32,
-        runSpacing: 12,
-        children: logos
-            .map(
-              (l) => Text(
-                l,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.neutral400,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _FeaturesSection extends StatelessWidget {
-  const _FeaturesSection();
-
-  @override
-  Widget build(BuildContext context) {
-    const features = [
-      (Icons.qr_code_scanner, 'QR join', 'Customers join in seconds from any phone.'),
-      (Icons.bolt, 'Staff console', 'One-tap call, skip, hold — built for front desk speed.'),
-      (Icons.tv, 'TV display', 'Lobby boards with live tokens and branding.'),
-      (Icons.insights, 'Owner analytics', 'KPIs, reports, and branch insights at a glance.'),
-      (Icons.notifications_active, 'Smart alerts', 'SMS, WhatsApp, and push when it\'s their turn.'),
-      (Icons.hub, 'Realtime', 'Socket-powered updates across every screen.'),
-    ];
-
-    return _Section(
-      title: 'Everything you need to run queues',
-      subtitle: 'Six products, one platform — designed for operators and executives alike.',
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final cols = constraints.maxWidth > 900 ? 3 : 1;
-          return GridView.count(
-            crossAxisCount: cols,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: cols == 3 ? 1.4 : 2.2,
-            children: [
-              for (final f in features)
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: AppGradients.primary,
-                          borderRadius: AppRadius.lgAll,
-                        ),
-                        child: Icon(f.$1, color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        f.$2,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(f.$3, style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _HowItWorksSection extends StatelessWidget {
-  const _HowItWorksSection();
-
-  @override
-  Widget build(BuildContext context) {
-    const steps = [
-      ('1', 'Scan QR', 'Guests open the join page on their phone — no app install.'),
-      ('2', 'Join queue', 'Party size, name, and phone — they get a queue number instantly.'),
-      ('3', 'Track live', 'Position and wait update on their phone. No refresh needed.'),
-      ('4', 'Get called', 'Staff taps CALL NEXT. The guest screen switches to It’s your turn.'),
-      ('5', 'Complete', 'Staff completes the visit. The guest sees You’re all set.'),
-    ];
-
-    return _Section(
-      title: 'How it works',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final s in steps)
+          QuykIconBubble(
+            icon: icon,
+            size: 48,
+            background: highlight ? QuykColors.lime : QuykColors.limeSoft,
+          ),
+          const SizedBox(height: 18),
+          Text(
+            who,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: highlight ? QuykColors.lime : QuykColors.greenMuted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.5,
+              color: highlight ? Colors.white : QuykColors.green,
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final p in points)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: AppCard(
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                      child: Text(
-                        s.$1,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: highlight ? QuykColors.lime : QuykColors.greenMuted,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            s.$2,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          Text(s.$3, style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      p,
+                      style: TextStyle(fontSize: 15, height: 1.4, color: fg.withValues(alpha: highlight ? 0.88 : 1)),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -417,91 +633,156 @@ class _HowItWorksSection extends StatelessWidget {
   }
 }
 
-class _PricingSection extends StatelessWidget {
-  const _PricingSection({required this.sectionKey, required this.onGetStarted});
+// ── How it works ────────────────────────────────────────────────────────────
 
-  final Key sectionKey;
-  final void Function({String plan}) onGetStarted;
+class _HowItWorks extends StatelessWidget {
+  const _HowItWorks({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _Section(
-      key: sectionKey,
-      title: 'Simple pricing',
-      subtitle: 'Start free. Scale as you grow.',
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 800;
-          if (isWide) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _PriceCard(
-                    name: 'Starter',
-                    price: 'Free',
-                    features: const ['2 queues', '1 branch', 'QR portal', 'Email support'],
-                    onGetStarted: () => onGetStarted(plan: 'Starter'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _PriceCard(
-                    name: 'Growth',
-                    price: '\$29',
-                    highlighted: true,
-                    features: const ['10 queues per branch', '5 branches', 'TV display', 'SMS alerts'],
-                    onGetStarted: () => onGetStarted(plan: 'Growth'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _PriceCard(
-                    name: 'Scale',
-                    price: '\$99',
-                    features: const [
-                      'Unlimited branches',
-                      'Unlimited queues',
-                      'Priority support',
-                      'Custom branding',
+    const steps = [
+      ('Scan', 'Guests scan the code at your door or on the table.'),
+      ('Join', 'Name, party size and phone — they get a ticket instantly.'),
+      ('Wait anywhere', 'Their place and wait update live. No refreshing.'),
+      ('Get called', 'Your team taps Call next. Their phone says it’s their turn.'),
+    ];
+    return Container(
+      color: QuykColors.green,
+      child: _Content(
+        vertical: 64,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SectionHeading(
+              eyebrow: 'How it works',
+              title: 'From the door to the table in four steps',
+              light: true,
+            ),
+            const SizedBox(height: 32),
+            LayoutBuilder(
+              builder: (context, c) {
+                final perRow = c.maxWidth >= 900 ? 4 : (c.maxWidth >= 560 ? 2 : 1);
+                final width = (c.maxWidth - (perRow - 1) * 16) / perRow;
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    for (var i = 0; i < steps.length; i++)
+                      SizedBox(
+                        width: width,
+                        child: Container(
+                          padding: const EdgeInsets.all(22),
+                          decoration: BoxDecoration(
+                            color: QuykColors.greenPanel,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                alignment: Alignment.center,
+                                decoration: const BoxDecoration(color: QuykColors.lime, shape: BoxShape.circle),
+                                child: Text(
+                                  '${i + 1}',
+                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: QuykColors.green),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                steps[i].$1,
+                                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600, color: Colors.white),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                steps[i].$2,
+                                style: TextStyle(fontSize: 14.5, height: 1.45, color: Colors.white.withValues(alpha: 0.75)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Pricing ─────────────────────────────────────────────────────────────────
+
+class _Pricing extends StatelessWidget {
+  const _Pricing({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = [
+      _PriceCard(
+        name: 'Starter',
+        price: 'Free',
+        blurb: 'Try Quyk at one location.',
+        features: const ['1 location', '2 waiting lines', 'Guest join codes', 'Email support'],
+        onTap: () => openGetStarted(plan: 'Starter'),
+      ),
+      _PriceCard(
+        name: 'Growth',
+        price: r'$29',
+        per: '/ month',
+        blurb: 'For busy restaurants and small groups.',
+        features: const [
+          'Up to 5 locations',
+          '10 lines per location',
+          'TV display for your lobby',
+          'Reports and guest reviews',
+          'WhatsApp & SMS alerts (coming soon)',
+        ],
+        highlight: true,
+        onTap: () => openGetStarted(plan: 'Growth'),
+      ),
+      _PriceCard(
+        name: 'Scale',
+        price: r'$99',
+        per: '/ month',
+        blurb: 'For chains and food courts.',
+        features: const ['Unlimited locations', 'Unlimited lines', 'Custom branding', 'Priority support'],
+        onTap: () => openGetStarted(plan: 'Scale'),
+      ),
+    ];
+    return _Content(
+      vertical: 64,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeading(
+            eyebrow: 'Pricing',
+            title: 'Simple plans that grow with you',
+            subtitle: 'Start free. Upgrade when you add locations or lines.',
+          ),
+          const SizedBox(height: 32),
+          LayoutBuilder(
+            builder: (context, c) {
+              if (c.maxWidth < 820) {
+                return Column(children: [for (final card in cards) ...[card, const SizedBox(height: 14)]]);
+              }
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < cards.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 16),
+                      Expanded(child: cards[i]),
                     ],
-                    onGetStarted: () => onGetStarted(plan: 'Scale'),
-                  ),
+                  ],
                 ),
-              ],
-            );
-          }
-          return Column(
-            children: [
-              _PriceCard(
-                name: 'Starter',
-                price: 'Free',
-                features: const ['2 queues', '1 branch', 'QR portal', 'Email support'],
-                onGetStarted: () => onGetStarted(plan: 'Starter'),
-              ),
-              const SizedBox(height: 16),
-              _PriceCard(
-                name: 'Growth',
-                price: '\$29',
-                highlighted: true,
-                features: const ['10 queues per branch', '5 branches', 'TV display', 'SMS alerts'],
-                onGetStarted: () => onGetStarted(plan: 'Growth'),
-              ),
-              const SizedBox(height: 16),
-              _PriceCard(
-                name: 'Scale',
-                price: '\$99',
-                features: const [
-                  'Unlimited branches',
-                  'Unlimited queues',
-                  'Priority support',
-                  'Custom branding',
-                ],
-                onGetStarted: () => onGetStarted(plan: 'Scale'),
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -511,108 +792,161 @@ class _PriceCard extends StatelessWidget {
   const _PriceCard({
     required this.name,
     required this.price,
+    required this.blurb,
     required this.features,
-    required this.onGetStarted,
-    this.highlighted = false,
+    required this.onTap,
+    this.per,
+    this.highlight = false,
   });
 
   final String name;
   final String price;
+  final String? per;
+  final String blurb;
   final List<String> features;
-  final VoidCallback onGetStarted;
-  final bool highlighted;
+  final VoidCallback onTap;
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Container(
-        decoration: highlighted
-            ? BoxDecoration(
-                borderRadius: AppRadius.xlAll,
-                border: Border.all(color: AppColors.primary, width: 2),
-              )
-            : null,
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text(
-              price,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
-            ),
-            if (price.toLowerCase() != 'free')
-              Text('/ month', style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 16),
-            for (final f in features)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle, size: 18, color: AppColors.success),
-                    const SizedBox(width: 8),
-                    Text(f),
-                  ],
+    final titleColor = highlight ? Colors.white : QuykColors.green;
+    final bodyColor = highlight ? Colors.white.withValues(alpha: 0.8) : QuykColors.muted;
+    return Container(
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(
+        color: highlight ? QuykColors.green : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: highlight ? null : Border.all(color: QuykColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: titleColor)),
+              if (highlight) ...[
+                const SizedBox(width: 10),
+                const QuykPill(label: 'Most popular'),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(blurb, style: TextStyle(fontSize: 14, color: bodyColor)),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                price,
+                style: TextStyle(
+                  fontSize: 46,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -1.5,
+                  color: highlight ? QuykColors.lime : QuykColors.green,
                 ),
               ),
-            const SizedBox(height: 16),
-            AppButton(label: 'Get started', fullWidth: true, onPressed: onGetStarted),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TestimonialsSection extends StatelessWidget {
-  const _TestimonialsSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return _Section(
-      title: 'Loved by operators',
-      child: AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '"Quyk cut our front-desk chaos in half. Guests love the digital pass."',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.5),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '— Maria R., Bella Vista Restaurant',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FaqSection extends StatelessWidget {
-  const _FaqSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _Section(
-      title: 'FAQ',
-      child: Column(
-        children: [
-          _FaqTile(
-            q: 'Do customers need to download an app?',
-            a: 'No — they scan a QR and join in the browser as a PWA.',
+              if (per != null) ...[
+                const SizedBox(width: 6),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(per!, style: TextStyle(fontSize: 14, color: bodyColor)),
+                ),
+              ],
+            ],
           ),
-          _FaqTile(
-            q: 'Can staff work offline?',
-            a: 'The staff app shows cached data and syncs when connectivity returns.',
+          const SizedBox(height: 20),
+          for (final f in features)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check_rounded, size: 18, color: highlight ? QuykColors.lime : QuykColors.greenMuted),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      f,
+                      style: TextStyle(fontSize: 14.5, color: highlight ? Colors.white : QuykColors.ink),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: highlight
+                ? FilledButton(
+                    onPressed: onTap,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: QuykColors.lime,
+                      foregroundColor: QuykColors.green,
+                    ),
+                    child: const Text('Get started'),
+                  )
+                : OutlinedButton(onPressed: onTap, child: const Text('Get started')),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── FAQ ─────────────────────────────────────────────────────────────────────
+
+class _Faq extends StatelessWidget {
+  const _Faq({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const faqs = [
+      (
+        'Do guests need to download an app?',
+        'No. They scan the code with their phone camera and join in the browser. No account either.',
+      ),
+      (
+        'What hardware do we need?',
+        'Any tablet or phone with a browser for your team. A TV display for the lobby is optional.',
+      ),
+      (
+        'What if a guest doesn’t have a phone?',
+        'Your team can add them as a walk-in and call them by name or ticket number.',
+      ),
+      (
+        'Can we run more than one line or location?',
+        'Yes — separate lines for dine-in, takeaway or drive-in, and as many locations as your plan allows.',
+      ),
+      (
+        'How long does setup take?',
+        'Most restaurants are live the same day: add your lines, print the join codes, and sign your team in.',
+      ),
+    ];
+    return _Content(
+      vertical: 40,
+      child: LayoutBuilder(
+        builder: (context, c) {
+          const heading = _SectionHeading(
+            eyebrow: 'FAQ',
+            title: 'Questions, answered',
+            subtitle: 'Anything else? Email us and a real person will reply.',
+          );
+          final list = Column(
+            children: [for (final (q, a) in faqs) _FaqTile(q: q, a: a)],
+          );
+          if (c.maxWidth < 820) {
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [heading, const SizedBox(height: 24), list]);
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(flex: 4, child: heading),
+              const SizedBox(width: 40),
+              Expanded(flex: 6, child: list),
+            ],
+          );
+        },
       ),
     );
   }
@@ -620,55 +954,85 @@ class _FaqSection extends StatelessWidget {
 
 class _FaqTile extends StatelessWidget {
   const _FaqTile({required this.q, required this.a});
+
   final String q;
   final String a;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(q, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(a, style: Theme.of(context).textTheme.bodySmall),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: QuykCard(
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+            iconColor: QuykColors.green,
+            collapsedIconColor: QuykColors.green,
+            title: Text(q, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: QuykColors.ink)),
+            expandedAlignment: Alignment.centerLeft,
+            children: [
+              Text(a, style: const TextStyle(fontSize: 15, height: 1.5, color: QuykColors.muted)),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _CtaSection extends StatelessWidget {
-  const _CtaSection({required this.onBookDemo});
+// ── CTA + footer ────────────────────────────────────────────────────────────
 
-  final VoidCallback onBookDemo;
+class _CtaBand extends StatelessWidget {
+  const _CtaBand();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        gradient: AppGradients.primary,
-        borderRadius: AppRadius.xxlAll,
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Ready to modernize your queue?',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
+    final wide = _isWide(context);
+    return _Content(
+      vertical: 40,
+      child: Container(
+        padding: EdgeInsets.all(wide ? 48 : 28),
+        decoration: BoxDecoration(color: QuykColors.lime, borderRadius: BorderRadius.circular(36)),
+        child: Builder(
+          builder: (context) {
+            final title = Text(
+              'Ready to make your line Quyk?',
+              style: TextStyle(
+                fontSize: wide ? 38 : 28,
+                height: 1.1,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -1,
+                color: QuykColors.green,
+              ),
+            );
+            final buttons = Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton(
+                  onPressed: openDemoRequest,
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 54), padding: const EdgeInsets.symmetric(horizontal: 26)),
+                  child: const Text('Book a demo'),
                 ),
-          ),
-          const SizedBox(height: 16),
-          AppButton(
-            label: 'Book a demo',
-            variant: AppButtonVariant.secondary,
-            onPressed: onBookDemo,
-          ),
-        ],
+                OutlinedButton(
+                  onPressed: openSalesContact,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 54),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    side: const BorderSide(color: QuykColors.green, width: 1.4),
+                  ),
+                  child: const Text('Email us'),
+                ),
+              ],
+            );
+            return wide
+                ? Row(children: [Expanded(child: title), const SizedBox(width: 24), buttons])
+                : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [title, const SizedBox(height: 20), buttons]);
+          },
+        ),
       ),
     );
   }
@@ -679,50 +1043,33 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Text(
-        '© ${DateTime.now().year} Quyk. All rights reserved.',
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral500),
-      ),
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section({
-    super.key,
-    required this.title,
-    required this.child,
-    this.subtitle,
-  });
-
-  final String title;
-  final String? subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width > 900;
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isWide ? 80 : 24,
-        vertical: AppSpacing.xl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return _Content(
+      vertical: 28,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 16,
+        runSpacing: 12,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const QuykLogoTile(size: 28),
+              const SizedBox(width: 8),
+              Text(
+                '© ${DateTime.now().year} Quyk',
+                style: const TextStyle(fontSize: 13, color: QuykColors.subtle),
+              ),
+            ],
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(subtitle!, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.neutral600)),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          child,
+          const Wrap(
+            spacing: 4,
+            children: [
+              TextButton(onPressed: openBusinessSignIn, child: Text('Owner sign in')),
+              TextButton(onPressed: openStaffSignIn, child: Text('Staff sign in')),
+              TextButton(onPressed: openSalesContact, child: Text(salesEmail)),
+            ],
+          ),
         ],
       ),
     );

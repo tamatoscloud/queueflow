@@ -37,16 +37,13 @@ class _SetupBackdrop extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.darkBackground,
-            AppColors.neutral950,
-            Color(0xFF0F1424),
+            QuykColors.green,
+            Color(0xFF022E26),
+            Color(0xFF01241D),
           ],
         ),
       ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(gradient: AppGradients.meshDark),
-        child: child,
-      ),
+      child: child,
     );
   }
 }
@@ -234,10 +231,10 @@ class _StaffConfigureScreenState extends ConsumerState<StaffConfigureScreen> {
         : ref.watch(setupQueuesProvider(_branchId!));
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: QuykColors.green,
       appBar: AppBar(
         title: const Text('Configure Display'),
-        backgroundColor: AppColors.darkSurface,
+        backgroundColor: QuykColors.greenPanel,
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -413,12 +410,11 @@ class _PublicPairScreenState extends ConsumerState<PublicPairScreen> {
                     Container(
                       width: 96,
                       height: 96,
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.primary,
+                      decoration: const BoxDecoration(
+                        color: QuykColors.lime,
                         shape: BoxShape.circle,
-                        boxShadow: AppShadows.glow(AppColors.primary),
                       ),
-                      child: const Icon(Icons.tv_rounded, size: 48, color: Colors.white),
+                      child: const Icon(Icons.tv_rounded, size: 48, color: QuykColors.green),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(

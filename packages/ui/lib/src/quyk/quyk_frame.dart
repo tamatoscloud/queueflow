@@ -74,13 +74,21 @@ class QuykAppFrame extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showHeader)
-          _Header(
-            title: title,
-            subtitle: subtitle,
-            actions: actions,
-            liveLabel: liveLabel,
-            liveOk: liveOk,
-            compact: !wide,
+          // Same max width as page content so the header's right edge
+          // (branch picker, live pill) lines up with the page below.
+          Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: quykContentMaxWidth),
+              child: _Header(
+                title: title,
+                subtitle: subtitle,
+                actions: actions,
+                liveLabel: liveLabel,
+                liveOk: liveOk,
+                compact: !wide,
+              ),
+            ),
           ),
         if (banner != null) banner!,
         Expanded(child: child),
@@ -327,29 +335,51 @@ class _Rail extends StatelessWidget {
         right: false,
         child: Column(
           children: [
-            const SizedBox(height: 22),
+            const SizedBox(height: 18),
             const QuykLogoTile(),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 6, bottom: 12),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < items.length; i++) ...[
-                      _RailItem(
-                        item: items[i],
-                        selected: i == selectedIndex,
-                        onTap: () => onSelect(i),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ],
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Shrink items on short windows (laptops) so every page
+                  // stays reachable; scroll with a fade hint beyond that.
+                  const fullExtent = 70.0 + 8.0;
+                  const denseExtent = 46.0 + 2.0;
+                  final dense = items.length * fullExtent > constraints.maxHeight - 12;
+                  final overflow = items.length * denseExtent > constraints.maxHeight - 12;
+                  final list = SingleChildScrollView(
+                    padding: EdgeInsets.only(top: 4, bottom: overflow ? 28 : 8),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < items.length; i++) ...[
+                          _RailItem(
+                            item: items[i],
+                            selected: i == selectedIndex,
+                            dense: dense,
+                            onTap: () => onSelect(i),
+                          ),
+                          SizedBox(height: dense ? 2 : 8),
+                        ],
+                      ],
+                    ),
+                  );
+                  if (!overflow) return list;
+                  return ShaderMask(
+                    blendMode: BlendMode.dstIn,
+                    shaderCallback: (rect) => const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.white, Colors.white, Colors.transparent],
+                      stops: [0, 0.94, 1],
+                    ).createShader(rect),
+                    child: Scrollbar(thumbVisibility: true, child: list),
+                  );
+                },
               ),
             ),
             if (onSignOut != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(top: 4, bottom: 12),
                 child: IconButton(
                   tooltip: 'Sign out',
                   onPressed: onSignOut,
@@ -364,11 +394,17 @@ class _Rail extends StatelessWidget {
 }
 
 class _RailItem extends StatelessWidget {
-  const _RailItem({required this.item, required this.selected, required this.onTap});
+  const _RailItem({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+    this.dense = false,
+  });
 
   final QuykNavItem item;
   final bool selected;
   final VoidCallback onTap;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -385,7 +421,7 @@ class _RailItem extends StatelessWidget {
           onTap: onTap,
           child: SizedBox(
             width: 76,
-            height: 70,
+            height: dense ? 46 : 70,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -393,15 +429,16 @@ class _RailItem extends StatelessWidget {
                   isLabelVisible: (item.badge ?? 0) > 0,
                   label: Text('${item.badge ?? 0}'),
                   backgroundColor: QuykColors.danger,
-                  child: Icon(item.icon, size: 22, color: fg),
+                  child: Icon(item.icon, size: dense ? 20 : 22, color: fg),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: dense ? 2 : 5),
                 Text(
                   item.label,
                   textAlign: TextAlign.center,
-                  maxLines: 2,
+                  maxLines: dense ? 1 : 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: dense ? 11 : 12,
                     height: 1.1,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: fg,

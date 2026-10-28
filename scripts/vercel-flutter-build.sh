@@ -54,6 +54,16 @@ build() {
 
   flutter build web --release -t lib/main_production.dart
   node "$REPO_ROOT/scripts/patch-flutter-web-loader.mjs" build/web
+
+  # Serve assets from a per-build path (/v/<build>/assets/...). Flutter's asset
+  # file names never change between builds, so long-lived caching of /assets
+  # left browsers on stale files (e.g. an old icon-font subset = blank icons).
+  # vercel.json rewrites /v/<build>/* back to /* and caches it immutably.
+  local ver="${VERCEL_GIT_COMMIT_SHA:-$(date +%s)}"
+  ver="${ver:0:12}"
+  sed -i "s#</head>#  <meta name=\"assetBase\" content=\"/v/$ver/\">\n</head>#" build/web/index.html
+  grep -q "name=\"assetBase\"" build/web/index.html
+  echo "assetBase: /v/$ver/"
 }
 
 case "${1:-}" in

@@ -28,6 +28,7 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Turn waiting lines into'), findsOneWidget);
+    expect(find.textContaining('Your queue,'), findsOneWidget);
+    expect(find.text('Book a demo'), findsWidgets);
   });
 }

@@ -106,14 +106,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       label: 'Average wait',
                       value: data.averageWaitMinutes > 0 ? '${data.averageWaitMinutes.toStringAsFixed(1)} min' : '—',
                       icon: Icons.timer_outlined,
-                      hint: 'Join to being served',
+                      hint: 'Join to being served, visits under 8 h',
                     ),
                   ],
                 ),
-                if (data.peakHoursNote?.trim().isNotEmpty == true) ...[
-                  const SizedBox(height: 12),
-                  Text(data.peakHoursNote!, style: const TextStyle(fontSize: 12.5, color: QuykColors.subtle)),
-                ],
                 const SizedBox(height: 24),
                 LayoutBuilder(
                   builder: (context, c) {

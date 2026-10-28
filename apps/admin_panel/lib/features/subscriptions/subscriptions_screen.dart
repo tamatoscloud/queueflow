@@ -81,9 +81,10 @@ class SubscriptionsScreen extends ConsumerWidget {
                               p['name']?.toString() ?? 'Plan',
                               style: const TextStyle(fontWeight: FontWeight.w600, color: QuykColors.ink),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              [p['code'], p['tier'], p['interval']].whereType<Object>().map((e) => '$e').join(' · ').ifEmpty('—'),
-                              style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+                              planPriceLabel(p),
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: QuykColors.green),
                             ),
                           ],
                         ),
@@ -175,6 +176,22 @@ class SubscriptionsScreen extends ConsumerWidget {
   }
 }
 
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
+/// "\$29 / month · \$290 / year" from a plan row (Decimals arrive as strings).
+String planPriceLabel(Map<String, dynamic> plan) {
+  String? money(Object? v) {
+    final n = num.tryParse('${v ?? ''}');
+    if (n == null) return null;
+    final currency = '${plan['currency'] ?? 'USD'}'.toUpperCase();
+    final symbol = currency == 'USD' ? '\$' : '$currency ';
+    return n == 0 ? 'Free' : '$symbol${n % 1 == 0 ? n.toInt() : n.toStringAsFixed(2)}';
+  }
+
+  final monthly = money(plan['priceMonthly']);
+  final yearly = money(plan['priceYearly']);
+  if (monthly == null && yearly == null) return 'Price not set';
+  if (monthly == 'Free') return 'Free';
+  return [
+    if (monthly != null) '$monthly / month',
+    if (yearly != null) '$yearly / year',
+  ].join(' · ');
 }

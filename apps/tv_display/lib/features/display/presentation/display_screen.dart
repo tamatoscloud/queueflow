@@ -20,7 +20,7 @@ class DisplayScreen extends ConsumerWidget {
     final config = configAsync.valueOrNull;
     if (config == null) {
       return const Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: QuykColors.green,
         body: Center(child: AppLoadingIndicator(size: 48)),
       );
     }
@@ -33,12 +33,12 @@ class DisplayScreen extends ConsumerWidget {
       final orientation = MediaQuery.orientationOf(context);
       if (orientation == Orientation.portrait) {
         return Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: QuykColors.green,
           body: Center(
             child: Text(
               'Please rotate to landscape',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.darkOnSurface,
+                    color: Colors.white,
                   ),
             ),
           ),
@@ -110,32 +110,26 @@ class _DisplayBackdrop extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.darkBackground,
-                AppColors.neutral950,
-                accent.withValues(alpha: 0.12),
+                QuykColors.green,
+                const Color(0xFF022E26),
+                accent.withValues(alpha: 0.10),
               ],
               stops: const [0.0, 0.55, 1.0],
             )
-          : LinearGradient(
+          : const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.lightBackground,
-                AppColors.neutral100,
-                accent.withValues(alpha: 0.06),
+                QuykColors.cream,
+                QuykColors.mist,
+                QuykColors.limeSoft,
               ],
             ),
     };
 
     return DecoratedBox(
       decoration: BoxDecoration(gradient: gradient),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: preset == DisplayThemePreset.minimal
-              ? null
-              : (config.darkMode ? AppGradients.meshDark : AppGradients.meshLight),
-        ),
-      ),
+      child: const SizedBox.expand(),
     );
   }
 }
@@ -161,15 +155,15 @@ class _SettingsButton extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.darkElevated.withValues(alpha: 0.55),
+            color: QuykColors.greenPanel.withValues(alpha: 0.8),
             border: Border.all(
-              color: AppColors.darkBorder.withValues(alpha: 0.6),
+              color: Colors.white.withValues(alpha: 0.12),
             ),
             boxShadow: AppShadows.sm(brightness),
           ),
           child: const Padding(
             padding: EdgeInsets.all(12),
-            child: Icon(Icons.settings_outlined, color: AppColors.darkOnSurfaceMuted, size: 22),
+            child: Icon(Icons.settings_outlined, color: Colors.white70, size: 22),
           ),
         ),
       ),
@@ -358,7 +352,7 @@ class Mode4Layout extends StatelessWidget {
                 colors: [
                   primary,
                   primary.withValues(alpha: 0.75),
-                  AppColors.neutral950,
+                  QuykColors.green,
                 ],
               )
             : null,
@@ -549,14 +543,7 @@ class _NowServingTokenState extends State<NowServingToken>
           ),
           decoration: BoxDecoration(
             borderRadius: AppRadius.xxlAll,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accent.withValues(alpha: 0.18 + _glow.value * 0.08),
-                AppColors.accentPurple.withValues(alpha: 0.12 + _glow.value * 0.06),
-              ],
-            ),
+            color: QuykColors.greenPanel,
             border: Border.all(
               color: accent.withValues(alpha: 0.45 + _glow.value * 0.25),
               width: 2,
@@ -576,7 +563,7 @@ class _NowServingTokenState extends State<NowServingToken>
       },
       child: ShaderMask(
         shaderCallback: (bounds) => LinearGradient(
-          colors: [accent, AppColors.primaryLight, AppColors.secondaryLight],
+          colors: [accent, accent],
         ).createShader(bounds),
         child: Text(
           token,
@@ -660,22 +647,14 @@ class NextCustomersList extends StatelessWidget {
                 width: 52 * scale,
                 height: 52 * scale,
                 decoration: BoxDecoration(
-                  gradient: AppGradients.primary,
+                  color: QuykColors.lime,
                   borderRadius: AppRadius.lgAll,
-                  boxShadow: AppShadows.glow(AppColors.primary)
-                      .map(
-                        (s) => s.copyWith(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          blurRadius: 12,
-                        ),
-                      )
-                      .toList(),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   '${index + 1}',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: QuykColors.green,
                     fontSize: 22 * scale,
                     fontWeight: FontWeight.w700,
                   ),
@@ -735,15 +714,46 @@ class DisplayFooter extends StatelessWidget {
         if (snapshot != null) ...[
           _WaitCountdown(minutes: wait, scale: scale),
           SizedBox(width: 32 * scale),
-          MetricCard(
-            label: 'Waiting',
-            value: '${snapshot!.metrics.waitingCount}',
-            icon: Icons.people_alt_outlined,
-            accentColor: AppColors.secondary,
-          ),
+          // MetricCard stretches its label row (Expanded), which can't lay
+          // out inside this Row — the footer threw on every board.
+          _WaitingCount(count: snapshot!.metrics.waitingCount, scale: scale),
         ] else
           _WaitCountdown(minutes: wait, scale: scale),
       ],
+    );
+  }
+}
+
+class _WaitingCount extends StatelessWidget {
+  const _WaitingCount({required this.count, required this.scale});
+
+  final int count;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 14 * scale),
+      decoration: BoxDecoration(
+        color: QuykColors.greenPanel,
+        borderRadius: BorderRadius.circular(24 * scale),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.people_alt_outlined, color: QuykColors.lime, size: 28 * scale),
+          SizedBox(width: 12 * scale),
+          Text(
+            '$count',
+            style: TextStyle(fontSize: 40 * scale, fontWeight: FontWeight.w700, color: Colors.white, height: 1),
+          ),
+          SizedBox(width: 8 * scale),
+          Text(
+            'waiting',
+            style: TextStyle(fontSize: 18 * scale, color: Colors.white.withValues(alpha: 0.8)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -758,7 +768,7 @@ class _WaitCountdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       variant: AppCardVariant.gradient,
-      gradient: AppGradients.secondary,
+      gradient: const LinearGradient(colors: [QuykColors.greenPanel, QuykColors.greenMuted]),
       padding: EdgeInsets.symmetric(horizontal: 28 * scale, vertical: 16 * scale),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -797,19 +807,25 @@ class QueueStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final variant = switch (status) {
-      'PAUSED' => AppBadgeVariant.warning,
-      'CLOSED' => AppBadgeVariant.danger,
-      _ => AppBadgeVariant.success,
+    final (String label, Color bg, Color fg, IconData icon) = switch (status) {
+      'PAUSED' => ('PAUSED', QuykColors.warningTint, const Color(0xFF7A4B0C), Icons.pause_circle_outline),
+      'CLOSED' => ('CLOSED', QuykColors.dangerTint, QuykColors.danger, Icons.cancel_outlined),
+      _ => ('OPEN', QuykColors.lime, QuykColors.green, Icons.check_circle_outline),
     };
-    return AppBadge(
-      label: status,
-      variant: variant,
-      icon: switch (status) {
-        'PAUSED' => Icons.pause_circle_outline,
-        'CLOSED' => Icons.cancel_outlined,
-        _ => Icons.check_circle_outline,
-      },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: fg),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -852,18 +868,18 @@ class AnnouncementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       variant: AppCardVariant.gradient,
-      gradient: AppGradients.accent,
+      gradient: const LinearGradient(colors: [QuykColors.lime, QuykColors.limeSoft]),
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         children: [
-          const Icon(Icons.campaign_outlined, color: Colors.white, size: 28),
+          const Icon(Icons.campaign_outlined, color: QuykColors.green, size: 28),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               message,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    color: QuykColors.green,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ),
@@ -1117,7 +1133,7 @@ class DisplaySettingsScreen extends ConsumerWidget {
 Color _accentColor(DisplayConfig config) {
   return config.primaryColorValue != null
       ? Color(config.primaryColorValue!)
-      : AppColors.primary;
+      : QuykColors.lime;
 }
 
 /// Brief celebratory burst when a customer is called.
@@ -1168,9 +1184,9 @@ class _ConfettiPainter extends CustomPainter {
   final double progress;
 
   static const _colors = [
-    AppColors.primary,
-    AppColors.accent,
-    AppColors.secondary,
+    QuykColors.lime,
+    QuykColors.limeSoft,
+    QuykColors.star,
     AppColors.success,
     AppColors.warning,
   ];

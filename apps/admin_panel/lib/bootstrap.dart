@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:queueflow_shared/queueflow_shared.dart';
 
 import 'app.dart';
@@ -10,6 +11,8 @@ import 'app.dart';
 /// depend on.
 Future<void> bootstrap(Flavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Keep the address bar in sync with pushed pages so refresh/share work.
+  GoRouter.optionURLReflectsImperativeAPIs = true;
 
   await dotenv.load(fileName: flavor.envFileName);
   final appConfig = AppConfig.fromEnvMap(dotenv.env, flavor);

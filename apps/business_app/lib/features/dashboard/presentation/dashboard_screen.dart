@@ -332,12 +332,18 @@ class _RecentActivity extends StatelessWidget {
                       icon: switch (recent[i].type.toUpperCase()) {
                         'YOUR_TURN' || 'ALMOST_YOUR_TURN' => Icons.campaign_outlined,
                         'FEEDBACK_REQUEST' => Icons.star_outline_rounded,
-                        _ => Icons.person_add_alt_outlined,
+                        'QUEUE_JOINED' => Icons.person_add_alt_outlined,
+                        'POSITION_UPDATE' => Icons.format_list_numbered_rounded,
+                        'QUEUE_PAUSED' || 'QUEUE_CLOSED' || 'QUEUE_CANCELLED' => Icons.pause_circle_outline_rounded,
+                        _ => Icons.chat_bubble_outline_rounded,
                       },
                       size: 36,
                     ),
                     title: Text(
-                      '${recent[i].displayCode ?? 'Guest'} · ${guestMessageEventLabel(recent[i].type)}',
+                      [
+                        if (recent[i].displayCode != null) recent[i].displayCode!,
+                        guestMessageEventLabel(recent[i].type),
+                      ].join(' · '),
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
