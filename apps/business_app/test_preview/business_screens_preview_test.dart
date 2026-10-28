@@ -25,6 +25,7 @@ import 'package:business_app/features/shell/presentation/business_shell.dart';
 import 'package:business_app/features/staff/presentation/staff_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -33,6 +34,7 @@ import 'package:queueflow_shared/queueflow_shared.dart'
 
 Future<void> _loadFonts() async {
   TestWidgetsFlutterBinding.ensureInitialized();
+  dotenv.testLoad(fileInput: 'CUSTOMER_PORTAL_URL=https://queueflow-six-beta.vercel.app');
   final hanken = FontLoader('HankenGrotesk');
   for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
     hanken.addFont(rootBundle.load('assets/fonts/HankenGrotesk-$w.ttf'));

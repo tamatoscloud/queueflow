@@ -168,7 +168,7 @@ class _NavBar extends StatelessWidget {
             TextButton(onPressed: onFaq, child: const Text('FAQ')),
             const SizedBox(width: 8),
           ],
-          OutlinedButton(onPressed: openBusinessSignIn, child: const Text('Sign in')),
+          const OutlinedButton(onPressed: openBusinessSignIn, child: Text('Sign in')),
           if (wide) ...[
             const SizedBox(width: 8),
             const FilledButton(onPressed: openDemoRequest, child: Text('Book a demo')),
@@ -1062,12 +1062,12 @@ class _Footer extends StatelessWidget {
               ),
             ],
           ),
-          Wrap(
+          const Wrap(
             spacing: 4,
             children: [
-              TextButton(onPressed: openBusinessSignIn, child: const Text('Owner sign in')),
-              TextButton(onPressed: openStaffSignIn, child: const Text('Staff sign in')),
-              TextButton(onPressed: openSalesContact, child: const Text(salesEmail)),
+              TextButton(onPressed: openBusinessSignIn, child: Text('Owner sign in')),
+              TextButton(onPressed: openStaffSignIn, child: Text('Staff sign in')),
+              TextButton(onPressed: openSalesContact, child: Text(salesEmail)),
             ],
           ),
         ],

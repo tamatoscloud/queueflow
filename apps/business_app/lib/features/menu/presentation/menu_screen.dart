@@ -26,10 +26,11 @@ class GuestMenuItemDraft {
 
   factory GuestMenuItemDraft.fromJson(Map<String, dynamic> json) {
     return GuestMenuItemDraft(
-      id: (json['id'] as String?) ?? UniqueKey().toString(),
-      name: (json['name'] as String?) ?? '',
-      description: (json['description'] as String?) ?? '',
-      price: (json['price'] as String?) ?? '0',
+      // Tolerate numbers as well as strings (older menus store price as a number).
+      id: json['id']?.toString() ?? UniqueKey().toString(),
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      price: json['price']?.toString() ?? '0',
       tags: ((json['tags'] as List?) ?? const []).map((e) => '$e').toList(),
       available: json['available'] != false,
     );
