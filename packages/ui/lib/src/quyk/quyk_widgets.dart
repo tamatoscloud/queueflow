@@ -379,48 +379,42 @@ class QuykTable extends StatelessWidget {
 
   Widget _stacked(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var r = 0; r < rows.length; r++) ...[
           if (r > 0) const SizedBox(height: 10),
           QuykCard(
             onTap: onRowTap == null ? null : () => onRowTap!(r),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (rows[r].isNotEmpty) rows[r].first,
-                if (rows[r].length > 1) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 18,
-                    runSpacing: 10,
-                    crossAxisAlignment: WrapCrossAlignment.end,
-                    children: [
-                      for (var i = 1; i < rows[r].length && i < columns.length; i++)
-                        if (rows[r][i] is! SizedBox)
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (columns[i].label.isNotEmpty)
-                                Text(
-                                  columns[i].label.toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.6,
-                                    color: QuykColors.subtle,
-                                  ),
-                                ),
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 260),
-                                child: rows[r][i],
+                const SizedBox(height: 6),
+                for (var i = 1; i < rows[r].length && i < columns.length; i++)
+                  if (rows[r][i] is! SizedBox)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 96,
+                            child: Text(
+                              columns[i].label.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.6,
+                                color: QuykColors.subtle,
                               ),
-                            ],
+                            ),
                           ),
-                    ],
-                  ),
-                ],
+                          Expanded(
+                            child: Align(alignment: Alignment.centerLeft, child: rows[r][i]),
+                          ),
+                        ],
+                      ),
+                    ),
               ],
             ),
           ),

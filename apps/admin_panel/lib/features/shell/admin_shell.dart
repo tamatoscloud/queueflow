@@ -60,7 +60,7 @@ class AdminShell extends ConsumerWidget {
       null when health.hasError => ('Health unknown', false),
       null => ('Checking…', false),
       0 => ('All systems OK', true),
-      final n => ('$n need${n == 1 ? 's' : ''} attention', false),
+      final n => ('$n issue${n == 1 ? '' : 's'}', false),
     };
 
     return AdminCommandPaletteShortcuts(
@@ -71,15 +71,25 @@ class AdminShell extends ConsumerWidget {
         title: firstName.isEmpty ? quykGreetingForTime() : '${quykGreetingForTime()}, $firstName',
         subtitle: 'Quyk platform',
         actions: [
-          OutlinedButton.icon(
-            onPressed: () => showAdminCommandPalette(context),
-            icon: const Icon(Icons.search_rounded, size: 18),
-            label: const Text('Search  ⌘K'),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              side: const BorderSide(color: QuykColors.line),
+          if (MediaQuery.sizeOf(context).width >= 900)
+            Tooltip(
+              message: 'Jump to any page (Ctrl/Cmd + K)',
+              child: OutlinedButton.icon(
+                onPressed: () => showAdminCommandPalette(context),
+                icon: const Icon(Icons.search_rounded, size: 18),
+                label: const Text('Search'),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: QuykColors.line),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              tooltip: 'Search',
+              onPressed: () => showAdminCommandPalette(context),
+              icon: const Icon(Icons.search_rounded, color: QuykColors.green),
             ),
-          ),
         ],
         liveLabel: liveLabel,
         liveOk: liveOk,
