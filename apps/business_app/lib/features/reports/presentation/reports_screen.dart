@@ -191,7 +191,8 @@ class _OutcomeBar extends StatelessWidget {
             height: 14,
             child: Row(
               children: [
-                for (final s in segments) Expanded(flex: s.$2, child: ColoredBox(color: s.$3)),
+                for (final s in segments)
+                  Expanded(flex: s.$2, child: ColoredBox(color: s.$3, child: const SizedBox.expand())),
               ],
             ),
           ),

@@ -62,10 +62,12 @@ class ProductThemeData {
               label: 'Display',
             ),
         ProductIdentity.platformAdmin => const ProductThemeData(
-              accent: AppColors.neutral700,
-              accentLight: Color(0xFFF1F5F9),
+              accent: QuykColors.green,
+              accentLight: QuykColors.limeSoft,
               gradient: LinearGradient(
-                colors: [AppColors.neutral800, AppColors.neutral900],
+                colors: [QuykColors.green, QuykColors.greenPanel],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               label: 'Platform',
             ),

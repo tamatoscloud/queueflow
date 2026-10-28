@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -16,6 +17,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisConnectionService } from '../../infrastructure/redis/redis-connection.service';
 import { PasswordService } from '../auth/password.service';
 import { AuthRepository } from '../auth/auth.repository';
+import { isPlatformAdmin } from '../auth/auth.mapper';
 import { NotificationDispatchService } from '../../infrastructure/notifications/services/notification-dispatch.service';
 import { BusinessService } from '../business/business.service';
 import type {
@@ -190,6 +192,10 @@ export class PlatformAdminService {
       deletedAt: null,
       ...(query.businessId ? { businessId: query.businessId } : {}),
       ...(query.status ? { status: query.status as UserStatus } : {}),
+      // Filter by role in the query so paging and totals respect it.
+      ...(query.role
+        ? { userRoles: { some: { role: { name: query.role } } } }
+        : {}),
       ...(query.search
         ? {
             OR: [
@@ -214,31 +220,44 @@ export class PlatformAdminService {
         orderBy: { createdAt: 'desc' },
       }),
     ]);
-    const data = users
-      .filter((u) => !query.role || u.userRoles.some((ur) => ur.role.name === query.role))
-      .map((u) => ({
+    const data = users.map((u) => {
+      const roles = u.userRoles.map((ur) => ur.role.name);
+      return {
         id: u.id,
         email: u.email,
         fullName: u.fullName,
         status: u.status,
         businessId: u.businessId,
         businessName: u.business?.name ?? null,
-        roles: u.userRoles.map((ur) => ur.role.name),
+        roles,
         lastLoginAt: u.lastLoginAt,
-        isPlatformAdmin: u.businessId === null,
-      }));
+        isPlatformAdmin: isPlatformAdmin(roles),
+      };
+    });
     return { data, meta: paginatedMeta(page, pageSize, totalItems) };
   }
 
-  async updateUserStatus(userId: string, dto: UpdatePlatformUserStatusDto) {
+  async updateUserStatus(
+    userId: string,
+    dto: UpdatePlatformUserStatusDto,
+    actorUserId?: string,
+  ) {
+    if (actorUserId && actorUserId === userId && dto.status !== 'ACTIVE') {
+      throw new BadRequestException('You can’t suspend or deactivate your own account');
+    }
     const user = await this.prisma.user.findFirst({
       where: { id: userId, deletedAt: null },
     });
     if (!user) throw new NotFoundException('User not found');
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { status: dto.status as UserStatus },
     });
+    if (dto.status !== 'ACTIVE') {
+      // Suspension must take effect now, not when the access token expires.
+      await this.authRepo.revokeAllSessions(userId);
+    }
+    return updated;
   }
 
   async resetUserPassword(userId: string) {

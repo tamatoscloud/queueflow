@@ -153,7 +153,7 @@ class _DashboardBody extends ConsumerWidget {
             ),
       children: [
         QuykGrid(
-          minTileWidth: 220,
+          minTileWidth: 170,
           children: [
             QuykStatTile(
               label: 'Waiting now',

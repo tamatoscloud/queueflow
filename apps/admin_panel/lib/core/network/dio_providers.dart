@@ -4,6 +4,7 @@ import 'package:queueflow_shared/queueflow_shared.dart';
 
 import '../../features/auth/data/auth_token_holder.dart';
 import '../../features/auth/data/auth_token_storage.dart';
+import '../../features/auth/presentation/auth_controller.dart';
 import 'api_response_parser.dart';
 import 'token_refresh_interceptor.dart';
 
@@ -22,7 +23,7 @@ final publicDioProvider = Provider<Dio>((ref) {
   );
 });
 
-final authenticatedDioProvider = Provider<Dio>((ref) {
+final Provider<Dio> authenticatedDioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final factory = ref.watch(adminDioFactoryProvider);
   final tokenStorage = ref.watch(authTokenStorageProvider);
@@ -47,6 +48,7 @@ final authenticatedDioProvider = Provider<Dio>((ref) {
         publicDio: publicDio,
         parser: parser,
         retryDio: () => dio,
+        onSessionExpired: () => ref.read(authControllerProvider.notifier).sessionExpired(),
       ),
     ],
   );

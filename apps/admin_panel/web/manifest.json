@@ -1,12 +1,12 @@
 {
-    "name": "admin_panel",
-    "short_name": "admin_panel",
+    "name": "Quyk Platform Admin",
+    "short_name": "Quyk Admin",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Quyk admin panel (web)",
-    "orientation": "portrait-primary",
+    "background_color": "#F3F7EA",
+    "theme_color": "#003D32",
+    "description": "Manage restaurants, users and platform health on Quyk.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

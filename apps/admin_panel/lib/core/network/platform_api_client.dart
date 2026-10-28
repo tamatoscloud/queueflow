@@ -200,7 +200,7 @@ class PlatformApiClient {
       _parser.getList(
         () => _dio.get('/feedback', queryParameters: {
           'page': page,
-          'pageSize': 40,
+          'pageSize': 100,
           if (rating != null) 'rating': rating,
           if (businessId != null) 'businessId': businessId,
         }),

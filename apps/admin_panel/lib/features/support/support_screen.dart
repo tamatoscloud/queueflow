@@ -6,18 +6,48 @@ import 'package:queueflow_ui/queueflow_ui.dart';
 import '../../core/models/platform_models.dart';
 import '../../core/network/api_error_message.dart';
 import '../../core/network/platform_api_client.dart';
-import '../../shared/widgets/calm/admin_calm_helpers.dart';
-import '../../shared/widgets/calm/calm_card.dart';
-import '../../shared/widgets/calm/calm_empty_state.dart';
-import '../../shared/widgets/calm/calm_page_scaffold.dart';
-import '../../shared/widgets/calm/calm_primary_button.dart';
-import '../../shared/widgets/calm/calm_search_field.dart';
-import '../../shared/widgets/calm/calm_section_label.dart';
-import '../../shared/widgets/calm/calm_status_dot.dart';
+import '../../shared/feedback.dart';
+import '../tenants/tenants_screen.dart' show formatDate;
 
-final supportTicketsProvider = FutureProvider.autoDispose((ref) async {
+final supportTicketsProvider = FutureProvider.autoDispose<List<SupportTicket>>((ref) async {
   return ref.watch(platformApiClientProvider).listSupportTickets();
 });
+
+const ticketStatuses = [
+  (value: 'OPEN', label: 'Open'),
+  (value: 'IN_PROGRESS', label: 'In progress'),
+  (value: 'RESOLVED', label: 'Resolved'),
+  (value: 'CLOSED', label: 'Closed'),
+];
+
+const ticketPriorities = [
+  (value: 'LOW', label: 'Low'),
+  (value: 'MEDIUM', label: 'Medium'),
+  (value: 'HIGH', label: 'High'),
+  (value: 'URGENT', label: 'Urgent'),
+];
+
+String _label(List<({String value, String label})> options, String value) =>
+    options.firstWhere((o) => o.value == value.toUpperCase(), orElse: () => (value: value, label: value)).label;
+
+Widget ticketStatusPill(String status) {
+  final (bg, fg) = switch (status.toUpperCase()) {
+    'OPEN' => (QuykColors.lime, QuykColors.green),
+    'IN_PROGRESS' => (QuykColors.limeSoft, QuykColors.green),
+    'RESOLVED' => (QuykColors.mist, QuykColors.greenMuted),
+    _ => (QuykColors.mist, QuykColors.subtle),
+  };
+  return QuykPill(label: _label(ticketStatuses, status), background: bg, foreground: fg, fontSize: 11);
+}
+
+Widget ticketPriorityPill(String priority) {
+  final (bg, fg) = switch (priority.toUpperCase()) {
+    'URGENT' => (QuykColors.dangerTint, QuykColors.danger),
+    'HIGH' => (QuykColors.warningTint, const Color(0xFF7A4B0C)),
+    _ => (QuykColors.mist, QuykColors.greenMuted),
+  };
+  return QuykPill(label: _label(ticketPriorities, priority), background: bg, foreground: fg, fontSize: 11);
+}
 
 class SupportScreen extends ConsumerStatefulWidget {
   const SupportScreen({super.key});
@@ -28,6 +58,8 @@ class SupportScreen extends ConsumerStatefulWidget {
 
 class _SupportScreenState extends ConsumerState<SupportScreen> {
   final _search = TextEditingController();
+  String _query = '';
+  String? _status = 'ACTIVE';
 
   @override
   void dispose() {
@@ -35,156 +67,233 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     super.dispose();
   }
 
+  bool _matches(SupportTicket t) {
+    final status = t.status.toUpperCase();
+    final statusOk = switch (_status) {
+      null => true,
+      'ACTIVE' => status == 'OPEN' || status == 'IN_PROGRESS',
+      final s => status == s,
+    };
+    if (!statusOk) return false;
+    if (_query.isEmpty) return true;
+    final q = _query.toLowerCase();
+    return t.subject.toLowerCase().contains(q) || (t.businessName?.toLowerCase().contains(q) ?? false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(supportTicketsProvider);
-    final query = _search.text.trim().toLowerCase();
-
-    return Column(
+    return QuykPage(
+      title: 'Support',
+      subtitle: 'Requests from restaurants that need a hand.',
+      onRefresh: () async => ref.invalidate(supportTicketsProvider),
+      action: FilledButton.icon(
+        onPressed: _create,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New ticket'),
+      ),
       children: [
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Support', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              Text('Help restaurants on the platform', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.calmWarmGray)),
-              const SizedBox(height: AppSpacing.md),
-              CalmSearchField(controller: _search, hint: 'Search businesses or requests', onSubmitted: (_) => setState(() {})),
-            ],
-          ),
+        QuykSearchField(
+          controller: _search,
+          hint: 'Search by subject or business',
+          onChanged: (v) => setState(() => _query = v.trim()),
         ),
-        Expanded(
-          child: async.when(
-            loading: () => const CalmPageScaffold(isLoading: true),
-            error: (_, __) => CalmPageScaffold(
-              errorMessage: 'We couldn\'t load support requests.',
-              onRetry: () => ref.invalidate(supportTicketsProvider),
-            ),
-            data: (tickets) {
-              final filtered = query.isEmpty
-                  ? tickets
-                  : tickets.where((t) {
-                      return t.subject.toLowerCase().contains(query) ||
-                          (t.businessName?.toLowerCase().contains(query) ?? false);
-                    }).toList();
-
-              if (filtered.isEmpty) {
-                return const CalmEmptyState(
-                  title: 'No open support requests',
-                  message: 'Support tickets will appear here when restaurants need help.',
-                  icon: Icons.support_agent_outlined,
-                );
-              }
-
-              final open = filtered.where((t) => t.status == 'OPEN').toList();
-              final waiting = filtered.where((t) => t.status == 'IN_PROGRESS').toList();
-              final resolved = filtered.where((t) => t.status == 'RESOLVED' || t.status == 'CLOSED').toList();
-
-              return RefreshIndicator(
-                onRefresh: () async => ref.invalidate(supportTicketsProvider),
-                child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  children: [
-                    if (open.isNotEmpty) ...[_section(context, 'Open', open, ref)],
-                    if (waiting.isNotEmpty) ...[_section(context, 'Waiting', waiting, ref)],
-                    if (resolved.isNotEmpty) ...[_section(context, 'Resolved', resolved, ref)],
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: CalmPrimaryButton(label: 'New ticket', icon: Icons.add, onPressed: () => _createTicket(context, ref)),
-        ),
-      ],
-    );
-  }
-
-  Widget _section(BuildContext context, String title, List<SupportTicket> tickets, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CalmSectionLabel(title),
-        const SizedBox(height: AppSpacing.sm),
-        for (final t in tickets)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: CalmCard(
-              onTap: () => _updateTicket(context, ref, t.id, t.status),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t.subject, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                        Text(
-                          t.businessName ?? 'Platform',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.calmWarmGray),
-                        ),
-                      ],
-                    ),
-                  ),
-                  CalmStatusDot(status: calmStatusFromRaw(t.status), label: t.priority),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: AppSpacing.md),
-      ],
-    );
-  }
-
-  Future<void> _createTicket(BuildContext context, WidgetRef ref) async {
-    final subjectCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Create support ticket'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            TextField(controller: subjectCtrl, decoration: const InputDecoration(labelText: 'Subject')),
-            const SizedBox(height: AppSpacing.sm),
-            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description'), maxLines: 3),
+            for (final f in const [
+              (value: 'ACTIVE', label: 'Needs work'),
+              (value: null, label: 'All'),
+              (value: 'RESOLVED', label: 'Resolved'),
+              (value: 'CLOSED', label: 'Closed'),
+            ])
+              QuykFilterChip(label: f.label, selected: _status == f.value, onTap: () => setState(() => _status = f.value)),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          AppButton(label: 'Create', onPressed: () => Navigator.pop(ctx, true)),
+        const SizedBox(height: 16),
+        async.when(
+          loading: () => const QuykLoadingBlock(),
+          error: (e, _) => QuykMessageCard(
+            icon: Icons.cloud_off_rounded,
+            title: 'We couldn’t load support requests',
+            subtitle: apiExceptionMessage(e),
+            actionLabel: 'Try again',
+            onAction: () => ref.invalidate(supportTicketsProvider),
+          ),
+          data: (tickets) {
+            final shown = tickets.where(_matches).toList();
+            if (shown.isEmpty) {
+              return QuykMessageCard(
+                icon: Icons.support_agent_outlined,
+                title: _query.isNotEmpty
+                    ? 'No requests match “$_query”'
+                    : _status == 'ACTIVE'
+                        ? 'Nothing waiting on you'
+                        : 'No requests here',
+                subtitle: _query.isNotEmpty ? 'Try a different search.' : 'New support requests show up here.',
+              );
+            }
+            return QuykTable(
+              columns: const [
+                QuykColumn('Request', flex: 5),
+                QuykColumn('Business', flex: 3),
+                QuykColumn('Priority', flex: 2),
+                QuykColumn('Opened', flex: 2),
+                QuykColumn('Status', flex: 2),
+                QuykColumn('', flex: 1, alignEnd: true),
+              ],
+              rows: [
+                for (final t in shown)
+                  [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        QuykCellText(t.subject, strong: true),
+                        if (t.assignedToName != null)
+                          Text(
+                            'Assigned to ${t.assignedToName}',
+                            style: const TextStyle(fontSize: 12, color: QuykColors.subtle),
+                          ),
+                      ],
+                    ),
+                    QuykCellText(t.businessName ?? 'Platform'),
+                    ticketPriorityPill(t.priority),
+                    QuykCellText(formatDate(t.createdAt)),
+                    ticketStatusPill(t.status),
+                    PopupMenuButton<String>(
+                      tooltip: 'Update request',
+                      icon: const Icon(Icons.more_horiz_rounded, color: QuykColors.muted),
+                      onSelected: (v) => _update(t, v),
+                      itemBuilder: (_) => [
+                        for (final s in ticketStatuses)
+                          CheckedPopupMenuItem(
+                            value: 'status:${s.value}',
+                            checked: t.status.toUpperCase() == s.value,
+                            child: Text('Mark ${s.label.toLowerCase()}'),
+                          ),
+                        const PopupMenuDivider(),
+                        for (final p in ticketPriorities)
+                          CheckedPopupMenuItem(
+                            value: 'priority:${p.value}',
+                            checked: t.priority.toUpperCase() == p.value,
+                            child: Text('${p.label} priority'),
+                          ),
+                      ],
+                    ),
+                  ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _update(SupportTicket t, String action) async {
+    final [field, value] = action.split(':');
+    final done = await runWithFeedback(
+      context,
+      () => ref.read(platformApiClientProvider).updateSupportTicket(t.id, {field: value}),
+      success: field == 'status'
+          ? '“${t.subject}” marked ${_label(ticketStatuses, value).toLowerCase()}'
+          : 'Priority set to ${_label(ticketPriorities, value).toLowerCase()}',
+      failure: 'Couldn’t update the request',
+    );
+    if (done) ref.invalidate(supportTicketsProvider);
+  }
+
+  Future<void> _create() async {
+    final created = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _NewTicketSheet(),
+    );
+    if (created == true) ref.invalidate(supportTicketsProvider);
+  }
+}
+
+class _NewTicketSheet extends ConsumerStatefulWidget {
+  const _NewTicketSheet();
+
+  @override
+  ConsumerState<_NewTicketSheet> createState() => _NewTicketSheetState();
+}
+
+class _NewTicketSheetState extends ConsumerState<_NewTicketSheet> {
+  final _subject = TextEditingController();
+  final _details = TextEditingController();
+  String _priority = 'MEDIUM';
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _subject.dispose();
+    _details.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_subject.text.trim().isEmpty || _details.text.trim().isEmpty) {
+      setState(() => _error = 'Add a subject and describe the problem.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ref.read(platformApiClientProvider).createSupportTicket({
+        'subject': _subject.text.trim(),
+        'description': _details.text.trim(),
+        'priority': _priority,
+      });
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiExceptionMessage(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'New support ticket',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: QuykColors.green),
+          ),
+          const SizedBox(height: 20),
+          TextField(controller: _subject, autofocus: true, decoration: const InputDecoration(labelText: 'Subject')),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _details,
+            maxLines: 4,
+            decoration: const InputDecoration(labelText: 'What’s going on?', alignLabelWithHint: true),
+          ),
+          const SizedBox(height: 14),
+          SegmentedButton<String>(
+            segments: [for (final p in ticketPriorities) ButtonSegment(value: p.value, label: Text(p.label))],
+            selected: {_priority},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => setState(() => _priority = s.first),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 14),
+            QuykAuthError(_error!),
+          ],
+          const SizedBox(height: 20),
+          QuykAuthButton(label: 'Create ticket', loading: _saving, onPressed: _save),
         ],
       ),
     );
-    if (ok != true) return;
-    try {
-      await ref.read(platformApiClientProvider).createSupportTicket({
-        'subject': subjectCtrl.text.trim(),
-        'description': descCtrl.text.trim(),
-        'priority': 'MEDIUM',
-      });
-      ref.invalidate(supportTicketsProvider);
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiExceptionMessage(e))));
-      }
-    }
-  }
-
-  Future<void> _updateTicket(BuildContext context, WidgetRef ref, String id, String currentStatus) async {
-    const statuses = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
-    final next = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
-    try {
-      await ref.read(platformApiClientProvider).updateSupportTicket(id, {'status': next});
-      ref.invalidate(supportTicketsProvider);
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiExceptionMessage(e))));
-      }
-    }
   }
 }

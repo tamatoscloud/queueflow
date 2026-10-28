@@ -27,13 +27,12 @@ const adminCommandPaletteEntries = [
   AdminCommandPaletteEntry(label: 'Support', route: AppRoutes.support, icon: Icons.support_agent_outlined),
   AdminCommandPaletteEntry(label: 'Analytics', route: AppRoutes.analytics, icon: Icons.analytics_outlined),
   AdminCommandPaletteEntry(label: 'Health', route: AppRoutes.health, icon: Icons.monitor_heart_outlined),
-  AdminCommandPaletteEntry(label: 'Activity', route: AppRoutes.activity, icon: Icons.timeline_outlined),
   AdminCommandPaletteEntry(label: 'Feature flags', route: AppRoutes.featureFlags, icon: Icons.flag_outlined),
   AdminCommandPaletteEntry(label: 'Settings', route: AppRoutes.settings, icon: Icons.settings_outlined),
   AdminCommandPaletteEntry(label: 'Branches', route: AppRoutes.branches, icon: Icons.store_outlined),
   AdminCommandPaletteEntry(label: 'Users', route: AppRoutes.users, icon: Icons.people_outline),
   AdminCommandPaletteEntry(label: 'Subscriptions', route: AppRoutes.subscriptions, icon: Icons.card_membership_outlined),
-  AdminCommandPaletteEntry(label: 'Audit log', route: AppRoutes.audit, icon: Icons.history),
+  AdminCommandPaletteEntry(label: 'Audit log', route: AppRoutes.audit, icon: Icons.history, keywords: ['activity', 'events']),
 ];
 
 Future<void> showAdminCommandPalette(BuildContext context) async {
@@ -101,7 +100,7 @@ class _AdminCommandPaletteDialogState extends State<_AdminCommandPaletteDialog> 
           ),
         },
         child: Dialog(
-          backgroundColor: AppColors.calmIvory,
+          backgroundColor: QuykColors.cream,
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
@@ -116,10 +115,10 @@ class _AdminCommandPaletteDialogState extends State<_AdminCommandPaletteDialog> 
                     autofocus: true,
                     decoration: InputDecoration(
                       hintText: 'Search Quyk',
-                      prefixIcon: const Icon(Icons.search, color: AppColors.calmViolet),
+                      prefixIcon: const Icon(Icons.search, color: QuykColors.green),
                       filled: true,
-                      fillColor: AppColors.lightSurface,
-                      border: OutlineInputBorder(borderRadius: AppRadius.lgAll, borderSide: const BorderSide(color: AppColors.calmBorder)),
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(borderRadius: AppRadius.lgAll, borderSide: const BorderSide(color: QuykColors.line)),
                     ),
                     onChanged: (v) => setState(() {
                       _query = v;
@@ -138,8 +137,8 @@ class _AdminCommandPaletteDialogState extends State<_AdminCommandPaletteDialog> 
                       for (var i = 0; i < results.length; i++)
                         ListTile(
                           selected: i == _selected,
-                          selectedTileColor: AppColors.calmLilac.withValues(alpha: 0.5),
-                          leading: Icon(results[i].icon, color: AppColors.calmViolet),
+                          selectedTileColor: QuykColors.limeSoft.withValues(alpha: 0.5),
+                          leading: Icon(results[i].icon, color: QuykColors.green),
                           title: Text(results[i].label),
                           onTap: () => _go(results[i].route),
                         ),

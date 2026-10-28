@@ -58,7 +58,7 @@ class QuykPage extends StatelessWidget {
           const SizedBox(width: 12),
         ],
         Expanded(child: QuykPageHeading(title: title, subtitle: subtitle)),
-        if (action != null) ...[const SizedBox(width: 12), action!],
+        if (action != null && !compact) ...[const SizedBox(width: 12), action!],
       ],
     );
 
@@ -68,6 +68,10 @@ class QuykPage extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(compact ? 16 : 32, 8, compact ? 16 : 32, 40),
       children: [
         header,
+        if (action != null && compact) ...[
+          const SizedBox(height: 14),
+          Align(alignment: Alignment.centerLeft, child: action!),
+        ],
         const SizedBox(height: 20),
         if (maxWidth == null)
           ...children

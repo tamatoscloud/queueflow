@@ -156,7 +156,7 @@ export class PlatformAdminController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     this.platform.assertPlatformAdmin(user.isPlatformAdmin);
-    return this.platform.updateUserStatus(id, dto);
+    return this.platform.updateUserStatus(id, dto, user.id);
   }
 
   @Post('users/:id/reset-password')
