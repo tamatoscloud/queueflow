@@ -100,3 +100,4 @@ supabase/.temp/
 backend/supabase/.temp/
 .cursor/
 
+.flutter-sdk/

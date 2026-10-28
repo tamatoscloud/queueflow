@@ -7,8 +7,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:staff_app/core/models/models.dart';
+import 'package:staff_app/features/auth/presentation/login_screen.dart';
 import 'package:staff_app/features/customers/presentation/guests_view.dart';
 import 'package:staff_app/features/notifications/presentation/guest_messages_view.dart';
 import 'package:staff_app/features/profile/profile_view.dart';
@@ -290,4 +292,28 @@ void main() {
     );
     expect(find.byType(QuykCard), findsOneWidget);
   });
+
+  for (final (name, size) in [('login', const Size(1366, 1024)), ('login_phone', const Size(390, 844))]) {
+    testWidgets(name, (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: buildQuykStaffTheme(),
+            home: const LoginScreen(),
+          ),
+        ),
+      );
+      await tester.runAsync(() async {
+        for (final element in find.byType(Image).evaluate()) {
+          await precacheImage((element.widget as Image).image, element);
+        }
+      });
+      await tester.pumpAndSettle();
+      await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/$name.png'));
+    });
+  }
 }

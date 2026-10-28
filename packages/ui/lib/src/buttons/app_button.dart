@@ -87,7 +87,23 @@ class AppButton extends StatelessWidget {
                 Icon(icon, size: iconSize),
                 SizedBox(width: size == AppButtonSize.xl ? 12 : 8),
               ],
-              Flexible(child: Text(label, style: textStyle, textAlign: TextAlign.center)),
+              Flexible(
+                // Drop the text theme's colour so the label follows the
+                // button's foreground (white on primary, primary on ghost…).
+                child: Text(
+                  label,
+                  style: textStyle == null
+                      ? null
+                      : TextStyle(
+                          fontFamily: textStyle.fontFamily,
+                          fontSize: textStyle.fontSize,
+                          fontWeight: textStyle.fontWeight,
+                          letterSpacing: textStyle.letterSpacing,
+                          height: textStyle.height,
+                        ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           );
 
