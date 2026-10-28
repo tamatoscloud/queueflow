@@ -25,7 +25,7 @@ final publicDioProvider = Provider<Dio>((ref) {
 });
 
 /// Authenticated Dio with bearer token and automatic 401 refresh.
-final authenticatedDioProvider = Provider<Dio>((ref) {
+final Provider<Dio> authenticatedDioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
   final factory = ref.watch(businessDioFactoryProvider);
   final tokenStorage = ref.watch(authTokenStorageProvider);

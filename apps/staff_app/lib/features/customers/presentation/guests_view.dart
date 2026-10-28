@@ -4,7 +4,6 @@ import 'package:queueflow_theme/queueflow_theme.dart';
 
 import '../../../core/models/customer_model.dart';
 import '../../../shared/widgets/quyk/quyk_widgets.dart';
-import '../../../theme/quyk_staff_theme.dart';
 
 /// Guests tab filter (Figma: All · Waiting · Called).
 enum GuestFilter { all, waiting, called }

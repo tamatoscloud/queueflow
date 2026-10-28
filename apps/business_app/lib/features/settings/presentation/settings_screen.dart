@@ -36,7 +36,7 @@ class SettingsScreen extends ConsumerWidget {
         _RestaurantCard(profile: profile, canEdit: isOwner),
         const SizedBox(height: 20),
         const QuykSectionTitle('Restaurant setup'),
-        _Group(
+        const _Group(
           tiles: [
             _Tile(Icons.storefront_outlined, 'Locations', 'Add or edit restaurant locations', AppRoutes.branches),
             _Tile(Icons.format_list_numbered_rounded, 'Waiting lines', 'Dine-in, takeaway and drive-in', AppRoutes.queues),
@@ -47,15 +47,15 @@ class SettingsScreen extends ConsumerWidget {
         const QuykSectionTitle('Guests & team'),
         _Group(
           tiles: [
-            _Tile(Icons.qr_code_2_rounded, 'Guest join codes', 'Print or share codes for guests to scan', AppRoutes.restaurantQr),
-            _Tile(Icons.notifications_none_rounded, 'Guest messages', 'WhatsApp / SMS alerts sent to guests', AppRoutes.notifications),
-            if (manages) _Tile(Icons.badge_outlined, 'Team', 'Invite hosts, staff and managers', AppRoutes.staff),
+            const _Tile(Icons.qr_code_2_rounded, 'Guest join codes', 'Print or share codes for guests to scan', AppRoutes.restaurantQr),
+            const _Tile(Icons.notifications_none_rounded, 'Guest messages', 'WhatsApp / SMS alerts sent to guests', AppRoutes.notifications),
+            if (manages) const _Tile(Icons.badge_outlined, 'Team', 'Invite hosts, staff and managers', AppRoutes.staff),
           ],
         ),
         if (kDebugMode) ...[
           const SizedBox(height: 20),
           const QuykSectionTitle('Testing tools · only while developing'),
-          _Group(
+          const _Group(
             tiles: [
               _Tile(Icons.science_outlined, 'Demo simulator', 'Fill a demo line for testing', AppRoutes.restaurantSimulator),
               _Tile(Icons.table_restaurant_outlined, 'Table layout', 'Dine-in seating demo', AppRoutes.restaurantTables),
