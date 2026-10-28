@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
-import 'package:queueflow_ui/queueflow_ui.dart';
-import 'package:queueflow_widgets/queueflow_widgets.dart';
 
 import '../../../core/models/notification_model.dart';
 import '../../../core/network/business_api_client.dart';
 import '../../../core/routing/staff_routes.dart';
+import 'guest_messages_view.dart';
 
 class NotificationsNotifier extends StateNotifier<AsyncValue<List<NotificationModel>>> {
   NotificationsNotifier(this._api) : super(const AsyncValue.loading()) {
@@ -53,25 +52,6 @@ final notificationsNotifierProvider =
   return NotificationsNotifier(ref.watch(businessApiClientProvider));
 });
 
-enum _AlertCategory { attention, issue, completed }
-
-_AlertCategory _categoryFor(NotificationModel n) {
-  final type = n.type.toUpperCase();
-  if (type.contains('FAIL') || type.contains('ERROR') || n.status == 'FAILED') {
-    return _AlertCategory.attention;
-  }
-  if (n.status == 'DELIVERED' || type.contains('COMPLETE')) {
-    return _AlertCategory.completed;
-  }
-  return _AlertCategory.issue;
-}
-
-String _alertTitle(NotificationModel n) {
-  final type = n.type.replaceAll('_', ' ');
-  if (n.message != null && n.message!.isNotEmpty) return n.message!;
-  return type.isEmpty ? 'Customer update' : type;
-}
-
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -101,144 +81,22 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(notificationsNotifierProvider);
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(notificationsNotifierProvider.notifier).refresh(),
-        child: async.when(
-          loading: () => const PageLoading(message: 'Loading messages…'),
-          error: (e, _) => PageError(
-            message: "We couldn't load message delivery history.",
-            onRetry: () => ref.read(notificationsNotifierProvider.notifier).refresh(),
-          ),
-          data: (items) {
-            if (items.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 80),
-                  EmptyStateView(
-                    title: 'No messages yet',
-                    message:
-                        'SMS and WhatsApp delivery to guests will show up here. Floor alerts appear as banners on Live Queue.',
-                    icon: Icons.sms_outlined,
-                  ),
-                ],
-              );
-            }
-
-            final grouped = {
-              _AlertCategory.attention: <NotificationModel>[],
-              _AlertCategory.issue: <NotificationModel>[],
-              _AlertCategory.completed: <NotificationModel>[],
-            };
-            for (final n in items) {
-              grouped[_categoryFor(n)]!.add(n);
-            }
-
-            return ListView(
-              controller: _scroll,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                Text(
-                  'Guest messages',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Delivery log for SMS / WhatsApp sent to guests — not staff push alerts.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.neutral600),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                if (grouped[_AlertCategory.attention]!.isNotEmpty)
-                  _AlertSection(
-                    title: 'Failed delivery',
-                    emoji: '🔴',
-                    items: grouped[_AlertCategory.attention]!,
-                  ),
-                if (grouped[_AlertCategory.issue]!.isNotEmpty)
-                  _AlertSection(
-                    title: 'Pending / sent',
-                    emoji: '🟡',
-                    items: grouped[_AlertCategory.issue]!,
-                  ),
-                if (grouped[_AlertCategory.completed]!.isNotEmpty)
-                  _AlertSection(
-                    title: 'Delivered',
-                    emoji: '🟢',
-                    items: grouped[_AlertCategory.completed]!,
-                  ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _AlertSection extends StatelessWidget {
-  const _AlertSection({
-    required this.title,
-    required this.emoji,
-    required this.items,
-  });
-
-  final String title;
-  final String emoji;
-  final List<NotificationModel> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm, top: AppSpacing.sm),
-          child: Text(
-            '$emoji $title',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-        ...items.map((n) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _AlertCard(notification: n),
-            )),
-      ],
-    );
-  }
-}
-
-class _AlertCard extends StatelessWidget {
-  const _AlertCard({required this.notification});
-  final NotificationModel notification;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _alertTitle(notification),
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          if (notification.recipientPhone != null) ...[
-            const SizedBox(height: 4),
-            Text(notification.recipientPhone!, style: Theme.of(context).textTheme.bodySmall),
-          ],
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              StatusBadge(status: notification.status),
-              const Spacer(),
-              AppButton(
-                label: 'View queue',
-                size: AppButtonSize.sm,
-                variant: AppButtonVariant.outline,
-                onPressed: () => context.push(StaffRoutes.today),
-              ),
-            ],
-          ),
-        ],
+    final notifier = ref.read(notificationsNotifierProvider.notifier);
+    return RefreshIndicator(
+      color: QuykColors.green,
+      backgroundColor: Colors.white,
+      onRefresh: notifier.refresh,
+      child: GuestMessagesView(
+        scrollController: _scroll,
+        items: async.valueOrNull ?? const <NotificationModel>[],
+        loading: async.isLoading && !async.hasValue,
+        errorMessage: async.hasError && !async.hasValue
+            ? "We couldn't load message delivery history."
+            : null,
+        onRetry: notifier.refresh,
+        onViewQueue: (n) => n.queueId == null
+            ? context.go(StaffRoutes.today)
+            : context.push(StaffRoutes.queueConsole(n.queueId!)),
       ),
     );
   }

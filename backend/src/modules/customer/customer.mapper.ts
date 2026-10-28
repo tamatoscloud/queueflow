@@ -37,6 +37,7 @@ export function toCustomerListItem(customer: CustomerWithEntries) {
     queueId: latest?.queueId ?? null,
     queueName: latest?.queue?.name ?? null,
     entryId: latest?.id ?? null,
+    visitedAt: latest?.joinedAt ?? null,
   };
 }
 

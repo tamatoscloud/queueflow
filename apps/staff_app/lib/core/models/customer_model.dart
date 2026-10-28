@@ -10,6 +10,7 @@ class CustomerModel {
     this.queueId,
     this.queueName,
     this.entryId,
+    this.visitedAt,
   });
 
   final String id;
@@ -22,6 +23,9 @@ class CustomerModel {
   final String? queueId;
   final String? queueName;
   final String? entryId;
+
+  /// When the guest joined their latest visit (Guests table "Visit date").
+  final DateTime? visitedAt;
 
   factory CustomerModel.fromJson(Map<String, dynamic> json) {
     // lookup/active wraps the profile under `customer`
@@ -38,6 +42,9 @@ class CustomerModel {
       queueId: src['queueId'] as String? ?? json['queueId'] as String?,
       queueName: src['queueName'] as String? ?? json['queueName'] as String?,
       entryId: src['entryId'] as String? ?? json['entryId'] as String?,
+      visitedAt: DateTime.tryParse(
+        (src['visitedAt'] ?? json['visitedAt']) as String? ?? '',
+      ),
     );
   }
 }

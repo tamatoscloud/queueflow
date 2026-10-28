@@ -3,123 +3,104 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:queueflow_theme/queueflow_theme.dart';
 
+import '../../core/models/branch_model.dart';
 import '../../core/providers/branches_provider.dart';
+import '../../core/realtime/realtime_client.dart';
 import '../../core/routing/staff_routes.dart';
 import '../../core/session/session_providers.dart';
 import '../../features/auth/presentation/auth_controller.dart';
-import '../../shared/widgets/common_widgets.dart';
 import '../../shared/widgets/offline_banner.dart';
-import '../../shared/widgets/staff/staff_content_width.dart';
+import '../../shared/widgets/quyk/quyk_frame.dart';
 import '../../shared/widgets/staff/staff_realtime_feedback.dart';
 
+/// Staff app chrome (Quyk redesign): rail + greeting header around each tab.
 class StaffShell extends ConsumerWidget {
   const StaffShell({super.key, required this.child});
 
   final Widget child;
 
-  static const _destinations = [
-    (icon: Icons.campaign_outlined, label: 'Live Queue', route: StaffRoutes.today),
-    (icon: Icons.people_outline, label: 'Guests', route: StaffRoutes.customers),
-    (icon: Icons.star_outline, label: 'Reviews', route: StaffRoutes.reviews),
-    (icon: Icons.notifications_outlined, label: 'Messages', route: StaffRoutes.notifications),
-    (icon: Icons.person_outline, label: 'Profile', route: StaffRoutes.profile),
+  static const _routes = [
+    StaffRoutes.today,
+    StaffRoutes.customers,
+    StaffRoutes.reviews,
+    StaffRoutes.notifications,
+    StaffRoutes.profile,
   ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
-    final product = context.productTheme;
-    final selected = _indexFor(location);
-    final branchesAsync = ref.watch(branchesProvider);
+    final user = ref.watch(currentUserProvider);
+    final branches = ref.watch(branchesProvider).valueOrNull ?? const <BranchModel>[];
     final selectedBranchId = ref.watch(selectedBranchIdProvider);
+    final status = ref.watch(realtimeStatusProvider).valueOrNull;
+    final authorized = ref.watch(realtimeAuthorizedProvider).valueOrNull ?? false;
+    final live = status == RealtimeStatus.connected && authorized;
 
-    return Scaffold(
-      backgroundColor: AppColors.calmIvory,
-      appBar: AppBar(
-        backgroundColor: AppColors.calmIvory,
-        surfaceTintColor: Colors.transparent,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: product.gradient,
-                borderRadius: AppRadius.mdAll,
-              ),
-              child: const Icon(Icons.bolt, color: Colors.white, size: 22),
+    String? branchName;
+    for (final b in branches) {
+      if (b.id == selectedBranchId) branchName = b.name;
+    }
+    final venueName = branchName ?? (branches.isNotEmpty ? branches.first.name : null);
+
+    Future<void> selectBranch(String? id) async {
+      ref.read(selectedBranchIdProvider.notifier).state = id;
+      if (id != null) {
+        await ref.read(sessionBootstrapProvider).saveBranchId(id);
+      }
+    }
+
+    final branchPicker = branches.length < 2
+        ? null
+        : PopupMenuButton<String>(
+            tooltip: 'Choose branch',
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            onSelected: (value) => selectBranch(value == '*' ? null : value),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: '*', child: Text('All branches')),
+              for (final b in branches)
+                PopupMenuItem(value: b.id, child: Text(b.name)),
+            ],
+            child: IgnorePointer(
+              child: QuykBranchPill(label: branchName ?? 'All branches'),
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Staff',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.calmCharcoal,
-                  ),
-            ),
-          ],
-        ),
-        actions: [
-          branchesAsync.when(
-            data: (branches) => BranchSwitcher(
-              branches: branches.map((b) => (id: b.id, name: b.name)).toList(),
-              selectedId: selectedBranchId,
-              onChanged: (id) async {
-                ref.read(selectedBranchIdProvider.notifier).state = id;
-                if (id != null) {
-                  await ref.read(sessionBootstrapProvider).saveBranchId(id);
-                }
-              },
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          const RealtimeStatusChip(),
-          IconButton(
-            icon: const Icon(Icons.logout_outlined, color: AppColors.calmCharcoal),
-            onPressed: () async {
-              await ref.read(authControllerProvider.notifier).logout();
-              if (context.mounted) context.go(StaffRoutes.login);
-            },
-          ),
-        ],
-      ),
-      body: StaffRealtimeFeedback(
+          );
+
+    return QuykStaffFrame(
+      selectedIndex: _indexFor(location),
+      onSelect: (i) => context.go(_routes[i]),
+      greetingName: user?.fullName.split(' ').first ?? 'there',
+      venueName: venueName,
+      branchPicker: branchPicker,
+      liveLabel: live ? 'Live' : 'Updating',
+      liveOk: live,
+      onSignOut: () async {
+        await ref.read(authControllerProvider.notifier).logout();
+        if (context.mounted) context.go(StaffRoutes.login);
+      },
+      child: StaffRealtimeFeedback(
         child: OfflineBanner(
-          child: SizedBox.expand(
-            child: ColoredBox(
-              color: AppColors.calmIvory,
-              child: StaffContentWidth.constrain(context, child: child),
+          child: ColoredBox(
+            color: QuykColors.cream,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: quykContentMaxWidth),
+                child: SizedBox.expand(child: child),
+              ),
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: product.accent.withValues(alpha: 0.14),
-        selectedIndex: selected,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        onDestinationSelected: (i) => context.go(_destinations[i].route),
-        destinations: [
-          for (final d in _destinations)
-            NavigationDestination(
-              icon: Icon(d.icon, color: AppColors.neutral500),
-              selectedIcon: Icon(d.icon, color: product.accent),
-              label: d.label,
-            ),
-        ],
       ),
     );
   }
 
   int _indexFor(String path) {
-    for (var i = 0; i < _destinations.length; i++) {
-      if (path == _destinations[i].route ||
-          (i == 1 && path.startsWith('/customers')) ||
-          (i == 2 && path.startsWith('/reviews'))) {
-        return i;
-      }
-    }
+    if (path.startsWith('/customers')) return 1;
+    if (path.startsWith('/reviews')) return 2;
+    if (path.startsWith('/notifications')) return 3;
+    if (path.startsWith('/profile')) return 4;
     return 0;
   }
 }
