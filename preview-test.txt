@@ -1,0 +1,17 @@
+
+✅ dashboard
+✅ dashboard phone
+✅ lines
+✅ line detail
+✅ serve guests
+✅ guests
+✅ locations
+✅ team
+✅ reports
+✅ settings
+✅ guest_codes
+✅ menu
+✅ dashboard_laptop
+✅ login
+
+🎉 14 tests passed.

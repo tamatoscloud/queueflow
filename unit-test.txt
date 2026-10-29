@@ -1,0 +1,23 @@
+
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/api_error_message_test.dart: apiExceptionMessage maps noConnection
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/api_error_message_test.dart: apiExceptionMessage maps unauthorized
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/api_error_message_test.dart: apiExceptionMessage sanitizes Dio 500 boilerplate
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/widget_test.dart: StatCard renders label and value
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: staff subscribe payloads business subscription sends businessId only
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: staff subscribe payloads queue-detail sends queueId only (not client businessId)
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: subscription ack handling ok:true means authorized
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: subscription ack handling ok:false / missing means rejected
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: RealtimeClient without live socket starts disconnected and unauthorized
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: RealtimeClient without live socket missing JWT subscribe fails safely
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: RealtimeClient without live socket disconnect clears authorization state
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/realtime_client_test.dart: realtime sources use handshake auth not query token
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/platform_url_resolver_test.dart: PlatformUrlResolver leaves web URLs unchanged
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/auth_user_test.dart: AuthUser parses login response user object
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/business_helpers_test.dart: branchCodeFromName uses initials for multi-word names
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/business_helpers_test.dart: branchCodeFromName uses the word for single-word names
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/business_helpers_test.dart: branchCodeFromName meets the backend pattern for short or odd names
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/business_helpers_test.dart: branchCodeFromName avoids codes already taken
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/business_helpers_test.dart: businessDestinationIndex matches the longest route prefix
+✅ /home/runner/work/queueflow/queueflow/apps/business_app/test/business_helpers_test.dart: businessDestinationIndex returns -1 for pages outside the menu
+
+🎉 20 tests passed.
