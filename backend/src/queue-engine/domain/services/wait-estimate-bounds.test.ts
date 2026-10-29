@@ -34,7 +34,7 @@ describe('estimateWaitMinutesForPosition', () => {
   });
 
   it('clamps at 30 minutes', () => {
-    expect(estimateWaitMinutesForPosition(20)).toBe(30);
+    expect(estimateWaitMinutesForPosition(20)).toBe(35);
   });
 });
 

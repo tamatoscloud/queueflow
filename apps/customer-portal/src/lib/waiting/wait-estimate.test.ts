@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   clampEstimatedWaitMinutes,
+  estimateWaitForGuest,
   formatCountdownClock,
   formatEstimatedWaitLabel,
   MAX_ESTIMATED_WAIT_MINUTES,
@@ -14,9 +15,9 @@ describe('wait-estimate bounds', () => {
     expect(clampEstimatedWaitMinutes(2.5)).toBe(2.5);
   });
 
-  it('clamps above maximum to 30', () => {
+  it('clamps above maximum to 35', () => {
     expect(clampEstimatedWaitMinutes(45)).toBe(MAX_ESTIMATED_WAIT_MINUTES);
-    expect(clampEstimatedWaitMinutes(765)).toBe(30);
+    expect(clampEstimatedWaitMinutes(765)).toBe(35);
   });
 
   it('formats countdown clocks', () => {
@@ -28,5 +29,18 @@ describe('wait-estimate bounds', () => {
   it('formats static wait labels', () => {
     expect(formatEstimatedWaitLabel(0)).toBe('Soon');
     expect(formatEstimatedWaitLabel(18)).toBe('18 min');
+  });
+});
+
+describe('estimateWaitForGuest', () => {
+  it('shows at least 2.5 min for the only guest', () => {
+    expect(estimateWaitForGuest(0, 1)).toBe(2.5);
+  });
+  it('adds 2.5 per party ahead plus a slot by party size', () => {
+    expect(estimateWaitForGuest(2, 4)).toBe(8.5);
+    expect(estimateWaitForGuest(1, 8)).toBe(8);
+  });
+  it('caps at 35 min', () => {
+    expect(estimateWaitForGuest(40, 2)).toBe(35);
   });
 });

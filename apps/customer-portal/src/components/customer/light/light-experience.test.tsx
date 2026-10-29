@@ -16,7 +16,7 @@ describe('LightWaitingExperience', () => {
 
     expect(screen.getByRole('heading', { name: /You're in the queue/i })).toBeInTheDocument();
     expect(screen.getByText('Waiting Line')).toBeInTheDocument();
-    expect(screen.getByText('03')).toBeInTheDocument();
+    expect(screen.getByText(/Minutes estimated wait/i)).toBeInTheDocument();
     expect(screen.getByText('Browse menu')).toBeInTheDocument();
     expect(screen.getByText('Browser notifications')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Browser notifications' })).toBeInTheDocument();
@@ -53,7 +53,7 @@ describe('LightWaitingExperience', () => {
     );
 
     expect(screen.getByText(/You're next in line/i)).toBeInTheDocument();
-    expect(screen.getByText(/Any moment now/i)).toBeInTheDocument();
+    expect(screen.getByText(/mins? left/i)).toBeInTheDocument();
   });
 });
 

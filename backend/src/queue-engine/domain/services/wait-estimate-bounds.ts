@@ -1,6 +1,6 @@
 /** Guest-facing ETA bounds (minutes). */
 export const MIN_ESTIMATED_WAIT_MINUTES = 2.5;
-export const MAX_ESTIMATED_WAIT_MINUTES = 30;
+export const MAX_ESTIMATED_WAIT_MINUTES = 35;
 
 /** Minutes added per party in line (1st = 2.5, 2nd = 5, 3rd = 7.5, …). */
 export const SERVICE_SLOT_MINUTES = 2.5;

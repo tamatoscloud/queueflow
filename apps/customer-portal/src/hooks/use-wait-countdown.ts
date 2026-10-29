@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   clampEstimatedWaitMinutes,
   formatCountdownClock,
+  MIN_ESTIMATED_WAIT_MINUTES,
 } from '@/lib/waiting/wait-estimate';
 import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
 
@@ -63,8 +64,13 @@ export function useWaitCountdown(
     }
 
     const tick = () => {
+      // Still waiting after the estimate ran out: never show 0:00 — roll
+      // forward by the minimum wait (2.5 min) until the guest is called.
+      if (deadlineRef.current - Date.now() <= 0) {
+        deadlineRef.current = Date.now() + MIN_ESTIMATED_WAIT_MINUTES * 60_000;
+      }
       const left = Math.max(
-        0,
+        1,
         Math.ceil((deadlineRef.current - Date.now()) / 1000),
       );
       setRemainingSeconds(left);

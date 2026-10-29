@@ -4,10 +4,11 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UtensilsCrossed } from 'lucide-react';
 import { GuestActiveEntryGuard } from '@/components/customer/guest-active-entry-guard';
 import { customerApi } from '@/lib/api/customer-api';
 import { DEFAULT_GUEST_MENU } from '@/lib/demo/guest-menu';
+import { dishImageUrl } from '@/lib/menu/dish-image';
 import { isQueueUuid } from '@/lib/queue-id';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,30 @@ function formatPrice(price: string): string {
     return trimmed;
   }
   return `$${trimmed}`;
+}
+
+/** Square dish photo; falls back to a branded tile if the image fails. */
+function DishThumb({ name, imageUrl }: { name: string; imageUrl?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="flex size-[72px] shrink-0 items-center justify-center rounded-[14px] bg-q-lime-tint text-q-green">
+        <UtensilsCrossed className="size-6" aria-hidden />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- tiny thumbnails; any https host a restaurant pastes
+    <img
+      src={dishImageUrl({ name, imageUrl })}
+      alt=""
+      loading="lazy"
+      width={72}
+      height={72}
+      onError={() => setFailed(true)}
+      className="size-[72px] shrink-0 rounded-[14px] bg-q-mist object-cover"
+    />
+  );
 }
 
 /** Tag colours from the Figma menu. */
@@ -117,34 +142,39 @@ export default function BusinessMenuPage() {
                     .map((item) => (
                       <article
                         key={item.id}
-                        className="rounded-[18px] border border-q-line bg-white px-4 py-3.5"
+                        className="rounded-[18px] border border-q-line bg-white p-3"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-[16px] font-semibold text-q-ink">{item.name}</p>
-                          <p className="shrink-0 text-[16px] font-bold text-q-green">
-                            {formatPrice(item.price)}
-                          </p>
-                        </div>
-                        {item.description ? (
-                          <p className="mt-1 text-[13px] leading-snug text-q-muted">
-                            {item.description}
-                          </p>
-                        ) : null}
-                        {item.tags && item.tags.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {item.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className={cn(
-                                  'rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none',
-                                  menuTagClass(tag),
-                                )}
-                              >
-                                {tag}
-                              </span>
-                            ))}
+                        <div className="flex gap-3">
+                          <DishThumb name={item.name} imageUrl={item.imageUrl} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="text-[16px] font-semibold text-q-ink">{item.name}</p>
+                              <p className="shrink-0 text-[16px] font-bold text-q-green">
+                                {formatPrice(item.price)}
+                              </p>
+                            </div>
+                            {item.description ? (
+                              <p className="mt-1 text-[13px] leading-snug text-q-muted">
+                                {item.description}
+                              </p>
+                            ) : null}
+                            {item.tags && item.tags.length > 0 ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {item.tags.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className={cn(
+                                      'rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none',
+                                      menuTagClass(tag),
+                                    )}
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null}
+                        </div>
                       </article>
                     ))}
                 </div>

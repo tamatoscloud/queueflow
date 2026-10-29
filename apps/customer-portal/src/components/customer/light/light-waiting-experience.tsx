@@ -8,7 +8,7 @@ import type { EntryTracking } from '@/lib/api/types';
 import type { RealtimeConnectionState } from '@/lib/realtime/socket-events';
 import { customerApi } from '@/lib/api/customer-api';
 import { loadQueueSession, saveQueueSession } from '@/lib/storage/session';
-import { clampEstimatedWaitMinutes } from '@/lib/waiting/wait-estimate';
+import { estimateWaitForGuest, formatWaitNumber } from '@/lib/waiting/wait-estimate';
 import { useWaitCountdown } from '@/hooks/use-wait-countdown';
 import { WaitTimerCircle } from '@/components/customer/light/wait-timer-circle';
 import {
@@ -90,12 +90,10 @@ export function LightWaitingExperience({
   );
 
   const session = loadQueueSession();
-  const { customersAhead, estimatedWaitMinutes, position } = tracking;
+  const { customersAhead, position } = tracking;
   const copy = getServiceModeCopy(tracking.queue.serviceMode);
-  // Whole minutes only — avoid false precision like "26.75".
-  const clampedEstimate = Math.round(
-    clampEstimatedWaitMinutes(estimatedWaitMinutes),
-  );
+  // 2.5 min per party ahead + this party's own slot by size; 2.5–35 min.
+  const clampedEstimate = estimateWaitForGuest(customersAhead, tracking.entry.partySize);
   const countdown = useWaitCountdown(tracking.entry.id, clampedEstimate, true);
 
   const minsLeft = Math.max(0, Math.ceil(countdown.remainingSeconds / 60));
@@ -211,15 +209,13 @@ export function LightWaitingExperience({
     return 'Auto-updating every few seconds';
   }, [connection]);
 
-  const aheadPadded = pad2(customersAhead);
-  const aheadCaption =
-    customersAhead <= 0
-      ? "You're next in line"
-      : `${aheadText}${customersAhead > 0 ? ' of you' : ''}`;
+  // Headline is the wait, not the people-ahead count (a lone guest saw "00").
+  const aheadPadded = formatWaitNumber(clampedEstimate);
+  const aheadCaption = 'Minutes estimated wait';
   const etaLine =
     customersAhead <= 0
-      ? 'Please stay nearby.'
-      : `About ${clampedEstimate} ${clampedEstimate === 1 ? 'min' : 'mins'} estimated wait.`;
+      ? "You're next in line — please stay nearby."
+      : `${aheadText} of you.`;
 
   return (
     <div className={cn('flex flex-1 flex-col gap-4', className)}>
@@ -250,9 +246,7 @@ export function LightWaitingExperience({
         <WaitTimerCircle progress={progress} className="mx-auto mt-5" />
 
         <p className="mt-5 text-[22px] font-semibold text-white" aria-live="polite" aria-atomic="true">
-          {countdown.finished || customersAhead <= 0
-            ? 'Any moment now'
-            : `${minsLeft} ${minsLeft === 1 ? 'min' : 'mins'} left`}
+          {`${minsLeft} ${minsLeft === 1 ? 'min' : 'mins'} left`}
         </p>
         <p className="mt-1 text-[13px] text-white/75">Updates as people ahead of you are served.</p>
       </section>

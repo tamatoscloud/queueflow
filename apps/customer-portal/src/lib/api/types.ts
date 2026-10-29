@@ -144,6 +144,7 @@ export interface GuestMenuItem {
   price: string;
   tags?: string[];
   available?: boolean;
+  imageUrl?: string;
 }
 
 export interface GuestMenuCategory {

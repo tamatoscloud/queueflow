@@ -7,6 +7,7 @@ export type GuestMenuItem = {
   price: string;
   tags?: string[];
   available?: boolean;
+  imageUrl?: string;
 };
 
 export type GuestMenuCategory = {
