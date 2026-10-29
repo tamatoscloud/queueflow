@@ -1,0 +1,6 @@
+Analyzing marketing_website...                                  
+
+   info • Use 'const' with the constructor to improve performance • lib/features/landing/presentation/landing_page.dart:555:12 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/features/landing/presentation/landing_page.dart:557:14 • prefer_const_constructors
+
+2 issues found. (ran in 17.5s)
