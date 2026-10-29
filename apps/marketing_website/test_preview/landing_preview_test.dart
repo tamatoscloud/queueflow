@@ -49,6 +49,6 @@ Future<void> _render(WidgetTester tester, String name, Size size) async {
 void main() {
   setUpAll(_loadFonts);
 
-  testWidgets('landing_desktop', (t) => _render(t, 'landing_desktop', const Size(1440, 5200)));
-  testWidgets('landing_phone', (t) => _render(t, 'landing_phone', const Size(390, 7600)));
+  testWidgets('landing_desktop', (t) => _render(t, 'landing_desktop', const Size(1440, 6400)));
+  testWidgets('landing_phone', (t) => _render(t, 'landing_phone', const Size(390, 9800)));
 }
