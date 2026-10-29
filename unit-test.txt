@@ -1,0 +1,10 @@
+
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/unit/auth_controller_test.dart: AuthUser fromJson parses platform admin flag
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/unit/auth_controller_test.dart: AuthState isAuthenticated reflects status
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/unit/platform_models_test.dart: PlatformDashboard parses KPI payload
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/unit/platform_models_test.dart: BusinessSummary fromJson
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/widget_test.dart: AdminPanelApp boots with an overridden AppConfig
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/widget/login_screen_test.dart: LoginScreen renders platform admin sign-in
+✅ /home/runner/work/queueflow/queueflow/apps/admin_panel/test/widget/login_screen_test.dart: AdminPanelApp boots with overridden AppConfig
+
+🎉 7 tests passed.
