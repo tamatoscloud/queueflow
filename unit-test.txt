@@ -1,0 +1,37 @@
+
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/staff_ux_test.dart: staffGreetingForTime returns morning before noon
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/staff_ux_test.dart: staffGreetingForTime returns afternoon before 5pm
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/staff_ux_test.dart: staffGreetingForTime returns evening after 5pm
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/staff_ux_test.dart: staffJourneyFromStatus maps waiting with low position to almost ready
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/staff_ux_test.dart: staffJourneyFromStatus maps called to called step
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/select_call_next_queue_test.dart: selectCallNextQueue prefers queues that actually have waiters
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/select_call_next_queue_test.dart: selectCallNextQueue honors preferred service mode with waiters
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/call_next_target_test.dart: trueNextWaiting picks lowest position waiting guest, ignoring called
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/call_next_target_test.dart: trueNextWaiting returns null when nobody is waiting
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/call_next_target_test.dart: canAutoCallFocus allows only when focus is the true next guest
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/call_next_target_test.dart: canAutoCallFocus blocks filtered-list false next (search shows 74, true next is 66)
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/quyk_screen_helpers_test.dart: splitReviewComment pulls highlight chips out of the first line
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/quyk_screen_helpers_test.dart: splitReviewComment plain comments have no tags
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/quyk_screen_helpers_test.dart: splitReviewComment null is empty
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/quyk_screen_helpers_test.dart: applyGuestFilter keeps matching statuses
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/quyk_screen_helpers_test.dart: guest message labels
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/quyk_screen_helpers_test.dart: guest message grouping
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/refresh_gate_test.dart: queues one refresh while a load is in flight
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/refresh_gate_test.dart: Call is not replaced by a later wait-estimate event
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/refresh_gate_test.dart: Call replaces an earlier wait-estimate event
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/connectivity_provider_test.dart: connectivityResultsOnline is false only when all results are none
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/guest_history_display_test.dart: strips leading hash from ticket search
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/guest_history_display_test.dart: history headline includes ticket number and queue
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/unit/guest_history_display_test.dart: visit timestamp includes calendar date
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/widget_test.dart: staff_app placeholder
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: staff subscribe payloads business subscription sends businessId only
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: staff subscribe payloads queue-detail sends queueId only (not client businessId)
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: subscription ack handling ok:true means authorized
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: subscription ack handling ok:false / missing means rejected
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: RealtimeClient without live socket starts disconnected and unauthorized
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: RealtimeClient without live socket missing JWT subscribe fails safely (no unauthorized room join)
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: RealtimeClient without live socket queue-detail subscribe fails safely without socket
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: RealtimeClient without live socket disconnect clears authorization state
+✅ /home/runner/work/queueflow/queueflow/apps/staff_app/test/realtime_client_test.dart: realtime sources use handshake auth not query token
+
+🎉 34 tests passed.
