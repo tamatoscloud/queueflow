@@ -1,0 +1,27 @@
+
+::group::✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/goldens/now_serving_token_test.dart: NowServingToken golden
+Golden within threshold: 0.284% <= 0.5% (goldens/now_serving_token.png)
+::endgroup::
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/queue_models_test.dart: QueueSnapshotModel parses flat engine snapshot shape
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/queue_models_test.dart: QueueSnapshotModel parses nested queue snapshot
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/display_config_test.dart: generateDisplayToken returns 8 characters
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/display_config_test.dart: DisplayConfig round-trips JSON including displayCredential
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/display_config_test.dart: legacy config without displayCredential remains valid
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/display_config_test.dart: clearDisplayCredential removes JWT while keeping pairing code
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/display_config_test.dart: DisplayCredentialModel parses backend response
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/display_config_test.dart: toJson does not put credential in accidental URL-like fields
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: RealtimeEnvelope parses socket payload
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: display event list includes required events
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: TvRealtimeClient starts disconnected
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract valid payload includes queueId and backend displayToken together
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract Queue A credential is bound to Queue A in payload
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract ack ok:true means successful subscription
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract ack failure fails safely
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract missing credential does not authorize subscription
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract whitespace-only credential fails safely
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: subscribe:queue-display credential contract reconnect path retains then clears credential lifecycle
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/tv_realtime_client_test.dart: realtime + setup sources never log or URL-expose credentials
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/widget/display_screen_test.dart: Mode3Layout shows current token
+✅ /home/runner/work/queueflow/queueflow/apps/tv_display/test/widget/display_screen_test.dart: QueueStatusChip renders status
+
+🎉 22 tests passed.

@@ -1,0 +1,10 @@
+
+✅ board_now_serving
+✅ board_split
+✅ board_minimal
+
+🎉 3 tests passed.
+
+✅ NowServingToken golden
+
+🎉 1 test passed.
