@@ -2,6 +2,8 @@
  * Built-in permission/role/plan catalog shared by the dev seed and the
  * production bootstrap. Changing these changes what a fresh database gets.
  */
+import type { PrismaClient } from '@prisma/client';
+
 export const SYSTEM_ROLE_NAMES = ['OWNER', 'MANAGER', 'RECEPTIONIST', 'STAFF', 'VIEWER'] as const;
 export const PLATFORM_ROLE_NAME = 'PLATFORM_ADMIN';
 
@@ -67,3 +69,52 @@ export const SUBSCRIPTION_PLANS = [
     sortOrder: 2,
   },
 ];
+
+/**
+ * Idempotently ensures the catalog exists. Existing plans are left untouched
+ * so later price edits are not overwritten.
+ */
+export async function ensureCatalog(prisma: PrismaClient): Promise<{
+  roleIdByName: Map<string, string>;
+  planIdBySlug: Map<string, string>;
+}> {
+  for (const p of PERMISSIONS) {
+    await prisma.permission.upsert({
+      where: { key: p.key },
+      update: { category: p.category, description: p.description },
+      create: p,
+    });
+  }
+  const permissionIdByKey = new Map(
+    (await prisma.permission.findMany()).map((p) => [p.key, p.id]),
+  );
+
+  const roleIdByName = new Map<string, string>();
+  for (const name of [...SYSTEM_ROLE_NAMES, PLATFORM_ROLE_NAME]) {
+    const existing = await prisma.role.findFirst({ where: { name, businessId: null, isSystem: true } });
+    const role =
+      existing ??
+      (await prisma.role.create({
+        data: {
+          name,
+          isSystem: true,
+          description: name === PLATFORM_ROLE_NAME ? 'QueueFlow platform operations' : `Built-in ${name} role`,
+        },
+      }));
+    roleIdByName.set(name, role.id);
+    await prisma.rolePermission.createMany({
+      data: (ROLE_PERMISSIONS[name] ?? [])
+        .map((key) => permissionIdByKey.get(key))
+        .filter((id): id is string => Boolean(id))
+        .map((permissionId) => ({ roleId: role.id, permissionId })),
+      skipDuplicates: true,
+    });
+  }
+
+  const planIdBySlug = new Map<string, string>();
+  for (const plan of SUBSCRIPTION_PLANS) {
+    const row = await prisma.subscriptionPlan.upsert({ where: { slug: plan.slug }, update: {}, create: plan });
+    planIdBySlug.set(plan.slug, row.id);
+  }
+  return { roleIdByName, planIdBySlug };
+}
