@@ -53,18 +53,58 @@
   const showHero = (n, instant) => pad3(n).split('').forEach((d, i) => setRoll(rolls[i], Number(d), instant));
   showHero(reduce ? heroNum : 0, true);
 
-  /* ---------- place in line pill ---------- */
-  const place = $('#place'), placeText = $('#placeText'), fill = $('.place__fill');
-  let currentPlace = 8;
-  function setPlace(n) {
+  /* ---------- glass dock: your place in line ---------- */
+  const place = $('#place'), placeText = $('#placeText'), placeLabel = $('#placeLabel'), placeNum = $('#placeNum'), fill = $('.dock__fill');
+  const RING = 163.4;
+  let currentPlace = 8, burstDone = false;
+  function rollNum(text) {
+    const old = $('span:not(.out)', placeNum);
+    const nu = document.createElement('span'); nu.textContent = text; nu.className = 'pre';
+    placeNum.appendChild(nu); void nu.offsetWidth; nu.className = '';
+    if (old) { old.className = 'out'; setTimeout(() => old.remove(), 700); }
+  }
+  function setPlace(n, label) {
+    if (label) placeLabel.textContent = n === 0 ? 'Thanks for waiting' : `Now viewing: ${label}`;
     if (n === currentPlace) return;
     currentPlace = n;
     placeText.textContent = n === 0 ? 'It’s your turn' : `${ordinal(n)} in line`;
-    fill.style.strokeDashoffset = String(97.4 * (n / 8));
+    rollNum(n === 0 ? '✓' : String(n));
+    fill.style.strokeDashoffset = String(RING * (n / 8));
     place.classList.toggle('is-turn', n === 0);
-    place.classList.remove('bump'); void place.offsetWidth; place.classList.add('bump');
+    place.classList.remove('moved'); void place.offsetWidth; place.classList.add('moved');
+    if (n === 0 && !burstDone && !reduce) { burstDone = true; burst(); }
   }
-  fill.style.strokeDashoffset = '97.4';
+  fill.style.strokeDashoffset = String(RING);
+  const showDock = () => place.classList.add('is-in');
+
+  /* ticket confetti from the dock, once */
+  function burst() {
+    const c = document.createElement('canvas');
+    c.setAttribute('aria-hidden', 'true');
+    c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:75';
+    document.body.appendChild(c);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+    const g = c.getContext('2d'); g.scale(dpr, dpr);
+    const r = place.getBoundingClientRect();
+    const ox = r.left + r.width / 2, oy = r.top + r.height / 2;
+    const cols = ['#E4FF2C', '#003D32', '#F3F7EA', '#ffffff', '#0B5444'];
+    const ps = Array.from({ length: 110 }, () => {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = 7 + Math.random() * 11;
+      return { x: ox, y: oy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: 8 + Math.random() * 10, h: 5 + Math.random() * 5, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, c: cols[(Math.random() * cols.length) | 0] };
+    });
+    const t0 = performance.now();
+    (function frame(t) {
+      const k = (t - t0) / 1000;
+      g.clearRect(0, 0, innerWidth, innerHeight);
+      ps.forEach((p) => {
+        p.vy += 0.32; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        g.save(); g.globalAlpha = Math.max(0, 1 - k / 2.6); g.translate(p.x, p.y); g.rotate(p.r);
+        g.fillStyle = p.c; g.beginPath(); g.roundRect ? g.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, 2) : g.rect(-p.w / 2, -p.h / 2, p.w, p.h); g.fill(); g.restore();
+      });
+      if (k < 2.6) requestAnimationFrame(frame); else c.remove();
+    })(t0);
+  }
 
   /* ---------- guest story ---------- */
   const phone = $('#storyPhone');
@@ -232,6 +272,7 @@
   let tvNum = 52, tvTimer = null;
   const tvList = $('#tvBigNext');
   function tvAdvance() {
+    const fr = $('#tvFrame'); fr.classList.add('glow'); setTimeout(() => fr.classList.remove('glow'), 700);
     tvNum = tvNum >= 99 ? 48 : tvNum + 1;
     const s = `A-${pad3(tvNum)}`;
     s.split('').forEach((ch, i) => setTimeout(() => flipCell(cells[i], ch), i * 70));
@@ -260,17 +301,100 @@
     lastY = y;
   }, { passive: true });
 
+  /* ---------- hero crowd: scattered dots that form a line as you scroll ---------- */
+  const cv = $('#crowd'), hero = $('.hero');
+  let mouse = { x: -9999, y: -9999 };
+  if (cv && cv.getContext) {
+    const g = cv.getContext('2d');
+    let W = 0, H = 0, dots = [], running = false;
+    const N = () => (innerWidth < 760 ? 56 : 130);
+    function size() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = hero.clientWidth; H = hero.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = N();
+      dots = Array.from({ length: n }, (_, i) => {
+        const hx = W * (0.08 + Math.random() * 0.9), hy = H * (0.12 + Math.random() * 0.78);
+        return { i, hx, hy, x: hx, y: hy, ph: Math.random() * 6.28, sp: 0.4 + Math.random() * 0.8, r: 1.6 + Math.random() * 2.4, c: Math.random() < 0.7 ? '228,255,44' : '243,247,234', a: 0.25 + Math.random() * 0.45 };
+      });
+    }
+    function draw(t) {
+      const p0 = Math.min(1, Math.max(0, window.scrollY / (H * 0.5)));
+      const p = p0 * p0 * (3 - 2 * p0);
+      const span = W * 1.3, gap = span / dots.length;
+      g.clearRect(0, 0, W, H);
+      for (const d of dots) {
+        const wx = d.hx + Math.sin(t * d.sp + d.ph) * 22, wy = d.hy + Math.cos(t * d.sp * 1.3 + d.ph) * 18;
+        const lx = ((d.i * gap + t * 46) % span) - W * 0.15;
+        const ly = H * 0.86 + Math.sin(lx * 0.012 + t * 1.4) * 7 - p0 * H * 0.08;
+        let tx = wx + (lx - wx) * p, ty = wy + (ly - wy) * p;
+        const dx = tx - mouse.x, dy = ty - mouse.y, dist = Math.hypot(dx, dy);
+        if (dist < 140) { const f = (1 - dist / 140) * 46; tx += (dx / (dist || 1)) * f; ty += (dy / (dist || 1)) * f; }
+        d.x += (tx - d.x) * 0.08; d.y += (ty - d.y) * 0.08;
+        g.beginPath(); g.fillStyle = `rgba(${d.c},${d.a * (0.55 + p * 0.45)})`; g.arc(d.x, d.y, d.r + p * 0.6, 0, 6.283); g.fill();
+      }
+    }
+    function loop(ts) { if (!running) return; draw(ts / 1000); requestAnimationFrame(loop); }
+    size();
+    window.addEventListener('resize', () => { size(); if (reduce) draw(0); });
+    hero.addEventListener('pointermove', (e) => { const r = hero.getBoundingClientRect(); mouse = { x: e.clientX - r.left, y: e.clientY - r.top }; });
+    hero.addEventListener('pointerleave', () => { mouse = { x: -9999, y: -9999 }; });
+    if (reduce) draw(0);
+    else new IntersectionObserver(([en]) => { const was = running; running = en.isIntersecting; if (running && !was) requestAnimationFrame(loop); }).observe(hero);
+  }
+
+  /* ---------- custom cursor ---------- */
+  const cur = $('#cursor');
+  if (!reduce && window.matchMedia('(pointer: fine)').matches && cur) {
+    document.body.classList.add('has-cursor');
+    let cx = innerWidth / 2, cy = innerHeight / 2, tx = cx, ty = cy;
+    window.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; cur.classList.add('is-on'); }, { passive: true });
+    document.addEventListener('pointerleave', () => cur.classList.remove('is-on'));
+    (function f() { cx += (tx - cx) * 0.2; cy += (ty - cy) * 0.2; cur.style.transform = `translate(${cx}px,${cy}px)`; requestAnimationFrame(f); })();
+    document.addEventListener('pointerover', (e) => {
+      const el = e.target.closest('a, button, summary, .tog');
+      const label = el && el.dataset.cursor;
+      cur.classList.toggle('is-big', !!el && !label);
+      cur.classList.toggle('is-label', !!label);
+      $('span', cur).textContent = label || '';
+    });
+  }
+
+  /* ---------- pointer spotlights ---------- */
+  const spot = (el) => el.addEventListener('pointermove', (e) => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', `${e.clientX - r.left}px`); el.style.setProperty('--my', `${e.clientY - r.top}px`);
+  });
+  $$('.staff, .plan').forEach(spot);
+
+  /* ---------- text splitting for scroll fills and the final letters ---------- */
+  function split(el, mode) {
+    const nodes = [...el.childNodes]; el.textContent = '';
+    nodes.forEach((n) => {
+      if (n.nodeType !== 3) { el.appendChild(n); return; }
+      n.textContent.split(/(\s+)/).forEach((part) => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { el.appendChild(document.createTextNode(part)); return; }
+        if (mode === 'ch') [...part].forEach((ch) => { const s = document.createElement('span'); s.className = 'ch'; s.textContent = ch; el.appendChild(s); });
+        else { const s = document.createElement('span'); s.className = 'w'; s.textContent = part; el.appendChild(s); }
+      });
+    });
+  }
+  const fillHeads = $$('.sec-head h2, .owners__copy h2, .tv__copy h2, .faq > h2, .setup > h2');
+  if (!reduce && hasGsap) { fillHeads.forEach((h) => split(h, 'w')); split($('.final__big'), 'ch'); }
+
   /* ---------- without GSAP: simple observers so everything still works ---------- */
   if (!hasGsap) {
     const io = new IntersectionObserver((ents) => ents.forEach((en) => {
       if (!en.isIntersecting) return;
       const t = en.target;
-      if (t.dataset.place) setPlace(Number(t.dataset.place));
+      if (t.dataset.place) setPlace(Number(t.dataset.place), t.dataset.label);
       if (t.classList.contains('step')) showStep(Number(t.dataset.step));
       if (t.id === 'dash') countUp();
       if (t.id === 'demo') startAuto();
     }), { threshold: 0.5 });
     $$('[data-place], .step, #dash, #demo').forEach((el) => io.observe(el));
+    showDock();
     $$('.chart span').forEach((b) => { b.style.transform = 'none'; });
     showHero(heroNum, true);
     return;
@@ -286,7 +410,8 @@
       .from('.hero__lede, .hero__cta', { y: 24, opacity: 0, duration: 1, stagger: 0.08 }, '-=0.9')
       .from('.ticket', { y: 80, rotateX: -35, rotateY: 12, opacity: 0, duration: 1.6 }, '-=1.1')
       .from('.nav', { y: -30, opacity: 0, duration: 0.9 }, '-=1.3')
-      .add(() => showHero(heroNum), '-=1.0');
+      .add(() => showHero(heroNum), '-=1.0')
+      .add(showDock, '-=0.6');
     // The ticket keeps moving: the line is live.
     let ahead = 2;
     setInterval(() => {
@@ -337,16 +462,17 @@
     gsap.from('.dash', { y: 80, rotateX: 12, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: '.dash', start: 'top 85%' } });
   } else {
     showHero(heroNum, true);
+    showDock();
   }
 
   // Place in line, section by section.
-  setPlace(8);
   $$('[data-place]').forEach((sec) => {
+    const go = (el) => (el && el.dataset.place ? setPlace(Number(el.dataset.place), el.dataset.label) : (setPlace(8), (placeLabel.textContent = 'Scroll to move up the line')));
     ScrollTrigger.create({
       trigger: sec, start: 'top 55%', end: 'bottom 55%',
-      onEnter: () => setPlace(Number(sec.dataset.place)),
-      onEnterBack: () => setPlace(Number(sec.dataset.place)),
-      onLeaveBack: () => { const prev = sec.previousElementSibling; setPlace(prev && prev.dataset.place ? Number(prev.dataset.place) : 8); },
+      onEnter: () => go(sec),
+      onEnterBack: () => go(sec),
+      onLeaveBack: () => go(sec.previousElementSibling),
     });
   });
 
@@ -382,6 +508,70 @@
       if (s.isActive && !reduce) { tvAdvance(); tvTimer = setInterval(tvAdvance, 3200); }
     },
   });
+
+  /* ---------- extra motion ---------- */
+  if (!reduce) {
+    // Headings fill word by word as they scroll in.
+    fillHeads.forEach((h) => {
+      gsap.fromTo($$('.w', h), { opacity: 0.12, yPercent: 25 }, {
+        opacity: 1, yPercent: 0, stagger: 0.08, ease: 'none',
+        scrollTrigger: { trigger: h, start: 'top 90%', end: 'top 50%', scrub: true },
+      });
+    });
+
+    // The guest phone turns in 3D as the story scrolls past.
+    gsap.fromTo('#storyPhone', { rotateY: -24, rotateX: 8 }, {
+      rotateY: 16, rotateX: -6, ease: 'none',
+      scrollTrigger: { trigger: '.story', start: 'top bottom', end: 'bottom top', scrub: true },
+    });
+
+    // Floating demo screens.
+    gsap.to('.tvmini', { y: -10, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    gsap.to('.phone--mini', { y: -8, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 0.6 });
+
+    // Marquee leans with scroll speed.
+    const skew = gsap.quickTo('.band', 'skewY', { duration: 0.5, ease: 'power3' });
+    if (lenis) lenis.on('scroll', ({ velocity }) => skew(Math.max(-4, Math.min(4, velocity * -0.25))));
+
+    if (window.matchMedia('(pointer: fine)').matches) {
+      // 3D tilt on the ticket, tablet and dashboard.
+      [['.hero', '.hero__ticket'], ['.staff', '.demo .tilt'], ['.owners', '.owners .tilt']].forEach(([zone, sel]) => {
+        const z = $(zone), el = $(sel); if (!z || !el) return;
+        gsap.set(el, { transformPerspective: 1000 });
+        const rx = gsap.quickTo(el, 'rotateX', { duration: 0.7, ease: 'power3' }), ry = gsap.quickTo(el, 'rotateY', { duration: 0.7, ease: 'power3' });
+        z.addEventListener('pointermove', (e) => {
+          const r = el.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+          rx(Math.max(-1, Math.min(1, y)) * -9); ry(Math.max(-1, Math.min(1, x)) * 11);
+        });
+        z.addEventListener('pointerleave', () => { rx(0); ry(0); });
+      });
+
+      // Hero headline drifts with the pointer, each line at its own depth.
+      const lines = $$('.hero__title .ln');
+      const movers = lines.map((l) => gsap.quickTo(l, 'x', { duration: 1, ease: 'power3' }));
+      hero.addEventListener('pointermove', (e) => { const x = e.clientX / innerWidth - 0.5; movers.forEach((m, i) => m(x * (10 + i * 10))); });
+
+      // "You're next." letters move out of the pointer's way.
+      const fin = $('.final'), chars = $$('.final__big .ch');
+      const qs = chars.map((c) => [gsap.quickTo(c, 'x', { duration: 0.6, ease: 'power3' }), gsap.quickTo(c, 'y', { duration: 0.6, ease: 'power3' })]);
+      fin.addEventListener('pointermove', (e) => {
+        chars.forEach((c, i) => {
+          const r = c.getBoundingClientRect();
+          const dx = r.left + r.width / 2 - e.clientX, dy = r.top + r.height / 2 - e.clientY, d = Math.hypot(dx, dy);
+          const f = d < 260 ? (1 - d / 260) * 36 : 0;
+          qs[i][0]((dx / (d || 1)) * f); qs[i][1]((dy / (d || 1)) * f);
+        });
+      });
+      fin.addEventListener('pointerleave', () => qs.forEach(([x, y]) => { x(0); y(0); }));
+    }
+
+    // Final letters rise in one after another.
+    gsap.from('.final__big .ch', {
+      yPercent: 60, opacity: 0, stagger: 0.04, ease: 'none',
+      scrollTrigger: { trigger: '.final', start: 'top 85%', end: 'top 25%', scrub: true },
+    });
+  }
 
   window.addEventListener('load', () => ScrollTrigger.refresh());
 })();
