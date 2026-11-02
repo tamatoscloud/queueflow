@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quyk — digital waiting lists for restaurants</title>
+<meta name="description" content="Guests scan a code and wait from their phone. Your team calls the next guest with one tap, and every screen updates at once.">
+<meta name="theme-color" content="#003D32">
+<meta property="og:title" content="Quyk — nobody stands in line anymore">
+<meta property="og:description" content="Digital waiting lists for restaurants: guest page, staff app, owner app and lobby TV, all live.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://quyk.io/">
+<link rel="icon" href="img/favicon.png">
+<link rel="preload" href="fonts/hanken-bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/hanken-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/site.css?v=__V__">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <a class="nav__logo" href="#top" aria-label="Quyk home"><img src="img/quyk-lime.webp" alt="Quyk" width="92" height="33"></a>
+  <nav class="nav__links" aria-label="Sections">
+    <a href="#guests">Guests</a><a href="#staff">Staff</a><a href="#owners">Owners</a><a href="#tv">TV</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
+  </nav>
+  <div class="nav__end">
+    <a class="nav__signin" href="https://business.quyk.io">Sign in</a>
+    <a class="place" id="place" href="#book" aria-live="polite">
+      <span class="place__ring" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5"/><circle class="place__fill" cx="18" cy="18" r="15.5"/></svg></span>
+      <span class="place__text" id="placeText">8th in line</span>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero__copy">
+    <h1 class="hero__title" aria-label="Nobody stands in line anymore.">
+      <span class="ln"><span>Nobody stands</span></span>
+      <span class="ln"><span>in line</span></span>
+      <span class="ln"><span>anymore.</span></span>
+    </h1>
+    <p class="hero__lede">Guests scan a code and wait from their phone. Your team calls the next guest with one tap, and every screen updates at once.</p>
+    <div class="hero__cta">
+      <a class="btn btn--lime magnetic" href="mailto:hello@quyk.app?subject=Quyk%20demo%20request">Book a demo</a>
+      <a class="btn btn--ghost" href="#staff">Try the live demo</a>
+    </div>
+  </div>
+  <div class="hero__ticket" id="heroTicket">
+    <div class="ticket">
+      <div class="ticket__top">
+        <span class="live"><i></i>Now serving</span>
+        <span class="ticket__venue">Dine-in, main hall</span>
+      </div>
+      <div class="ticket__num" aria-label="Ticket A-047">
+        <span class="ticket__letter">A</span><span class="ticket__dash">-</span>
+        <span class="roll" data-roll="0"></span><span class="roll" data-roll="4"></span><span class="roll" data-roll="7"></span>
+      </div>
+      <div class="ticket__perf" aria-hidden="true"></div>
+      <div class="ticket__bottom">
+        <div><b id="heroAhead">2</b><span>guests ahead of Sara</span></div>
+        <div><b id="heroWait">5</b><span>minutes, about</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="hero__scroll" aria-hidden="true"><span></span></div>
+</section>
+
+<div class="band" aria-hidden="true"><div class="band__track" id="band">
+  <span>Scan the code</span><b></b><span>Join in seconds</span><b></b><span>Wait anywhere</span><b></b><span>Get called</span><b></b>
+  <span>Scan the code</span><b></b><span>Join in seconds</span><b></b><span>Wait anywhere</span><b></b><span>Get called</span><b></b>
+</div></div>
+
+<!-- GUESTS -->
+<section class="guests" id="guests" data-place="7">
+  <div class="sec-head">
+    <p class="kicker">Guest page</p>
+    <h2>No app. No account.<br>No crowd at the door.</h2>
+  </div>
+  <div class="story">
+    <ol class="story__steps">
+      <li class="step is-on" data-step="0"><span class="step__n">1</span><h3>Scan the code</h3><p>Guests point their camera at the code on your door or table. The page opens in the browser.</p></li>
+      <li class="step" data-step="1"><span class="step__n">2</span><h3>Join in seconds</h3><p>Name, party size and phone number. A ticket appears instantly.</p></li>
+      <li class="step" data-step="2"><span class="step__n">3</span><h3>Wait anywhere</h3><p>Their place and wait time update live while they grab a coffee or take a walk. No refreshing.</p></li>
+      <li class="step" data-step="3"><span class="step__n">4</span><h3>Get called</h3><p>When it’s their turn, their phone tells them. Your host stand stays clear.</p></li>
+    </ol>
+    <div class="story__stage">
+      <div class="phone" id="storyPhone">
+        <div class="phone__notch"></div>
+        <div class="screen s0 is-on">
+          <div class="cam">
+            <div class="cam__qr"><i></i><i></i><i></i><span class="cam__scan"></span></div>
+            <p>Point your camera at the code</p>
+          </div>
+        </div>
+        <div class="screen s1">
+          <p class="mini">Bella Vista, dine-in</p>
+          <h4>Join the line</h4>
+          <label>Your name<span class="field"><span class="type" data-text="Sara"></span></span></label>
+          <label>Party size<span class="seg"><i>2</i><i class="on">4</i><i>6+</i></span></label>
+          <label>Phone<span class="field"><span class="type" data-text="0300 555 0147"></span></span></label>
+          <span class="pbtn">Join the line</span>
+        </div>
+        <div class="screen s2">
+          <p class="mini">Your ticket</p>
+          <div class="bigtix">A-051</div>
+          <p class="pos"><b id="storyPos">3rd</b> in line</p>
+          <div class="bar"><span id="storyBar"></span></div>
+          <p class="mini">About <b id="storyMin">8</b> min. We’ll tell you when it’s time.</p>
+        </div>
+        <div class="screen s3">
+          <div class="turn">
+            <span class="turn__pulse"></span>
+            <h4>It’s your turn</h4>
+            <p>Your table for 4 is ready. Please come to the host stand.</p>
+            <span class="pbtn pbtn--dark">I’m on my way</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STAFF LIVE DEMO -->
+<section class="staff" id="staff" data-place="6">
+  <div class="sec-head sec-head--light">
+    <p class="kicker">Staff app and live sync</p>
+    <h2>One tap calls the next guest.<br>Every screen knows.</h2>
+    <p class="lede">Try it. Press <b>Call next</b> on the tablet and watch the lobby TV and Sara’s phone update at the same moment.</p>
+  </div>
+  <div class="demo" id="demo">
+    <div class="tablet">
+      <div class="tablet__bar">
+        <div><p class="mini">Bella Vista, main hall</p><h4>Who’s next</h4></div>
+        <span class="chip chip--open">Open</span>
+      </div>
+      <ul class="queue" id="queue" aria-live="polite"></ul>
+      <div class="tablet__actions">
+        <button class="btn btn--lime" id="callNext" type="button">Call next</button>
+        <button class="btn btn--line" id="addWalkin" type="button">Add walk-in</button>
+      </div>
+    </div>
+    <div class="demo__side">
+      <div class="tvmini">
+        <p class="mini">Lobby TV</p>
+        <div class="tvmini__now"><span>Now serving</span><b class="flip" id="tvNow">A-047</b></div>
+        <div class="tvmini__next" id="tvNext"></div>
+      </div>
+      <div class="phone phone--mini" id="demoPhone">
+        <div class="phone__notch"></div>
+        <div class="dp">
+          <p class="mini">Sara, party of 4</p>
+          <div class="bigtix">A-051</div>
+          <p class="pos" id="dpPos"><b>4th</b> in line</p>
+          <div class="bar"><span id="dpBar"></span></div>
+        </div>
+        <div class="dp dp--turn"><h4>It’s your turn</h4><p>Table for 4 is ready.</p></div>
+      </div>
+      <button class="reset" id="demoReset" type="button" hidden>Start the line again</button>
+    </div>
+  </div>
+  <ul class="facts">
+    <li><h3>Call, hold, skip or move</h3><p>Every action is one tap, and the guest hears about it right away.</p></li>
+    <li><h3>Walk-ins in seconds</h3><p>No phone? Add them by name and call their ticket number.</p></li>
+    <li><h3>Find any guest</h3><p>Search by name or ticket when someone asks where they are.</p></li>
+  </ul>
+</section>
+
+<!-- OWNERS -->
+<section class="owners" id="owners" data-place="5">
+  <div class="owners__grid">
+    <div class="owners__copy">
+      <p class="kicker">Owner app</p>
+      <h2>Every line, every location. Live.</h2>
+      <ul class="ticks">
+        <li>Open, pause or close any line in a tap</li>
+        <li>Printable join codes for doors and tables</li>
+        <li>Waits, no-shows and guests served, by the hour</li>
+        <li>Guest reviews after each visit</li>
+        <li>Menu, team and locations in one place</li>
+      </ul>
+      <a class="btn btn--dark" href="https://business.quyk.io">Owner sign-in</a>
+    </div>
+    <div class="dash" id="dash">
+      <div class="dash__head"><h4>Today</h4><span class="demo-tag">Demo data</span></div>
+      <div class="stats">
+        <div class="stat"><b data-count="184">0</b><span>guests joined</span></div>
+        <div class="stat"><b data-count="11">0</b><span>min average wait</span></div>
+        <div class="stat"><b data-count="4.8" data-dec="1">0</b><span>average review</span></div>
+      </div>
+      <div class="chart" aria-hidden="true">
+        <span style="--h:22"></span><span style="--h:30"></span><span style="--h:48"></span><span style="--h:82"></span><span style="--h:96"></span><span style="--h:70"></span><span style="--h:44"></span><span style="--h:58"></span><span style="--h:88"></span><span style="--h:100"></span><span style="--h:76"></span><span style="--h:40"></span>
+      </div>
+      <p class="chart__axis"><span>11am</span><span>3pm</span><span>7pm</span><span>10pm</span></p>
+      <ul class="lines">
+        <li><span>Dine-in</span><em>12 waiting</em><button class="tog on" type="button" aria-pressed="true" aria-label="Dine-in open"></button></li>
+        <li><span>Takeaway</span><em>3 waiting</em><button class="tog on" type="button" aria-pressed="true" aria-label="Takeaway open"></button></li>
+        <li><span>Terrace</span><em>Paused</em><button class="tog" type="button" aria-pressed="false" aria-label="Terrace paused"></button></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TV -->
+<section class="tv" id="tv" data-place="4">
+  <div class="tv__frame" id="tvFrame">
+    <div class="tv__board">
+      <div class="tv__now">
+        <span>Now serving</span>
+        <div class="flipboard" id="flipboard" aria-label="Now serving A-052"></div>
+      </div>
+      <div class="tv__next">
+        <span>Up next</span>
+        <ol id="tvBigNext"><li>A-053</li><li>A-054</li><li>A-055</li></ol>
+      </div>
+      <div class="tv__msg"><div class="tv__msgtrack"><span>Welcome to Bella Vista. Fresh bread comes out at 7pm.</span><span>Welcome to Bella Vista. Fresh bread comes out at 7pm.</span></div></div>
+    </div>
+  </div>
+  <div class="tv__copy">
+    <p class="kicker">Lobby TV</p>
+    <h2>A board everyone can read from across the room.</h2>
+    <p>Open tv.quyk.io on any smart TV, enter the pairing code from the owner app, and the board follows your line from then on. Add a short message for the room.</p>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section class="setup" data-place="3">
+  <h2>Live the same day.</h2>
+  <ol class="setup__steps">
+    <li><span class="step__n">1</span><h3>Add your lines</h3><p>Dine-in, takeaway, terrace. Each with its own ticket letter.</p></li>
+    <li><span class="step__n">2</span><h3>Print the join codes</h3><p>One for the door, one for each table if you like.</p></li>
+    <li><span class="step__n">3</span><h3>Sign your team in</h3><p>Any tablet or phone with a browser. Nothing to install.</p></li>
+  </ol>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing" data-place="2">
+  <div class="sec-head">
+    <h2>Simple plans that grow with you.</h2>
+    <p class="lede">Start free. Upgrade when you add locations or lines.</p>
+  </div>
+  <div class="plans">
+    <article class="plan">
+      <h3>Starter</h3><p class="plan__price">Free</p><p class="plan__blurb">Try Quyk at one location.</p>
+      <ul><li>1 location</li><li>2 waiting lines</li><li>Guest join codes</li><li>Email support</li></ul>
+      <a class="btn btn--line" href="mailto:hello@quyk.app?subject=Quyk%20%E2%80%94%20Get%20started%20(Starter)">Get started</a>
+    </article>
+    <article class="plan plan--hot">
+      <h3>Growth</h3><p class="plan__price">$29<small>/ month</small></p><p class="plan__blurb">For busy restaurants and small groups.</p>
+      <ul><li>Up to 5 locations</li><li>10 lines per location</li><li>TV display for your lobby</li><li>Reports and guest reviews</li><li>WhatsApp and SMS alerts <em>coming soon</em></li></ul>
+      <a class="btn btn--lime" href="mailto:hello@quyk.app?subject=Quyk%20%E2%80%94%20Get%20started%20(Growth)">Get started</a>
+    </article>
+    <article class="plan">
+      <h3>Scale</h3><p class="plan__price">$99<small>/ month</small></p><p class="plan__blurb">For chains and food courts.</p>
+      <ul><li>Unlimited locations</li><li>Unlimited lines</li><li>Custom branding</li><li>Priority support</li></ul>
+      <a class="btn btn--line" href="mailto:hello@quyk.app?subject=Quyk%20%E2%80%94%20Get%20started%20(Scale)">Get started</a>
+    </article>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq" data-place="1">
+  <h2>Questions, answered.</h2>
+  <div class="faq__list">
+    <details><summary>Do guests need to download an app?</summary><p>No. They scan the code with their phone camera and join in the browser. No account either.</p></details>
+    <details><summary>What hardware do we need?</summary><p>Any tablet or phone with a browser for your team. A TV display for the lobby is optional.</p></details>
+    <details><summary>What if a guest doesn’t have a phone?</summary><p>Your team can add them as a walk-in and call them by name or ticket number.</p></details>
+    <details><summary>Can we run more than one line or location?</summary><p>Yes. Separate lines for dine-in, takeaway or drive-in, and as many locations as your plan allows.</p></details>
+    <details><summary>How long does setup take?</summary><p>Most restaurants are live the same day: add your lines, print the join codes, and sign your team in.</p></details>
+  </div>
+  <p class="faq__more">Anything else? <a href="mailto:hello@quyk.app">Email us</a> and a real person will reply.</p>
+</section>
+
+<!-- FINAL -->
+<section class="final" id="book" data-place="0">
+  <p class="final__small">Your turn.</p>
+  <h2 class="final__big" aria-label="You're next.">You’re<br>next.</h2>
+  <a class="btn btn--dark btn--xl magnetic" href="mailto:hello@quyk.app?subject=Quyk%20demo%20request">Book a demo</a>
+</section>
+</main>
+
+<footer class="foot">
+  <img src="img/quyk-lime.webp" alt="Quyk" width="80" height="29">
+  <nav aria-label="Footer">
+    <a href="https://business.quyk.io">Owner sign-in</a>
+    <a href="https://staff.quyk.io">Staff sign-in</a>
+    <a href="https://join.quyk.io">Guest page</a>
+    <a href="mailto:hello@quyk.app">hello@quyk.app</a>
+  </nav>
+  <p>© <span id="year">2026</span> Quyk</p>
+</footer>
+
+<script src="vendor/gsap.min.js?v=3.12.5" defer></script>
+<script src="vendor/ScrollTrigger.min.js?v=3.12.5" defer></script>
+<script src="vendor/lenis.min.js?v=1.1.13" defer></script>
+<script src="js/site.js?v=__V__" defer></script>
+</body>
+</html>
