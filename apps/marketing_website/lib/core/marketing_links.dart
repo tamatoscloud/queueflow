@@ -3,11 +3,11 @@ import 'open_external_link.dart';
 const salesEmail = 'hello@quyk.app';
 
 /// Live apps the landing page links to.
-const businessAppUrl = 'https://queueflow-business-alpha.vercel.app';
-const staffAppUrl = 'https://queueflow-staff.vercel.app';
+const businessAppUrl = 'https://business.quyk.io';
+const staffAppUrl = 'https://staff.quyk.io';
 
 /// Public demo line (Bella Vista) — lets visitors try the guest view.
-const guestDemoUrl = 'https://queueflow-six-beta.vercel.app';
+const guestDemoUrl = 'https://join.quyk.io';
 
 void openDemoRequest() {
   final subject = Uri.encodeComponent('Quyk demo request');
