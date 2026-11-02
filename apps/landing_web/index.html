@@ -25,17 +25,25 @@
   </nav>
   <div class="nav__end">
     <a class="nav__signin" href="https://business.quyk.io">Sign in</a>
-    <a class="place" id="place" href="#book" aria-live="polite">
-      <span class="place__ring" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5"/><circle class="place__fill" cx="18" cy="18" r="15.5"/></svg></span>
-      <span class="place__text" id="placeText">8th in line</span>
-    </a>
+    <a class="btn btn--lime btn--sm" href="mailto:hello@quyk.app?subject=Quyk%20demo%20request">Book a demo</a>
   </div>
 </header>
+
+<a class="dock" id="place" href="#book" aria-live="polite">
+  <span class="dock__ring" aria-hidden="true">
+    <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26"/><circle class="dock__fill" cx="30" cy="30" r="26"/></svg>
+    <span class="dock__num" id="placeNum"><span>8</span></span>
+  </span>
+  <span class="dock__txt"><small id="placeLabel">Scroll to move up the line</small><strong id="placeText">8th in line</strong></span>
+  <span class="dock__go">Book a demo</span>
+</a>
+<div class="cursor" id="cursor" aria-hidden="true"><span></span></div>
 
 <main id="main">
 
 <!-- HERO -->
 <section class="hero" id="top">
+  <canvas class="hero__crowd" id="crowd" aria-hidden="true"></canvas>
   <div class="hero__copy">
     <h1 class="hero__title" aria-label="Nobody stands in line anymore.">
       <span class="ln"><span>Nobody stands</span></span>
@@ -74,7 +82,7 @@
 </div></div>
 
 <!-- GUESTS -->
-<section class="guests" id="guests" data-place="7">
+<section class="guests" id="guests" data-label="Guest page" data-place="7">
   <div class="sec-head">
     <p class="kicker">Guest page</p>
     <h2>No app. No account.<br>No crowd at the door.</h2>
@@ -124,24 +132,24 @@
 </section>
 
 <!-- STAFF LIVE DEMO -->
-<section class="staff" id="staff" data-place="6">
+<section class="staff" id="staff" data-label="Staff app" data-place="6">
   <div class="sec-head sec-head--light">
     <p class="kicker">Staff app and live sync</p>
     <h2>One tap calls the next guest.<br>Every screen knows.</h2>
     <p class="lede">Try it. Press <b>Call next</b> on the tablet and watch the lobby TV and Sara’s phone update at the same moment.</p>
   </div>
   <div class="demo" id="demo">
-    <div class="tablet">
+    <div class="tilt"><div class="tablet">
       <div class="tablet__bar">
         <div><p class="mini">Bella Vista, main hall</p><h4>Who’s next</h4></div>
         <span class="chip chip--open">Open</span>
       </div>
       <ul class="queue" id="queue" aria-live="polite"></ul>
       <div class="tablet__actions">
-        <button class="btn btn--lime" id="callNext" type="button">Call next</button>
+        <button class="btn btn--lime" id="callNext" type="button" data-cursor="Call">Call next</button>
         <button class="btn btn--line" id="addWalkin" type="button">Add walk-in</button>
       </div>
-    </div>
+    </div></div>
     <div class="demo__side">
       <div class="tvmini">
         <p class="mini">Lobby TV</p>
@@ -169,7 +177,7 @@
 </section>
 
 <!-- OWNERS -->
-<section class="owners" id="owners" data-place="5">
+<section class="owners" id="owners" data-label="Owner app" data-place="5">
   <div class="owners__grid">
     <div class="owners__copy">
       <p class="kicker">Owner app</p>
@@ -183,7 +191,7 @@
       </ul>
       <a class="btn btn--dark" href="https://business.quyk.io">Owner sign-in</a>
     </div>
-    <div class="dash" id="dash">
+    <div class="tilt"><div class="dash" id="dash">
       <div class="dash__head"><h4>Today</h4><span class="demo-tag">Demo data</span></div>
       <div class="stats">
         <div class="stat"><b data-count="184">0</b><span>guests joined</span></div>
@@ -199,12 +207,12 @@
         <li><span>Takeaway</span><em>3 waiting</em><button class="tog on" type="button" aria-pressed="true" aria-label="Takeaway open"></button></li>
         <li><span>Terrace</span><em>Paused</em><button class="tog" type="button" aria-pressed="false" aria-label="Terrace paused"></button></li>
       </ul>
-    </div>
+    </div></div>
   </div>
 </section>
 
 <!-- TV -->
-<section class="tv" id="tv" data-place="4">
+<section class="tv" id="tv" data-label="Lobby TV" data-place="4">
   <div class="tv__frame" id="tvFrame">
     <div class="tv__board">
       <div class="tv__now">
@@ -226,7 +234,7 @@
 </section>
 
 <!-- SETUP -->
-<section class="setup" data-place="3">
+<section class="setup" data-label="Setup" data-place="3">
   <h2>Live the same day.</h2>
   <ol class="setup__steps">
     <li><span class="step__n">1</span><h3>Add your lines</h3><p>Dine-in, takeaway, terrace. Each with its own ticket letter.</p></li>
@@ -236,7 +244,7 @@
 </section>
 
 <!-- PRICING -->
-<section class="pricing" id="pricing" data-place="2">
+<section class="pricing" id="pricing" data-label="Pricing" data-place="2">
   <div class="sec-head">
     <h2>Simple plans that grow with you.</h2>
     <p class="lede">Start free. Upgrade when you add locations or lines.</p>
@@ -261,7 +269,7 @@
 </section>
 
 <!-- FAQ -->
-<section class="faq" id="faq" data-place="1">
+<section class="faq" id="faq" data-label="Questions" data-place="1">
   <h2>Questions, answered.</h2>
   <div class="faq__list">
     <details><summary>Do guests need to download an app?</summary><p>No. They scan the code with their phone camera and join in the browser. No account either.</p></details>
@@ -274,7 +282,7 @@
 </section>
 
 <!-- FINAL -->
-<section class="final" id="book" data-place="0">
+<section class="final" id="book" data-label="Book a demo" data-place="0">
   <p class="final__small">Your turn.</p>
   <h2 class="final__big" aria-label="You're next.">You’re<br>next.</h2>
   <a class="btn btn--dark btn--xl magnetic" href="mailto:hello@quyk.app?subject=Quyk%20demo%20request">Book a demo</a>
